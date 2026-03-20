@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
-import { collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc, setDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc, setDoc, getDocs } from 'firebase/firestore';
 import { useAuth } from './AuthContext';
-import { Book, LiteraryProfile, Recommendation } from '../types';
+import { Book, LiteraryProfile, Recommendation, FeedItemType } from '../types';
 
 interface BookContextType {
   books: Book[];
@@ -81,14 +81,99 @@ export const BookProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user]);
 
+  const updateUserStats = async (userId: string) => {
+    if (!db) return;
+    try {
+      const q = query(collection(db, 'books'), where('userId', '==', userId));
+      const snapshot = await getDocs(q);
+      let booksRead = 0;
+      let pagesRead = 0;
+      let totalRating = 0;
+      let ratedBooks = 0;
+      const genres: Record<string, number> = {};
+      let lastReadDate: number | undefined = undefined;
+
+      snapshot.forEach((doc) => {
+        const data = doc.data() as Book;
+        if (data.status === 'lido') {
+          booksRead++;
+          if (data.pageCount) pagesRead += data.pageCount;
+          if (data.notaGeral && data.notaGeral > 0) {
+            totalRating += data.notaGeral;
+            ratedBooks++;
+          }
+          if (data.genero) {
+            genres[data.genero] = (genres[data.genero] || 0) + 1;
+          }
+          
+          const readDate = data.createdAt?.toMillis ? data.createdAt.toMillis() : Date.now();
+          if (!lastReadDate || readDate > lastReadDate) {
+            lastReadDate = readDate;
+          }
+        }
+      });
+
+      const averageRating = ratedBooks > 0 ? Number((totalRating / ratedBooks).toFixed(1)) : 0;
+      
+      let favoriteGenre = '';
+      let maxGenreCount = 0;
+      for (const [genre, count] of Object.entries(genres)) {
+        if (count > maxGenreCount) {
+          maxGenreCount = count;
+          favoriteGenre = genre;
+        }
+      }
+
+      const userRef = doc(db, 'users', userId);
+      await setDoc(userRef, {
+        booksRead,
+        pagesRead,
+        averageRating,
+        favoriteGenre,
+        lastReadDate,
+        updatedAt: Date.now()
+      }, { merge: true });
+    } catch (error) {
+      console.error("Error updating user stats: ", error);
+    }
+  };
+
+  const createFeedItem = async (userId: string, type: FeedItemType, content: string, relatedBookId?: string, metadata?: any) => {
+    if (!db || !user) return;
+    try {
+      await addDoc(collection(db, 'communityFeed'), {
+        userId,
+        userDisplayName: user.name,
+        userPhotoURL: user.profilePhoto,
+        type,
+        content,
+        relatedBookId,
+        metadata,
+        createdAt: Date.now(),
+        likesCount: 0,
+        commentsCount: 0
+      });
+    } catch (error) {
+      console.error("Error creating feed item: ", error);
+    }
+  };
+
   const addBook = async (bookData: Omit<Book, 'id' | 'userId' | 'dataCadastro'>) => {
     if (!user || !db) return;
     try {
-      await addDoc(collection(db, 'books'), {
+      const docRef = await addDoc(collection(db, 'books'), {
         ...bookData,
         userId: user.userId,
         createdAt: serverTimestamp(),
       });
+      
+      await updateUserStats(user.userId);
+      
+      if (bookData.status === 'lido') {
+        await createFeedItem(user.userId, 'finished_book', `terminou de ler ${bookData.titulo}`, docRef.id, { bookTitle: bookData.titulo, coverUrl: bookData.coverUrl, rating: bookData.notaGeral });
+      } else {
+        await createFeedItem(user.userId, 'added_book', `adicionou ${bookData.titulo} à sua lista`, docRef.id, { bookTitle: bookData.titulo, coverUrl: bookData.coverUrl });
+      }
     } catch (error) {
       console.error("Error adding book: ", error);
       throw error;
@@ -99,7 +184,18 @@ export const BookProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user || !db) return;
     try {
       const bookRef = doc(db, 'books', id);
+      const oldBook = getBook(id);
       await updateDoc(bookRef, bookData);
+      
+      await updateUserStats(user.userId);
+      
+      if (oldBook) {
+        if (oldBook.status !== 'lido' && bookData.status === 'lido') {
+          await createFeedItem(user.userId, 'finished_book', `terminou de ler ${bookData.titulo || oldBook.titulo}`, id, { bookTitle: bookData.titulo || oldBook.titulo, coverUrl: bookData.coverUrl || oldBook.coverUrl, rating: bookData.notaGeral || oldBook.notaGeral });
+        } else if ((!oldBook.notaGeral || oldBook.notaGeral === 0) && bookData.notaGeral && bookData.notaGeral > 0) {
+          await createFeedItem(user.userId, 'rated_book', `avaliou ${bookData.titulo || oldBook.titulo} com ${bookData.notaGeral} estrelas`, id, { bookTitle: bookData.titulo || oldBook.titulo, coverUrl: bookData.coverUrl || oldBook.coverUrl, rating: bookData.notaGeral });
+        }
+      }
     } catch (error) {
       console.error("Error updating book: ", error);
       throw error;
@@ -110,6 +206,7 @@ export const BookProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user || !db) return;
     try {
       await deleteDoc(doc(db, 'books', id));
+      await updateUserStats(user.userId);
     } catch (error) {
       console.error("Error deleting book: ", error);
       throw error;
@@ -121,6 +218,7 @@ export const BookProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const promises = ids.map(id => deleteDoc(doc(db, 'books', id)));
       await Promise.all(promises);
+      await updateUserStats(user.userId);
     } catch (error) {
       console.error("Error deleting multiple books: ", error);
       throw error;

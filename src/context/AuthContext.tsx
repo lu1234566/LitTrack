@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth, db, googleProvider, isFirebaseConfigured } from '../lib/firebase';
 import { onAuthStateChanged, signInWithPopup, signOut, browserPopupRedirectResolver } from 'firebase/auth';
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 
 interface UserData {
   userId: string;
@@ -46,8 +46,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           if (!userSnap.exists()) {
             await setDoc(userRef, {
-              ...userData,
-              createdAt: serverTimestamp()
+              id: firebaseUser.uid,
+              displayName: firebaseUser.displayName || 'Usuário',
+              email: firebaseUser.email || '',
+              photoURL: firebaseUser.photoURL || '',
+              bio: '',
+              communityPublic: true,
+              showBooksPublicly: true,
+              showStatsPublicly: true,
+              booksRead: 0,
+              pagesRead: 0,
+              averageRating: 0,
+              favoriteGenre: '',
+              readingStreak: 0,
+              createdAt: Date.now(),
+              updatedAt: Date.now()
             });
           }
         } catch (e) {

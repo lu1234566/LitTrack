@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Library, Image as ImageIcon, Settings, PlusCircle, LogOut, UserCircle, Sparkles, History, Search, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Library, Image as ImageIcon, Settings, PlusCircle, LogOut, UserCircle, Sparkles, History, Search, Menu, X, Users } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { Logo } from './Logo';
@@ -16,6 +16,7 @@ const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
   { icon: Library, label: 'Meus Livros', path: '/livros' },
   { icon: Search, label: 'Pesquisar Livros', path: '/pesquisar' },
+  { icon: Users, label: 'Comunidade', path: '/comunidade' },
   { icon: UserCircle, label: 'Perfil Literário', path: '/perfil-literario' },
   { icon: History, label: 'Retrospectiva 2026', path: '/retrospectiva' },
   { icon: Sparkles, label: 'Recomendações', path: '/recomendacoes' },
