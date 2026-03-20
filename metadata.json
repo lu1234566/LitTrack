@@ -1,0 +1,5 @@
+{
+  "name": "LitTrack 2026",
+  "description": "Aplicativo para controle de leitura, diário literário e análise de qualidade dos livros lidos em 2026.",
+  "requestFramePermissions": ["camera"]
+}
