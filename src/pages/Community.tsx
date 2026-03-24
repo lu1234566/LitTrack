@@ -51,28 +51,27 @@ export const Community: React.FC = () => {
         return;
       }
 
-      setIsLoading(true);
+      // Only show loading if we don't have top readers yet
+      if (topReaders.length === 0) {
+        setIsLoading(true);
+      }
+      
       try {
         // Fetch Top Readers (public profiles only)
         const usersRef = collection(db, 'users');
-        const qUsers = query(usersRef, where('communityPublic', '==', true), orderBy('booksRead', 'desc'), limit(10));
+        const qUsers = query(usersRef, where('communityPublic', '==', true), limit(50));
         const usersSnap = await getDocs(qUsers);
         const usersData = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
-        setTopReaders(usersData);
+        // Sort client-side to avoid composite index requirement
+        const sortedUsers = usersData.sort((a, b) => (b.booksRead || 0) - (a.booksRead || 0)).slice(0, 10);
+        setTopReaders(sortedUsers);
 
         // Fetch Newest Member
-        const qNewest = query(usersRef, where('communityPublic', '==', true), orderBy('createdAt', 'desc'), limit(1));
-        const newestSnap = await getDocs(qNewest);
-        const newestData = newestSnap.docs[0] ? { id: newestSnap.docs[0].id, ...newestSnap.docs[0].data() } as UserProfile : undefined;
+        const newestData = usersData.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0];
 
         // Calculate Highlights
-        const qMostPages = query(usersRef, where('communityPublic', '==', true), orderBy('pagesRead', 'desc'), limit(1));
-        const mostPagesSnap = await getDocs(qMostPages);
-        const mostPagesData = mostPagesSnap.docs[0] ? { id: mostPagesSnap.docs[0].id, ...mostPagesSnap.docs[0].data() } as UserProfile : undefined;
-
-        const qHighestRating = query(usersRef, where('communityPublic', '==', true), orderBy('averageRating', 'desc'), limit(1));
-        const highestRatingSnap = await getDocs(qHighestRating);
-        const highestRatingData = highestRatingSnap.docs[0] ? { id: highestRatingSnap.docs[0].id, ...highestRatingSnap.docs[0].data() } as UserProfile : undefined;
+        const mostPagesData = usersData.sort((a, b) => (b.pagesRead || 0) - (a.pagesRead || 0))[0];
+        const highestRatingData = usersData.sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0))[0];
 
         setHighlights({
           mostPages: mostPagesData,
@@ -87,7 +86,7 @@ export const Community: React.FC = () => {
     };
 
     fetchCommunityData();
-  }, [activeCommunity, getCommunityMembers]);
+  }, [activeCommunity?.id, getCommunityMembers]);
 
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,17 +124,15 @@ export const Community: React.FC = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500"></div>
-      </div>
-    );
-  }
-
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-7xl mx-auto space-y-8 pb-12 px-4">
-      <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <motion.div className="max-w-7xl mx-auto space-y-8 pb-12 px-4">
+      {isLoading ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500"></div>
+        </div>
+      ) : (
+        <>
+          <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-4xl font-serif font-bold text-neutral-100 tracking-tight flex items-center gap-3">
             {activeCommunity ? (
@@ -464,6 +461,8 @@ export const Community: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
+        </>
+      )}
     </motion.div>
   );
 };

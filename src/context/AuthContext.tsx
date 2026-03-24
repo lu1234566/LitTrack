@@ -77,7 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  const loginWithGoogle = async () => {
+  const loginWithGoogle = React.useCallback(async () => {
     if (!isFirebaseConfigured || !auth) {
       alert("Firebase não está configurado. Verifique as variáveis de ambiente.");
       return;
@@ -88,19 +88,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Error signing in with Google:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = React.useCallback(async () => {
     if (!auth) return;
     try {
       await signOut(auth);
     } catch (error) {
       console.error('Error signing out:', error);
     }
-  };
+  }, []);
+
+  const value = React.useMemo(() => ({ 
+    user, 
+    loading, 
+    isConfigured: isFirebaseConfigured, 
+    loginWithGoogle, 
+    logout 
+  }), [user, loading, loginWithGoogle, logout]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, isConfigured: isFirebaseConfigured, loginWithGoogle, logout }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

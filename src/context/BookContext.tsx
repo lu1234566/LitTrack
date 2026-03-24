@@ -158,7 +158,7 @@ export const BookProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const addBook = async (bookData: Omit<Book, 'id' | 'userId' | 'dataCadastro'>) => {
+  const addBook = React.useCallback(async (bookData: Omit<Book, 'id' | 'userId' | 'dataCadastro'>) => {
     if (!user || !db) return;
     try {
       const docRef = await addDoc(collection(db, 'books'), {
@@ -178,9 +178,9 @@ export const BookProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("Error adding book: ", error);
       throw error;
     }
-  };
+  }, [user, db]);
 
-  const updateBook = async (id: string, bookData: Partial<Book>) => {
+  const updateBook = React.useCallback(async (id: string, bookData: Partial<Book>) => {
     if (!user || !db) return;
     try {
       const bookRef = doc(db, 'books', id);
@@ -200,9 +200,9 @@ export const BookProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("Error updating book: ", error);
       throw error;
     }
-  };
+  }, [user, db]);
 
-  const deleteBook = async (id: string) => {
+  const deleteBook = React.useCallback(async (id: string) => {
     if (!user || !db) return;
     try {
       await deleteDoc(doc(db, 'books', id));
@@ -211,9 +211,9 @@ export const BookProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("Error deleting book: ", error);
       throw error;
     }
-  };
+  }, [user, db]);
 
-  const deleteMultipleBooks = async (ids: string[]) => {
+  const deleteMultipleBooks = React.useCallback(async (ids: string[]) => {
     if (!user || !db) return;
     try {
       const promises = ids.map(id => deleteDoc(doc(db, 'books', id)));
@@ -223,13 +223,13 @@ export const BookProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("Error deleting multiple books: ", error);
       throw error;
     }
-  };
+  }, [user, db]);
 
-  const getBook = (id: string) => {
+  const getBook = React.useCallback((id: string) => {
     return books.find((b) => b.id === id);
-  };
+  }, [books]);
 
-  const saveLiteraryProfile = async (profile: LiteraryProfile) => {
+  const saveLiteraryProfile = React.useCallback(async (profile: LiteraryProfile) => {
     if (!user || !db) return;
     try {
       const profileRef = doc(db, 'profiles', user.userId);
@@ -238,9 +238,9 @@ export const BookProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("Error saving literary profile: ", error);
       throw error;
     }
-  };
+  }, [user, db]);
 
-  const saveRecommendations = async (recs: Recommendation[]) => {
+  const saveRecommendations = React.useCallback(async (recs: Recommendation[]) => {
     if (!user || !db) return;
     try {
       const recommendationsRef = doc(db, 'recommendations', user.userId);
@@ -249,22 +249,28 @@ export const BookProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("Error saving recommendations: ", error);
       throw error;
     }
-  };
+  }, [user, db]);
+
+  const value = React.useMemo(() => ({ 
+    books, 
+    loading, 
+    literaryProfile, 
+    recommendations, 
+    addBook, 
+    updateBook, 
+    deleteBook, 
+    deleteMultipleBooks, 
+    getBook,
+    saveLiteraryProfile,
+    saveRecommendations
+  }), [
+    books, loading, literaryProfile, recommendations, 
+    addBook, updateBook, deleteBook, deleteMultipleBooks, getBook, 
+    saveLiteraryProfile, saveRecommendations
+  ]);
 
   return (
-    <BookContext.Provider value={{ 
-      books, 
-      loading, 
-      literaryProfile, 
-      recommendations, 
-      addBook, 
-      updateBook, 
-      deleteBook, 
-      deleteMultipleBooks, 
-      getBook,
-      saveLiteraryProfile,
-      saveRecommendations
-    }}>
+    <BookContext.Provider value={value}>
       {children}
     </BookContext.Provider>
   );

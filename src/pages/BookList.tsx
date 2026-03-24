@@ -6,6 +6,42 @@ import { Search, Filter, Star, Heart, BookOpen, Clock, CheckCircle2, X } from 'l
 import { motion, AnimatePresence } from 'framer-motion';
 import { CoverImage } from '../components/CoverImage';
 
+const FiltersContent = ({ filterStatus, setFilterStatus, filterGenre, setFilterGenre, genres, sortBy, setSortBy }: any) => (
+  <>
+    <select
+      value={filterStatus}
+      onChange={(e) => setFilterStatus(e.target.value)}
+      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500/50 appearance-none"
+    >
+      <option value="todos">Todos os Status</option>
+      <option value="lido">Lidos</option>
+      <option value="lendo">Lendo</option>
+      <option value="quero ler">Quero Ler</option>
+    </select>
+
+    <select
+      value={filterGenre}
+      onChange={(e) => setFilterGenre(e.target.value)}
+      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500/50 appearance-none"
+    >
+      <option value="todos">Todos os Gêneros</option>
+      {genres.map((g: string) => (
+        <option key={g} value={g}>{g}</option>
+      ))}
+    </select>
+
+    <select
+      value={sortBy}
+      onChange={(e) => setSortBy(e.target.value as any)}
+      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500/50 appearance-none"
+    >
+      <option value="data">Mais Recentes</option>
+      <option value="nota">Maior Nota</option>
+      <option value="titulo">Ordem Alfabética</option>
+    </select>
+  </>
+);
+
 export const BookList: React.FC = () => {
   const { books, loading } = useBooks();
   const { isMobileLayout } = useSettings();
@@ -42,42 +78,6 @@ export const BookList: React.FC = () => {
     });
 
   const genres = Array.from(new Set(books.map((b) => b.genero)));
-
-  const FiltersContent = () => (
-    <>
-      <select
-        value={filterStatus}
-        onChange={(e) => setFilterStatus(e.target.value)}
-        className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500/50 appearance-none"
-      >
-        <option value="todos">Todos os Status</option>
-        <option value="lido">Lidos</option>
-        <option value="lendo">Lendo</option>
-        <option value="quero ler">Quero Ler</option>
-      </select>
-
-      <select
-        value={filterGenre}
-        onChange={(e) => setFilterGenre(e.target.value)}
-        className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500/50 appearance-none"
-      >
-        <option value="todos">Todos os Gêneros</option>
-        {genres.map((g) => (
-          <option key={g} value={g}>{g}</option>
-        ))}
-      </select>
-
-      <select
-        value={sortBy}
-        onChange={(e) => setSortBy(e.target.value as any)}
-        className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500/50 appearance-none"
-      >
-        <option value="data">Mais Recentes</option>
-        <option value="nota">Maior Nota</option>
-        <option value="titulo">Ordem Alfabética</option>
-      </select>
-    </>
-  );
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 md:space-y-8">
@@ -117,7 +117,15 @@ export const BookList: React.FC = () => {
         
         {!isMobileLayout && (
           <div className="flex gap-4 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
-            <FiltersContent />
+            <FiltersContent 
+              filterStatus={filterStatus} 
+              setFilterStatus={setFilterStatus} 
+              filterGenre={filterGenre} 
+              setFilterGenre={setFilterGenre} 
+              genres={genres} 
+              sortBy={sortBy} 
+              setSortBy={setSortBy} 
+            />
           </div>
         )}
       </div>
@@ -150,7 +158,15 @@ export const BookList: React.FC = () => {
                 </button>
               </div>
               <div className="space-y-4">
-                <FiltersContent />
+                <FiltersContent 
+                  filterStatus={filterStatus} 
+                  setFilterStatus={setFilterStatus} 
+                  filterGenre={filterGenre} 
+                  setFilterGenre={setFilterGenre} 
+                  genres={genres} 
+                  sortBy={sortBy} 
+                  setSortBy={setSortBy} 
+                />
                 <button
                   onClick={() => setIsFiltersOpen(false)}
                   className="w-full mt-4 bg-amber-500 text-neutral-950 py-3 rounded-xl font-bold"

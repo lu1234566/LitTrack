@@ -16,6 +16,42 @@ const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Jul
 
 const initialRatings: BookRatings = { historia: 0, personagens: 0, ritmo: 0, originalidade: 0, impactoEmocional: 0, final: 0 };
 
+const SectionWrapper = ({ id, title, icon: Icon, children, colorClass = "text-amber-500", isMobileLayout, openSection, toggleSection }: any) => {
+  const isOpen = !isMobileLayout || openSection === id;
+  
+  return (
+    <div className={`bg-neutral-900/50 border border-neutral-800 rounded-3xl shadow-xl overflow-hidden ${isMobileLayout ? 'mb-4' : 'mb-8'}`}>
+      <button
+        type="button"
+        onClick={() => toggleSection(id)}
+        className={`w-full flex items-center justify-between p-6 md:p-8 ${isMobileLayout ? 'cursor-pointer' : 'cursor-default'}`}
+      >
+        <h2 className={`text-xl font-serif font-semibold ${colorClass} flex items-center gap-2`}>
+          <Icon size={20} />
+          {title}
+        </h2>
+        {isMobileLayout && (
+          <div className="text-neutral-500">
+            {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+          </div>
+        )}
+      </button>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={isMobileLayout ? { height: 0, opacity: 0 } : false}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={isMobileLayout ? { height: 0, opacity: 0 } : undefined}
+            className="px-6 pb-6 md:px-8 md:pb-8"
+          >
+            {children}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 export const BookForm: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -351,42 +387,6 @@ export const BookForm: React.FC = () => {
     }
   };
 
-  const SectionWrapper = ({ id, title, icon: Icon, children, colorClass = "text-amber-500" }: any) => {
-    const isOpen = !isMobileLayout || openSection === id;
-    
-    return (
-      <div className={`bg-neutral-900/50 border border-neutral-800 rounded-3xl shadow-xl overflow-hidden ${isMobileLayout ? 'mb-4' : 'mb-8'}`}>
-        <button
-          type="button"
-          onClick={() => toggleSection(id)}
-          className={`w-full flex items-center justify-between p-6 md:p-8 ${isMobileLayout ? 'cursor-pointer' : 'cursor-default'}`}
-        >
-          <h2 className={`text-xl font-serif font-semibold ${colorClass} flex items-center gap-2`}>
-            <Icon size={20} />
-            {title}
-          </h2>
-          {isMobileLayout && (
-            <div className="text-neutral-500">
-              {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-            </div>
-          )}
-        </button>
-        <AnimatePresence>
-          {isOpen && (
-            <motion.div
-              initial={isMobileLayout ? { height: 0, opacity: 0 } : false}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={isMobileLayout ? { height: 0, opacity: 0 } : undefined}
-              className="px-6 pb-6 md:px-8 md:pb-8"
-            >
-              {children}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    );
-  };
-
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl mx-auto pb-24 md:pb-0">
       <header className="mb-6 md:mb-8 flex items-center justify-between">
@@ -428,7 +428,7 @@ export const BookForm: React.FC = () => {
           className="hidden"
         />
         {/* Importar dados do livro */}
-        <SectionWrapper id="import" title="Importar dados do livro" icon={Barcode}>
+        <SectionWrapper id="import" title="Importar dados do livro" icon={Barcode} isMobileLayout={isMobileLayout} openSection={openSection} toggleSection={toggleSection}>
           <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start">
             <button
               type="button"
@@ -543,7 +543,7 @@ export const BookForm: React.FC = () => {
         </SectionWrapper>
 
         {/* Informações Básicas */}
-        <SectionWrapper id="basic" title="Informações Básicas" icon={BookOpen}>
+        <SectionWrapper id="basic" title="Informações Básicas" icon={BookOpen} isMobileLayout={isMobileLayout} openSection={openSection} toggleSection={toggleSection}>
           <div className={isMobileLayout ? "flex flex-col gap-4" : "grid grid-cols-1 md:grid-cols-2 gap-6"}>
             <div className="space-y-2 md:col-span-2">
               <label className="text-sm font-medium text-neutral-400">Título</label>
@@ -711,7 +711,7 @@ export const BookForm: React.FC = () => {
         </SectionWrapper>
 
         {/* Avaliação Detalhada */}
-        <SectionWrapper id="quality" title="Controle de Qualidade" icon={Star}>
+        <SectionWrapper id="quality" title="Controle de Qualidade" icon={Star} isMobileLayout={isMobileLayout} openSection={openSection} toggleSection={toggleSection}>
           <div className="flex items-center justify-between mb-6">
             <div className="bg-amber-500/10 text-amber-500 px-4 py-2 rounded-xl font-bold text-lg flex items-center gap-2">
               Média: {formData.notaGeral?.toFixed(1)} <Star size={18} fill="currentColor" />
@@ -740,7 +740,7 @@ export const BookForm: React.FC = () => {
         </SectionWrapper>
 
         {/* Resenha e Anotações */}
-        <SectionWrapper id="diary" title="Diário de Leitura" icon={BookOpen}>
+        <SectionWrapper id="diary" title="Diário de Leitura" icon={BookOpen} isMobileLayout={isMobileLayout} openSection={openSection} toggleSection={toggleSection}>
           <div className="space-y-6">
             <div className="space-y-2">
               <label className="text-sm font-medium text-neutral-400">Resenha Completa</label>

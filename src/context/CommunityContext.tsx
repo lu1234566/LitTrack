@@ -82,7 +82,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     fetchBadges();
   }, []);
 
-  const createPost = async (content: string, relatedBookId?: string, communityId?: string) => {
+  const createPost = React.useCallback(async (content: string, relatedBookId?: string, communityId?: string) => {
     if (!user || !db) return;
     await addDoc(collection(db, 'communityFeed'), {
       userId: user.userId,
@@ -96,9 +96,9 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       likesCount: 0,
       commentsCount: 0
     });
-  };
+  }, [user, db, activeCommunity]);
 
-  const likePost = async (feedItemId: string, reactionType: string) => {
+  const likePost = React.useCallback(async (feedItemId: string, reactionType: string) => {
     if (!user || !db) return;
     
     // Check if already liked
@@ -124,9 +124,9 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const likeId = snap.docs[0].id;
       await updateDoc(doc(db, 'likes', likeId), { reactionType });
     }
-  };
+  }, [user, db]);
 
-  const unlikePost = async (feedItemId: string) => {
+  const unlikePost = React.useCallback(async (feedItemId: string) => {
     if (!user || !db) return;
     const q = query(collection(db, 'likes'), where('feedItemId', '==', feedItemId), where('userId', '==', user.userId));
     const snap = await getDocs(q);
@@ -142,9 +142,9 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
          await updateDoc(feedRef, { likesCount: Math.max(0, currentCount - 1) });
       }
     }
-  };
+  }, [user, db]);
 
-  const addComment = async (feedItemId: string, content: string) => {
+  const addComment = React.useCallback(async (feedItemId: string, content: string) => {
     if (!user || !db) return;
     await addDoc(collection(db, 'comments'), {
       feedItemId,
@@ -162,23 +162,24 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
        const currentCount = feedSnap.data().commentsCount || 0;
        await updateDoc(feedRef, { commentsCount: currentCount + 1 });
     }
-  };
+  }, [user, db]);
 
-  const getComments = async (feedItemId: string) => {
+  const getComments = React.useCallback(async (feedItemId: string) => {
     if (!db) return [];
-    const q = query(collection(db, 'comments'), where('feedItemId', '==', feedItemId), orderBy('createdAt', 'asc'));
+    const q = query(collection(db, 'comments'), where('feedItemId', '==', feedItemId), limit(100));
     const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() } as Comment));
-  };
+    const comments = snap.docs.map(d => ({ id: d.id, ...d.data() } as Comment));
+    return comments.sort((a, b) => a.createdAt - b.createdAt);
+  }, [db]);
 
-  const getLikes = async (feedItemId: string) => {
+  const getLikes = React.useCallback(async (feedItemId: string) => {
     if (!db) return [];
     const q = query(collection(db, 'likes'), where('feedItemId', '==', feedItemId));
     const snap = await getDocs(q);
     return snap.docs.map(d => ({ id: d.id, ...d.data() } as Like));
-  };
+  }, [db]);
 
-  const joinChallenge = async (challengeId: string) => {
+  const joinChallenge = React.useCallback(async (challengeId: string) => {
     if (!user || !db) return;
     
     // Check if already joined
@@ -193,9 +194,9 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         completed: false
       });
     }
-  };
+  }, [user, db]);
 
-  const followUser = async (targetUserId: string) => {
+  const followUser = React.useCallback(async (targetUserId: string) => {
     if (!user || !db || user.userId === targetUserId) return;
     
     const q = query(collection(db, 'follows'), where('followerId', '==', user.userId), where('followingId', '==', targetUserId));
@@ -208,9 +209,9 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         createdAt: Date.now()
       });
     }
-  };
+  }, [user, db]);
 
-  const unfollowUser = async (targetUserId: string) => {
+  const unfollowUser = React.useCallback(async (targetUserId: string) => {
     if (!user || !db) return;
     
     const q = query(collection(db, 'follows'), where('followerId', '==', user.userId), where('followingId', '==', targetUserId));
@@ -219,28 +220,29 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (!snap.empty) {
       await deleteDoc(doc(db, 'follows', snap.docs[0].id));
     }
-  };
+  }, [user, db]);
 
-  const getUserBadges = async (targetUserId: string) => {
+  const getUserBadges = React.useCallback(async (targetUserId: string) => {
     if (!db) return [];
     const q = query(collection(db, 'userBadges'), where('userId', '==', targetUserId));
     const snap = await getDocs(q);
     return snap.docs.map(d => ({ id: d.id, ...d.data() } as UserBadge));
-  };
+  }, [db]);
 
-  const getFollowersCount = async (targetUserId: string) => {
+  const getFollowersCount = React.useCallback(async (targetUserId: string) => {
     if (!db) return 0;
     const q = query(collection(db, 'follows'), where('followingId', '==', targetUserId));
     const snap = await getDocs(q);
     return snap.size;
-  };
+  }, [db]);
 
-  const getFollowingCount = async (targetUserId: string) => {
+  const getFollowingCount = React.useCallback(async (targetUserId: string) => {
     if (!db) return 0;
     const q = query(collection(db, 'follows'), where('followerId', '==', targetUserId));
     const snap = await getDocs(q);
     return snap.size;
-  };
+  }, [db]);
+
 
   const checkAndAwardBadges = React.useCallback(async () => {
     if (!user || !db) return;
@@ -338,7 +340,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [user, db, challenges]);
 
-  const createCommunity = async (name: string, description: string, visibility: CommunityVisibility, imageUrl?: string) => {
+  const createCommunity = React.useCallback(async (name: string, description: string, visibility: CommunityVisibility, imageUrl?: string) => {
     if (!user || !db) throw new Error('Not authenticated');
     
     let inviteCode = generateInviteCode();
@@ -382,9 +384,9 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
 
     return commRef.id;
-  };
+  }, [user, db]);
 
-  const joinCommunityByCode = async (code: string) => {
+  const joinCommunityByCode = React.useCallback(async (code: string) => {
     if (!user || !db) throw new Error('Not authenticated');
     
     const q = query(collection(db, 'communities'), where('inviteCode', '==', code.toUpperCase()));
@@ -412,9 +414,9 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     await updateDoc(doc(db, 'communities', community.id), {
       memberCount: (community.memberCount || 0) + 1
     });
-  };
+  }, [user, db]);
 
-  const leaveCommunity = async (communityId: string) => {
+  const leaveCommunity = React.useCallback(async (communityId: string) => {
     if (!user || !db) return;
     
     const q = query(collection(db, 'communityMembers'), where('communityId', '==', communityId), where('userId', '==', user.userId));
@@ -434,33 +436,33 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         });
       }
     }
-  };
+  }, [user, db]);
 
-  const getCommunityByCode = async (code: string) => {
+  const getCommunityByCode = React.useCallback(async (code: string) => {
     if (!db) return null;
     const q = query(collection(db, 'communities'), where('inviteCode', '==', code.toUpperCase()));
     const snap = await getDocs(q);
     if (snap.empty) return null;
     return { id: snap.docs[0].id, ...snap.docs[0].data() } as Community;
-  };
+  }, [db]);
 
-  const getCommunityMembers = async (communityId: string) => {
+  const getCommunityMembers = React.useCallback(async (communityId: string) => {
     if (!db) return [];
     const q = query(collection(db, 'communityMembers'), where('communityId', '==', communityId), orderBy('joinedAt', 'asc'));
     const snap = await getDocs(q);
     return snap.docs.map(d => ({ id: d.id, ...d.data() } as CommunityMember));
-  };
+  }, [db]);
 
-  const regenerateInviteCode = async (communityId: string) => {
+  const regenerateInviteCode = React.useCallback(async (communityId: string) => {
     if (!db) return '';
     const newCode = generateInviteCode();
     await updateDoc(doc(db, 'communities', communityId), {
       inviteCode: newCode
     });
     return newCode;
-  };
+  }, [db]);
 
-  const removeMember = async (communityId: string, targetUserId: string) => {
+  const removeMember = React.useCallback(async (communityId: string, targetUserId: string) => {
     if (!user || !db) return;
     
     // Check if current user is owner/admin
@@ -484,19 +486,23 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         });
       }
     }
-  };
+  }, [user, db]);
+
+
+  const checkAndAwardBadgesRef = React.useRef(checkAndAwardBadges);
+  const updateChallengeProgressRef = React.useRef(updateChallengeProgress);
 
   useEffect(() => {
+    checkAndAwardBadgesRef.current = checkAndAwardBadges;
+  }, [checkAndAwardBadges]);
+
+  useEffect(() => {
+    updateChallengeProgressRef.current = updateChallengeProgress;
+  }, [updateChallengeProgress]);
+
+  // Listen to user-specific data (global)
+  useEffect(() => {
     if (!db || !user) return;
-
-    // Listen to feed (global or community specific)
-    const feedQuery = activeCommunity 
-      ? query(collection(db, 'communityFeed'), where('communityId', '==', activeCommunity.id), orderBy('createdAt', 'desc'), limit(50))
-      : query(collection(db, 'communityFeed'), where('communityId', '==', null), orderBy('createdAt', 'desc'), limit(50));
-
-    const unsubFeed = onSnapshot(feedQuery, (snap) => {
-      setFeed(snap.docs.map(d => ({ id: d.id, ...d.data() } as CommunityFeedItem)));
-    });
 
     // Listen to user challenges
     const qUserChallenges = query(collection(db, 'userChallenges'), where('userId', '==', user.userId));
@@ -545,13 +551,12 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // Listen to user stats to trigger badges and challenges check
     const unsubUserStats = onSnapshot(doc(db, 'users', user.userId), (snap) => {
       if (snap.exists()) {
-        checkAndAwardBadges();
-        updateChallengeProgress();
+        checkAndAwardBadgesRef.current();
+        updateChallengeProgressRef.current();
       }
     });
 
     return () => {
-      unsubFeed();
       unsubUserChallenges();
       unsubUserBadges();
       unsubFollowing();
@@ -559,18 +564,48 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       unsubUserCommunities();
       unsubUserStats();
     };
-  }, [user, db, checkAndAwardBadges, updateChallengeProgress, activeCommunity]);
+  }, [user, db]);
+
+  // Listen to feed (community specific or global)
+  useEffect(() => {
+    if (!db || !user) return;
+
+    const feedQuery = activeCommunity 
+      ? query(collection(db, 'communityFeed'), where('communityId', '==', activeCommunity.id), limit(100))
+      : query(collection(db, 'communityFeed'), where('communityId', '==', null), limit(100));
+
+    const unsubFeed = onSnapshot(feedQuery, (snap) => {
+      const items = snap.docs.map(d => ({ id: d.id, ...d.data() } as CommunityFeedItem));
+      // Sort client-side to avoid composite index requirement
+      const sortedItems = items.sort((a, b) => b.createdAt - a.createdAt).slice(0, 50);
+      setFeed(sortedItems);
+    }, (error) => {
+      console.error("Error in feed listener:", error);
+    });
+
+    return () => unsubFeed();
+  }, [user, db, activeCommunity]);
+
+  const value = React.useMemo(() => ({
+    feed, challenges, userChallenges, badges, userBadges, following, followers,
+    userCommunities, activeCommunity, setActiveCommunity,
+    createPost, likePost, unlikePost, addComment, getComments, getLikes,
+    joinChallenge, followUser, unfollowUser, getUserBadges, getFollowersCount, getFollowingCount,
+    checkAndAwardBadges, updateChallengeProgress,
+    createCommunity, joinCommunityByCode, leaveCommunity, getCommunityByCode, getCommunityMembers,
+    regenerateInviteCode, removeMember
+  }), [
+    feed, challenges, userChallenges, badges, userBadges, following, followers,
+    userCommunities, activeCommunity, setActiveCommunity,
+    createPost, likePost, unlikePost, addComment, getComments, getLikes,
+    joinChallenge, followUser, unfollowUser, getUserBadges, getFollowersCount, getFollowingCount,
+    checkAndAwardBadges, updateChallengeProgress,
+    createCommunity, joinCommunityByCode, leaveCommunity, getCommunityByCode, getCommunityMembers,
+    regenerateInviteCode, removeMember
+  ]);
 
   return (
-    <CommunityContext.Provider value={{
-      feed, challenges, userChallenges, badges, userBadges, following, followers,
-      userCommunities, activeCommunity, setActiveCommunity,
-      createPost, likePost, unlikePost, addComment, getComments, getLikes,
-      joinChallenge, followUser, unfollowUser, getUserBadges, getFollowersCount, getFollowingCount,
-      checkAndAwardBadges, updateChallengeProgress,
-      createCommunity, joinCommunityByCode, leaveCommunity, getCommunityByCode, getCommunityMembers,
-      regenerateInviteCode, removeMember
-    }}>
+    <CommunityContext.Provider value={value}>
       {children}
     </CommunityContext.Provider>
   );

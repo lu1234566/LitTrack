@@ -30,10 +30,19 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const isMobileLayout = layoutMode === 'mobile' || (layoutMode === 'auto' && isMobileScreen);
+  const isMobileLayout = React.useMemo(() => 
+    layoutMode === 'mobile' || (layoutMode === 'auto' && isMobileScreen),
+    [layoutMode, isMobileScreen]
+  );
+
+  const value = React.useMemo(() => ({ 
+    layoutMode, 
+    setLayoutMode, 
+    isMobileLayout 
+  }), [layoutMode, isMobileLayout]);
 
   return (
-    <SettingsContext.Provider value={{ layoutMode, setLayoutMode, isMobileLayout }}>
+    <SettingsContext.Provider value={value}>
       {children}
     </SettingsContext.Provider>
   );
