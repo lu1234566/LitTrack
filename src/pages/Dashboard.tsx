@@ -1,14 +1,15 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useBooks } from '../context/BookContext';
-import { Book, Star, TrendingUp, Award, BookOpen, Calendar, Sparkles } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { motion } from 'framer-motion';
+import { Book, Star, TrendingUp, Award, BookOpen, Calendar, Sparkles, X } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
 const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
 export const Dashboard: React.FC = () => {
   const { books, loading } = useBooks();
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
 
   const stats = useMemo(() => {
     if (loading) return null;
@@ -36,7 +37,9 @@ export const Dashboard: React.FC = () => {
     // Leituras por mês
     const leiturasPorMes = MONTHS.map(mes => ({
       name: mes.substring(0, 3),
-      quantidade: lidos.filter(b => b.mesLeitura === mes).length
+      fullName: mes,
+      quantidade: lidos.filter(b => b.mesLeitura === mes).length,
+      livros: lidos.filter(b => b.mesLeitura === mes)
     }));
 
     // Top livros
@@ -56,6 +59,8 @@ export const Dashboard: React.FC = () => {
   }
 
   if (!stats) return null;
+
+  const selectedMonthData = selectedMonth ? stats.leiturasPorMes.find(m => m.name === selectedMonth) : null;
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
@@ -83,11 +88,12 @@ export const Dashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Chart */}
-        <div className="lg:col-span-2 bg-neutral-900/50 border border-neutral-800 rounded-3xl p-6 shadow-xl">
-          <h2 className="text-xl font-serif font-semibold mb-6 flex items-center gap-2">
+        <div className="lg:col-span-2 bg-neutral-900/50 border border-neutral-800 rounded-3xl p-6 shadow-xl flex flex-col">
+          <h2 className="text-xl font-serif font-semibold mb-2 flex items-center gap-2">
             <Calendar className="text-amber-500" size={20} />
             Evolução de Leituras
           </h2>
+          <p className="text-sm text-neutral-400 mb-6">Clique em uma barra para ver os livros lidos no mês.</p>
           <div className="h-72 w-full" style={{ minWidth: 0, minHeight: 0 }}>
             <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
               <BarChart data={stats.leiturasPorMes}>
@@ -95,7 +101,23 @@ export const Dashboard: React.FC = () => {
                 <XAxis dataKey="name" stroke="#737373" tick={{ fill: '#737373' }} axisLine={false} tickLine={false} />
                 <YAxis stroke="#737373" tick={{ fill: '#737373' }} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip cursor={{ fill: '#262626' }} contentStyle={{ backgroundColor: '#171717', border: '1px solid #262626', borderRadius: '12px' }} />
-                <Bar dataKey="quantidade" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                <Bar 
+                  dataKey="quantidade" 
+                  radius={[4, 4, 0, 0]} 
+                  onClick={(data) => {
+                    if (data && data.name) {
+                      setSelectedMonth(selectedMonth === data.name ? null : data.name);
+                    }
+                  }}
+                  className="cursor-pointer transition-all duration-300 hover:opacity-80"
+                >
+                  {stats.leiturasPorMes.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={selectedMonth === entry.name ? '#f59e0b' : (selectedMonth ? '#404040' : '#f59e0b')} 
+                    />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -129,6 +151,64 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Selected Month Books */}
+      <AnimatePresence>
+        {selectedMonthData && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }} 
+            animate={{ opacity: 1, height: 'auto' }} 
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-6 shadow-xl relative">
+              <button 
+                onClick={() => setSelectedMonth(null)}
+                className="absolute top-6 right-6 text-neutral-400 hover:text-neutral-200 transition-colors"
+              >
+                <X size={24} />
+              </button>
+              
+              <h2 className="text-2xl font-serif font-semibold mb-6 flex items-center gap-2">
+                <BookOpen className="text-amber-500" size={24} />
+                Livros lidos em {selectedMonthData.fullName}
+              </h2>
+              
+              {selectedMonthData.livros.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  {selectedMonthData.livros.map(livro => (
+                    <div key={livro.id} className="group relative aspect-[2/3] rounded-lg overflow-hidden bg-neutral-800">
+                      {livro.coverUrl ? (
+                        <img 
+                          src={livro.coverUrl} 
+                          alt={livro.titulo} 
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center border border-neutral-700">
+                          <Book className="text-neutral-600 mb-2" size={32} />
+                          <span className="text-xs font-medium text-neutral-400 line-clamp-3">{livro.titulo}</span>
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
+                        <p className="text-sm font-bold text-white line-clamp-2">{livro.titulo}</p>
+                        <p className="text-xs text-neutral-300 line-clamp-1">{livro.autor}</p>
+                        <div className="flex items-center gap-1 text-amber-500 mt-1">
+                          <Star size={12} fill="currentColor" />
+                          <span className="text-xs font-bold">{livro.notaGeral.toFixed(1)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-neutral-500 text-center py-8">Nenhum livro registrado como lido neste mês.</p>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
