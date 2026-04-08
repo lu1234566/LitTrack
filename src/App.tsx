@@ -23,6 +23,8 @@ import { Login } from './pages/Login';
 import { Settings } from './pages/Settings';
 import { Community } from './pages/Community';
 import { PublicProfile } from './pages/PublicProfile';
+import { Timeline } from './pages/Timeline';
+import { ExportData } from './pages/ExportData';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 export default function App() {
@@ -45,7 +47,9 @@ export default function App() {
                     <Route path="galeria" element={<Gallery />} />
                     <Route path="perfil-literario" element={<LiteraryProfile />} />
                     <Route path="retrospectiva" element={<Retrospective />} />
+                    <Route path="linha-do-tempo" element={<Timeline />} />
                     <Route path="recomendacoes" element={<Recommendations />} />
+                    <Route path="exportar" element={<ExportData />} />
                     <Route path="configuracoes" element={<Settings />} />
                     <Route path="comunidade" element={<Community />} />
                     <Route path="perfil/:userId" element={<PublicProfile />} />

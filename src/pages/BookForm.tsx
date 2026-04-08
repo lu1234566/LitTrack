@@ -11,6 +11,8 @@ import { BookSearchModal } from '../components/BookSearchModal';
 import { set } from 'idb-keyval';
 import { CoverImage } from '../components/CoverImage';
 
+import { safeParseNumber } from '../lib/statsUtils';
+
 const GENRES: BookGenre[] = ['Ficção', 'Não Ficção', 'Fantasia', 'Ficção Científica', 'Romance', 'Suspense', 'Terror', 'Biografia', 'História', 'Autoajuda', 'Outro'];
 const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
@@ -177,7 +179,9 @@ export const BookForm: React.FC = () => {
     const { name, value, type } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
+      [name]: type === 'checkbox' 
+        ? (e.target as HTMLInputElement).checked 
+        : (name === 'pageCount' ? safeParseNumber(value) : value),
     }));
   };
 
@@ -362,6 +366,12 @@ export const BookForm: React.FC = () => {
         delete sanitized[key as keyof Book];
       }
     });
+
+    // Ensure pageCount is a number
+    if ('pageCount' in sanitized) {
+      sanitized.pageCount = safeParseNumber(sanitized.pageCount);
+    }
+
     // Remove fields that shouldn't be updated directly
     delete sanitized.id;
     delete sanitized.userId;

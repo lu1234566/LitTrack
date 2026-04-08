@@ -215,3 +215,13 @@ export interface Follow {
   followingId: string;
   createdAt: number;
 }
+
+export interface UserGoal {
+  id: string;
+  userId: string;
+  year: number;
+  booksGoal: number;
+  pagesGoal: number;
+  createdAt: number;
+  updatedAt: number;
+}

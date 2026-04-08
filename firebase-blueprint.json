@@ -1,0 +1,128 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and statistics",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "photoURL": { "type": "string" },
+        "bio": { "type": "string" },
+        "communityPublic": { "type": "boolean" },
+        "showBooksPublicly": { "type": "boolean" },
+        "showStatsPublicly": { "type": "boolean" },
+        "booksRead": { "type": "number" },
+        "pagesRead": { "type": "number" },
+        "averageRating": { "type": "number" },
+        "favoriteGenre": { "type": "string" },
+        "readingStreak": { "type": "number" },
+        "lastReadDate": { "type": "number" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["id", "email"]
+    },
+    "Book": {
+      "title": "Book",
+      "description": "A book in the user's library",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "titulo": { "type": "string" },
+        "autor": { "type": "string" },
+        "genero": { "type": "string" },
+        "status": { "type": "string", "enum": ["lido", "lendo", "quero_ler"] },
+        "pageCount": { "type": "number" },
+        "notaGeral": { "type": "number" },
+        "favorito": { "type": "boolean" },
+        "resenha": { "type": "string" },
+        "coverUrl": { "type": "string" },
+        "anoLeitura": { "type": "number" },
+        "mesLeitura": { "type": "string" },
+        "createdAt": { "type": "object" }
+      },
+      "required": ["userId", "titulo", "autor"]
+    },
+    "Profile": {
+      "title": "Literary Profile",
+      "description": "User's literary preferences and profile",
+      "type": "object",
+      "properties": {
+        "favoriteAuthors": { "type": "array", "items": { "type": "string" } },
+        "favoriteGenres": { "type": "array", "items": { "type": "string" } },
+        "readingGoals": { "type": "string" },
+        "updatedAt": { "type": "number" }
+      }
+    },
+    "Recommendation": {
+      "title": "Recommendations",
+      "description": "AI generated book recommendations for the user",
+      "type": "object",
+      "properties": {
+        "list": { "type": "array" },
+        "updatedAt": { "type": "object" }
+      }
+    },
+    "UserGoal": {
+      "title": "User Goal",
+      "description": "Annual reading goals",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "year": { "type": "number" },
+        "booksGoal": { "type": "number" },
+        "pagesGoal": { "type": "number" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["userId", "year"]
+    },
+    "FeedItem": {
+      "title": "Feed Item",
+      "description": "An item in the community activity feed",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userDisplayName": { "type": "string" },
+        "userPhotoURL": { "type": "string" },
+        "type": { "type": "string" },
+        "content": { "type": "string" },
+        "relatedBookId": { "type": "string" },
+        "metadata": { "type": "object" },
+        "createdAt": { "type": "number" },
+        "likesCount": { "type": "number" },
+        "commentsCount": { "type": "number" }
+      },
+      "required": ["userId", "type", "content"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile data"
+    },
+    "/books/{bookId}": {
+      "schema": "Book",
+      "description": "Books in users' libraries"
+    },
+    "/profiles/{userId}": {
+      "schema": "Profile",
+      "description": "Users' literary profiles"
+    },
+    "/recommendations/{userId}": {
+      "schema": "Recommendation",
+      "description": "AI book recommendations"
+    },
+    "/userGoals/{goalId}": {
+      "schema": "UserGoal",
+      "description": "Annual reading goals"
+    },
+    "/communityFeed/{itemId}": {
+      "schema": "FeedItem",
+      "description": "Community activity feed items"
+    }
+  }
+}

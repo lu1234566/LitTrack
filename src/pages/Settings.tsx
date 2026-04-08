@@ -1,21 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { useSettings, LayoutMode } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
+import { useBooks } from '../context/BookContext';
 import { db } from '../lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { Settings as SettingsIcon, Monitor, Smartphone, MonitorSmartphone, Users, Save, Loader2 } from 'lucide-react';
+import { Settings as SettingsIcon, Monitor, Smartphone, MonitorSmartphone, Users, Save, Loader2, Target, BookOpen, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const Settings: React.FC = () => {
   const { layoutMode, setLayoutMode } = useSettings();
   const { user } = useAuth();
+  const { userGoal, saveUserGoal } = useBooks();
   
   const [bio, setBio] = useState('');
   const [communityPublic, setCommunityPublic] = useState(true);
   const [showBooksPublicly, setShowBooksPublicly] = useState(true);
   const [showStatsPublicly, setShowStatsPublicly] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingGoal, setIsSavingGoal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  const [booksGoal, setBooksGoal] = useState(0);
+  const [pagesGoal, setPagesGoal] = useState(0);
+
+  useEffect(() => {
+    if (userGoal) {
+      setBooksGoal(userGoal.booksGoal);
+      setPagesGoal(userGoal.pagesGoal);
+    }
+  }, [userGoal]);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -64,6 +77,23 @@ export const Settings: React.FC = () => {
     }
   };
 
+  const handleSaveGoal = async () => {
+    setIsSavingGoal(true);
+    try {
+      await saveUserGoal({
+        year: new Date().getFullYear(),
+        booksGoal,
+        pagesGoal
+      });
+      alert('Metas atualizadas com sucesso!');
+    } catch (error) {
+      console.error("Error saving goal:", error);
+      alert('Erro ao salvar metas.');
+    } finally {
+      setIsSavingGoal(false);
+    }
+  };
+
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl mx-auto space-y-8 pb-12">
       <header className="mb-8">
@@ -73,6 +103,57 @@ export const Settings: React.FC = () => {
         </h1>
         <p className="text-neutral-400 mt-2 text-lg">Personalize sua experiência no LitTrack.</p>
       </header>
+
+      {/* Goals Section */}
+      <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8 shadow-xl">
+        <h2 className="text-xl font-serif font-semibold mb-6 text-amber-500 flex items-center gap-2">
+          <Target size={24} />
+          Metas de Leitura {new Date().getFullYear()}
+        </h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-neutral-400 flex items-center gap-2">
+              <BookOpen size={16} />
+              Meta de Livros
+            </label>
+            <input
+              type="number"
+              value={booksGoal || ''}
+              onChange={(e) => setBooksGoal(Number(e.target.value))}
+              placeholder="Ex: 30"
+              className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-neutral-200 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
+            />
+            <p className="text-xs text-neutral-500">Quantos livros você deseja ler este ano?</p>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-neutral-400 flex items-center gap-2">
+              <FileText size={16} />
+              Meta de Páginas
+            </label>
+            <input
+              type="number"
+              value={pagesGoal || ''}
+              onChange={(e) => setPagesGoal(Number(e.target.value))}
+              placeholder="Ex: 10000"
+              className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-neutral-200 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
+            />
+            <p className="text-xs text-neutral-500">Qual o total de páginas que você planeja ler?</p>
+          </div>
+        </div>
+
+        <div className="pt-6 flex justify-end">
+          <button
+            onClick={handleSaveGoal}
+            disabled={isSavingGoal}
+            className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-neutral-950 px-6 py-3 rounded-xl font-bold transition-colors flex items-center gap-2 shadow-lg shadow-amber-500/20"
+          >
+            {isSavingGoal ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
+            Salvar Metas
+          </button>
+        </div>
+      </div>
 
       <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8 shadow-xl">
         <h2 className="text-xl font-serif font-semibold mb-6 text-amber-500">Layout da Interface</h2>
