@@ -23,6 +23,33 @@ service cloud.firestore {
     //
     // Collection: communityFeed
     // Document ID: {itemId}
+    //
+    // Collection: challenges
+    // Document ID: {challengeId}
+    //
+    // Collection: badges
+    // Document ID: {badgeId}
+    //
+    // Collection: userChallenges
+    // Document ID: {id}
+    //
+    // Collection: userBadges
+    // Document ID: {id}
+    //
+    // Collection: follows
+    // Document ID: {id}
+    //
+    // Collection: communities
+    // Document ID: {id}
+    //
+    // Collection: communityMembers
+    // Document ID: {id}
+    //
+    // Collection: likes
+    // Document ID: {id}
+    //
+    // Collection: comments
+    // Document ID: {id}
     // ===============================================================
 
     // Helper Functions
@@ -38,11 +65,15 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == resource.data.userId;
     }
 
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    // Domain Validators
     function isValidUser(data) {
       return data.keys().hasAll(['id', 'email']) &&
              data.id is string &&
-             data.email is string &&
-             data.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+             isValidEmail(data.email);
     }
 
     function isValidBook(data) {
@@ -56,7 +87,6 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isAuthenticated();
       allow create, update: if isOwner(userId) && isValidUser(request.resource.data);
-      allow delete: if false; // Users shouldn't be able to delete their own account data directly
     }
 
     match /books/{bookId} {
@@ -82,6 +112,58 @@ service cloud.firestore {
     }
 
     match /communityFeed/{itemId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /challenges/{challengeId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Only admin (manual)
+    }
+
+    match /badges/{badgeId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Only admin (manual)
+    }
+
+    match /userChallenges/{id} {
+      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow write: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+    }
+
+    match /userBadges/{id} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /follows/{id} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.followerId == request.auth.uid;
+      allow delete: if isAuthenticated() && (resource.data.followerId == request.auth.uid || resource.data.followingId == request.auth.uid);
+    }
+
+    match /communities/{id} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+      allow delete: if false;
+    }
+
+    match /communityMembers/{id} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || get(/databases/$(database)/documents/communities/$(resource.data.communityId)).data.ownerId == request.auth.uid);
+    }
+
+    match /likes/{id} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /comments/{id} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;

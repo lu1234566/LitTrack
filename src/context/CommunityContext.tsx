@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { collection, query, orderBy, limit, getDocs, getDoc, addDoc, updateDoc, doc, deleteDoc, where, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { useAuth } from './AuthContext';
+import { useAuth, handleFirestoreError, OperationType } from './AuthContext';
 import { CommunityFeedItem, Comment, Like, Challenge, UserChallenge, Badge, UserBadge, Follow, UserProfile, Community, CommunityMember, CommunityVisibility, CommunityRole } from '../types';
 
 interface CommunityContextType {
@@ -508,24 +508,32 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const qUserChallenges = query(collection(db, 'userChallenges'), where('userId', '==', user.userId));
     const unsubUserChallenges = onSnapshot(qUserChallenges, (snap) => {
       setUserChallenges(snap.docs.map(d => ({ id: d.id, ...d.data() } as UserChallenge)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'userChallenges');
     });
 
     // Listen to user badges
     const qUserBadges = query(collection(db, 'userBadges'), where('userId', '==', user.userId));
     const unsubUserBadges = onSnapshot(qUserBadges, (snap) => {
       setUserBadges(snap.docs.map(d => ({ id: d.id, ...d.data() } as UserBadge)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'userBadges');
     });
 
     // Listen to following
     const qFollowing = query(collection(db, 'follows'), where('followerId', '==', user.userId));
     const unsubFollowing = onSnapshot(qFollowing, (snap) => {
       setFollowing(snap.docs.map(d => d.data().followingId));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'follows/following');
     });
 
     // Listen to followers
     const qFollowers = query(collection(db, 'follows'), where('followingId', '==', user.userId));
     const unsubFollowers = onSnapshot(qFollowers, (snap) => {
       setFollowers(snap.docs.map(d => d.data().followerId));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'follows/followers');
     });
 
     // Listen to user communities
@@ -540,12 +548,18 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       // Fetch community details
       const communities: Community[] = [];
       for (const id of communityIds) {
-        const cSnap = await getDoc(doc(db, 'communities', id));
-        if (cSnap.exists()) {
-          communities.push({ id: cSnap.id, ...cSnap.data() } as Community);
+        try {
+          const cSnap = await getDoc(doc(db, 'communities', id));
+          if (cSnap.exists()) {
+            communities.push({ id: cSnap.id, ...cSnap.data() } as Community);
+          }
+        } catch (e) {
+          handleFirestoreError(e, OperationType.GET, `communities/${id}`);
         }
       }
       setUserCommunities(communities);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'communityMembers');
     });
 
     // Listen to user stats to trigger badges and challenges check
@@ -554,6 +568,8 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         checkAndAwardBadgesRef.current();
         updateChallengeProgressRef.current();
       }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, `users/${user.userId}`);
     });
 
     return () => {
@@ -580,7 +596,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const sortedItems = items.sort((a, b) => b.createdAt - a.createdAt).slice(0, 50);
       setFeed(sortedItems);
     }, (error) => {
-      console.error("Error in feed listener:", error);
+      handleFirestoreError(error, OperationType.GET, 'communityFeed');
     });
 
     return () => unsubFeed();

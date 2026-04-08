@@ -3,6 +3,18 @@ import { auth, db, googleProvider, isFirebaseConfigured } from '../lib/firebase'
 import { onAuthStateChanged, signInWithPopup, signOut, browserPopupRedirectResolver } from 'firebase/auth';
 import { doc, setDoc, getDoc, getDocFromServer } from 'firebase/firestore';
 
+async function testConnection() {
+  try {
+    // Attempt to fetch a non-existent doc from server to test connection
+    await getDocFromServer(doc(db, 'test', 'connection'));
+  } catch (error) {
+    if(error instanceof Error && error.message.includes('the client is offline')) {
+      console.error("Please check your Firebase configuration. The Firestore client is offline.");
+    }
+    // Skip logging for other errors (like permission denied), as this is simply a connection test.
+  }
+}
+
 export enum OperationType {
   CREATE = 'create',
   UPDATE = 'update',
@@ -66,6 +78,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
       return;
     }
+
+    testConnection();
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
