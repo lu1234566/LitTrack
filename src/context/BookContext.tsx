@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
 import { collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc, setDoc, getDocs, writeBatch } from 'firebase/firestore';
-import { useAuth } from './AuthContext';
+import { useAuth, handleFirestoreError, OperationType } from './AuthContext';
 import { Book, LiteraryProfile, Recommendation, FeedItemType, UserGoal } from '../types';
 import { safeParseNumber } from '../lib/statsUtils';
 
@@ -59,6 +59,8 @@ export const BookProvider: React.FC<{ children: React.ReactNode }> = ({ children
         booksData.sort((a, b) => b.dataCadastro - a.dataCadastro);
         setBooks(booksData);
         setLoading(false);
+      }, (error) => {
+        handleFirestoreError(error, OperationType.GET, 'books');
       });
 
       // Fetch Literary Profile
@@ -67,6 +69,8 @@ export const BookProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (doc.exists()) {
           setLiteraryProfile(doc.data() as LiteraryProfile);
         }
+      }, (error) => {
+        handleFirestoreError(error, OperationType.GET, `profiles/${user.userId}`);
       });
 
       // Fetch Recommendations
@@ -75,6 +79,8 @@ export const BookProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (doc.exists()) {
           setRecommendations(doc.data().list as Recommendation[]);
         }
+      }, (error) => {
+        handleFirestoreError(error, OperationType.GET, `recommendations/${user.userId}`);
       });
 
       // Fetch User Goal
@@ -86,6 +92,8 @@ export const BookProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           setUserGoal(null);
         }
+      }, (error) => {
+        handleFirestoreError(error, OperationType.GET, `userGoals/${user.userId}_${currentYear}`);
       });
 
       return () => {

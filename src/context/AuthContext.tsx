@@ -1,7 +1,44 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth, db, googleProvider, isFirebaseConfigured } from '../lib/firebase';
 import { onAuthStateChanged, signInWithPopup, signOut, browserPopupRedirectResolver } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, getDocFromServer } from 'firebase/firestore';
+
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+export interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId: string | undefined;
+    email: string | null | undefined;
+    emailVerified: boolean | undefined;
+    isAnonymous: boolean | undefined;
+  }
+}
+
+export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth?.currentUser?.uid,
+      email: auth?.currentUser?.email,
+      emailVerified: auth?.currentUser?.emailVerified,
+      isAnonymous: auth?.currentUser?.isAnonymous,
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo, null, 2));
+  throw new Error(JSON.stringify(errInfo));
+}
 
 interface UserData {
   userId: string;
@@ -40,28 +77,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         
         try {
-          // Save user to Firestore
+          // Test connection and permissions
           const userRef = doc(db, 'users', firebaseUser.uid);
-          const userSnap = await getDoc(userRef);
+          let userSnap;
+          try {
+            userSnap = await getDoc(userRef);
+          } catch (e) {
+            handleFirestoreError(e, OperationType.GET, `users/${firebaseUser.uid}`);
+          }
           
-          if (!userSnap.exists()) {
-            await setDoc(userRef, {
-              id: firebaseUser.uid,
-              displayName: firebaseUser.displayName || 'Usuário',
-              email: firebaseUser.email || '',
-              photoURL: firebaseUser.photoURL || '',
-              bio: '',
-              communityPublic: true,
-              showBooksPublicly: true,
-              showStatsPublicly: true,
-              booksRead: 0,
-              pagesRead: 0,
-              averageRating: 0,
-              favoriteGenre: '',
-              readingStreak: 0,
-              createdAt: Date.now(),
-              updatedAt: Date.now()
-            });
+          if (!userSnap?.exists()) {
+            try {
+              await setDoc(userRef, {
+                id: firebaseUser.uid,
+                displayName: firebaseUser.displayName || 'Usuário',
+                email: firebaseUser.email || '',
+                photoURL: firebaseUser.photoURL || '',
+                bio: '',
+                communityPublic: true,
+                showBooksPublicly: true,
+                showStatsPublicly: true,
+                booksRead: 0,
+                pagesRead: 0,
+                averageRating: 0,
+                favoriteGenre: '',
+                readingStreak: 0,
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+              });
+            } catch (e) {
+              handleFirestoreError(e, OperationType.WRITE, `users/${firebaseUser.uid}`);
+            }
           }
         } catch (e) {
           console.error("Error syncing user to Firestore:", e);
@@ -84,8 +130,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     try {
       await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
-    } catch (error) {
-      console.error('Error signing in with Google:', error);
+    } catch (error: any) {
+      if (error.code === 'auth/network-request-failed') {
+        console.error('Network error during sign-in. This often happens if the Firebase Auth Domain is not correctly configured or allowlisted.');
+        alert("Erro de rede ao fazer login. Verifique se o domínio do app está autorizado no console do Firebase.");
+      } else if (error.code === 'auth/popup-blocked') {
+        alert("O popup de login foi bloqueado pelo navegador. Por favor, permita popups para este site.");
+      } else {
+        console.error('Error signing in with Google:', error);
+        alert(`Erro ao entrar com Google: ${error.message}`);
+      }
       throw error;
     }
   }, []);

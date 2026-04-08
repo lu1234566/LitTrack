@@ -18,6 +18,16 @@ export const isFirebaseConfigured = !!(
   firebaseConfig.appId
 );
 
+if (!isFirebaseConfigured) {
+  console.warn("Firebase is not fully configured. Please check your environment variables:");
+  console.table({
+    apiKey: !!firebaseConfig.apiKey,
+    projectId: !!firebaseConfig.projectId,
+    appId: !!firebaseConfig.appId,
+    authDomain: !!firebaseConfig.authDomain
+  });
+}
+
 let app;
 let auth: any;
 let db: any;
