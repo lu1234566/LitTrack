@@ -3,6 +3,7 @@ import { useBooks } from '../context/BookContext';
 import { aiService } from '../services/aiService';
 import { BookOpen, Star, Award, Calendar, TrendingUp, Heart, ChevronRight, ChevronLeft, Share2, Download, Brain } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Logomark } from '../components/Logomark';
 
 const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
@@ -67,16 +68,8 @@ export const Retrospective: React.FC = () => {
   if (loading || isGenerating) {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] space-y-6">
-        <div className="w-20 h-20 bg-white p-1 rounded-3xl shadow-2xl shadow-amber-500/20 animate-pulse">
-          <img 
-            src="/logo.png" 
-            alt="Loading..." 
-            className="w-full h-full object-contain rounded-2xl"
-            onError={(e) => {
-              e.currentTarget.src = 'https://api.dicebear.com/7.x/initials/svg?seed=LT&backgroundColor=f59e0b';
-            }}
-            referrerPolicy="no-referrer"
-          />
+        <div className="w-24 h-24 bg-neutral-900 border border-neutral-800 p-2 rounded-3xl shadow-2xl shadow-amber-500/10 animate-pulse flex items-center justify-center">
+          <Logomark />
         </div>
         <p className="text-neutral-400 font-serif italic animate-pulse">Preparando sua retrospectiva literária...</p>
       </div>

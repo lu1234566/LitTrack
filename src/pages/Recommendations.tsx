@@ -3,6 +3,7 @@ import { useBooks } from '../context/BookContext';
 import { aiService } from '../services/aiService';
 import { Sparkles, Loader2, RefreshCw, BookOpen, Star, Heart, TrendingUp, Brain, Filter, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Logomark } from '../components/Logomark';
 
 export const Recommendations: React.FC = () => {
   const { books, recommendations, saveRecommendations, loading } = useBooks();
@@ -35,8 +36,8 @@ export const Recommendations: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
-        <div className="animate-spin text-amber-500">
-          <BookOpen size={48} />
+        <div className="w-20 h-20 bg-neutral-900 border border-neutral-800 p-2 rounded-2xl shadow-xl shadow-amber-500/10 animate-pulse flex items-center justify-center">
+          <Logomark />
         </div>
       </div>
     );

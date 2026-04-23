@@ -3,6 +3,7 @@ import { useBooks } from '../context/BookContext';
 import { Link } from 'react-router-dom';
 import { Image as ImageIcon, Heart, Star, Search, Filter, BookOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Logomark } from '../components/Logomark';
 
 export const Gallery: React.FC = () => {
   const { books, loading } = useBooks();
@@ -14,8 +15,8 @@ export const Gallery: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
-        <div className="animate-spin text-amber-500">
-          <BookOpen size={48} />
+        <div className="w-20 h-20 bg-neutral-900 border border-neutral-800 p-2 rounded-2xl shadow-xl shadow-amber-500/10 animate-pulse flex items-center justify-center">
+          <Logomark />
         </div>
       </div>
     );

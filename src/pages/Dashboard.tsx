@@ -5,6 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { safeParseNumber, formatPages, formatPagesShort, formatPagesPerBook, formatPagesLong } from '../lib/statsUtils';
+import { Logomark } from '../components/Logomark';
 
 const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
@@ -98,16 +99,8 @@ export const Dashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
-        <div className="w-16 h-16 bg-white p-1 rounded-2xl shadow-xl shadow-amber-500/20 animate-pulse">
-          <img 
-            src="/logo.png" 
-            alt="Loading..." 
-            className="w-full h-full object-contain rounded-xl"
-            onError={(e) => {
-              e.currentTarget.src = 'https://api.dicebear.com/7.x/initials/svg?seed=LT&backgroundColor=f59e0b';
-            }}
-            referrerPolicy="no-referrer"
-          />
+        <div className="w-20 h-20 bg-neutral-900 border border-neutral-800 p-2 rounded-2xl shadow-xl shadow-amber-500/10 animate-pulse flex items-center justify-center">
+          <Logomark />
         </div>
       </div>
     );

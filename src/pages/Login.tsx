@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { BookOpen, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Navigate } from 'react-router-dom';
+import { Logomark } from '../components/Logomark';
 
 export const Login: React.FC = () => {
   const { loginWithGoogle, user, loading, isConfigured } = useAuth();
@@ -11,16 +12,8 @@ export const Login: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
-        <div className="w-20 h-20 bg-white p-1 rounded-3xl shadow-2xl shadow-amber-500/20 animate-pulse">
-          <img 
-            src="/logo.png" 
-            alt="Loading..." 
-            className="w-full h-full object-contain rounded-2xl"
-            onError={(e) => {
-              e.currentTarget.src = 'https://api.dicebear.com/7.x/initials/svg?seed=LT&backgroundColor=f59e0b';
-            }}
-            referrerPolicy="no-referrer"
-          />
+        <div className="w-24 h-24 bg-neutral-900 border border-neutral-800 p-2 rounded-3xl shadow-2xl shadow-amber-500/10 animate-pulse flex items-center justify-center">
+          <Logomark />
         </div>
       </div>
     );
@@ -62,16 +55,8 @@ export const Login: React.FC = () => {
         className="bg-neutral-900/80 backdrop-blur-xl border border-neutral-800 p-10 rounded-3xl shadow-2xl max-w-md w-full text-center relative z-10"
       >
         <div className="flex justify-center mb-6">
-          <div className="bg-white p-1 rounded-3xl shadow-xl shadow-amber-500/20 overflow-hidden w-24 h-24">
-            <img 
-              src="/logo.png" 
-              alt="LitTrack Logo" 
-              className="w-full h-full object-contain rounded-2xl"
-              onError={(e) => {
-                e.currentTarget.src = 'https://api.dicebear.com/7.x/initials/svg?seed=LT&backgroundColor=f59e0b';
-              }}
-              referrerPolicy="no-referrer"
-            />
+          <div className="bg-neutral-950 border border-neutral-800 p-3 rounded-3xl shadow-2xl shadow-amber-500/20 overflow-hidden w-28 h-28 flex items-center justify-center">
+            <Logomark />
           </div>
         </div>
 
