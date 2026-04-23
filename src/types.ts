@@ -225,3 +225,20 @@ export interface UserGoal {
   createdAt: number;
   updatedAt: number;
 }
+
+export type BackupActionType = 'export_json' | 'export_pdf' | 'import_json' | 'restore_backup';
+export type BackupStatus = 'sucesso' | 'falha' | 'parcial';
+
+export interface BackupHistory {
+  id: string;
+  userId: string;
+  actionType: BackupActionType;
+  format: 'json' | 'pdf';
+  status: BackupStatus;
+  details: string;
+  affectedRecords: number;
+  createdAt: number;
+  fileName?: string;
+  scope?: string;
+  errorMessage?: string;
+}

@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
 import { collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc, setDoc, getDocs, writeBatch } from 'firebase/firestore';
 import { useAuth, handleFirestoreError, OperationType } from './AuthContext';
-import { Book, LiteraryProfile, Recommendation, FeedItemType, UserGoal } from '../types';
+import { Book, LiteraryProfile, Recommendation, FeedItemType, UserGoal, BackupHistory, BackupActionType, BackupStatus } from '../types';
 import { safeParseNumber } from '../lib/statsUtils';
 
 interface BookContextType {
@@ -11,6 +11,7 @@ interface BookContextType {
   literaryProfile: LiteraryProfile | null;
   recommendations: Recommendation[];
   userGoal: UserGoal | null;
+  backupHistory: BackupHistory[];
   addBook: (book: Omit<Book, 'id' | 'userId' | 'dataCadastro'>) => Promise<void>;
   updateBook: (id: string, book: Partial<Book>) => Promise<void>;
   deleteBook: (id: string) => Promise<void>;
@@ -20,6 +21,7 @@ interface BookContextType {
   saveRecommendations: (recommendations: Recommendation[]) => Promise<void>;
   saveUserGoal: (goal: Omit<UserGoal, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   importData: (data: any, mode: 'merge' | 'replace') => Promise<{ imported: number, ignored: number, goals: number }>;
+  logBackupAction: (action: Omit<BackupHistory, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
 }
 
 const BookContext = createContext<BookContextType | undefined>(undefined);
@@ -29,6 +31,7 @@ export const BookProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [literaryProfile, setLiteraryProfile] = useState<LiteraryProfile | null>(null);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [userGoal, setUserGoal] = useState<UserGoal | null>(null);
+  const [backupHistory, setBackupHistory] = useState<BackupHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
@@ -38,6 +41,7 @@ export const BookProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLiteraryProfile(null);
       setRecommendations([]);
       setUserGoal(null);
+      setBackupHistory([]);
       setLoading(false);
       return;
     }
@@ -96,11 +100,25 @@ export const BookProvider: React.FC<{ children: React.ReactNode }> = ({ children
         handleFirestoreError(error, OperationType.GET, `userGoals/${user.userId}_${currentYear}`);
       });
 
+      // Fetch Backup History
+      const historyQ = query(collection(db, 'backupHistory'), where('userId', '==', user.userId));
+      const unsubscribeHistory = onSnapshot(historyQ, (snapshot) => {
+        const historyData: BackupHistory[] = [];
+        snapshot.forEach((doc) => {
+          historyData.push({ ...doc.data(), id: doc.id } as BackupHistory);
+        });
+        historyData.sort((a, b) => b.createdAt - a.createdAt);
+        setBackupHistory(historyData);
+      }, (error) => {
+        handleFirestoreError(error, OperationType.GET, 'backupHistory');
+      });
+
       return () => {
         unsubscribeBooks();
         unsubscribeProfile();
         unsubscribeRecommendations();
         unsubscribeGoal();
+        unsubscribeHistory();
       };
     } catch (e) {
       console.error("Error setting up Firestore listeners:", e);
@@ -162,7 +180,7 @@ export const BookProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updatedAt: Date.now()
       }, { merge: true });
     } catch (error) {
-      console.error("Error updating user stats: ", error);
+      handleFirestoreError(error, OperationType.WRITE, `users/${userId}/stats`);
     }
   };
 
@@ -312,6 +330,19 @@ export const BookProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user, db]);
 
+  const logBackupAction = React.useCallback(async (actionData: Omit<BackupHistory, 'id' | 'userId' | 'createdAt'>) => {
+    if (!user || !db) return;
+    try {
+      await addDoc(collection(db, 'backupHistory'), {
+        ...actionData,
+        userId: user.userId,
+        createdAt: Date.now()
+      });
+    } catch (error) {
+      console.error("Error logging backup action: ", error);
+    }
+  }, [user, db]);
+
   const importData = React.useCallback(async (data: any, mode: 'merge' | 'replace') => {
     if (!user || !db) throw new Error("Usuário não autenticado");
     
@@ -388,12 +419,32 @@ export const BookProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await batch.commit();
       await updateUserStats(user.userId);
       
+      // Log history
+      await logBackupAction({
+        actionType: mode === 'replace' ? 'restore_backup' : 'import_json',
+        format: 'json',
+        status: 'sucesso',
+        details: `${importedCount} livros importados, ${ignoredCount} duplicados ignorados`,
+        affectedRecords: importedCount
+      });
+      
       return { imported: importedCount, ignored: ignoredCount, goals: goalsCount };
     } catch (error) {
       console.error("Error importing data: ", error);
+      
+      // Log failure
+      await logBackupAction({
+        actionType: mode === 'replace' ? 'restore_backup' : 'import_json',
+        format: 'json',
+        status: 'falha',
+        details: 'Erro durante a importação de dados',
+        affectedRecords: 0,
+        errorMessage: error instanceof Error ? error.message : String(error)
+      });
+      
       throw error;
     }
-  }, [user, db, books]);
+  }, [user, db, books, logBackupAction]);
 
   const value = React.useMemo(() => ({ 
     books, 
@@ -401,6 +452,7 @@ export const BookProvider: React.FC<{ children: React.ReactNode }> = ({ children
     literaryProfile, 
     recommendations, 
     userGoal,
+    backupHistory,
     addBook, 
     updateBook, 
     deleteBook, 
@@ -409,11 +461,12 @@ export const BookProvider: React.FC<{ children: React.ReactNode }> = ({ children
     saveLiteraryProfile,
     saveRecommendations,
     saveUserGoal,
-    importData
+    importData,
+    logBackupAction
   }), [
-    books, loading, literaryProfile, recommendations, userGoal,
+    books, loading, literaryProfile, recommendations, userGoal, backupHistory,
     addBook, updateBook, deleteBook, deleteMultipleBooks, getBook, 
-    saveLiteraryProfile, saveRecommendations, saveUserGoal, importData
+    saveLiteraryProfile, saveRecommendations, saveUserGoal, importData, logBackupAction
   ]);
 
   return (

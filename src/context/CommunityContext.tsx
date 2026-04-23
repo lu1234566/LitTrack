@@ -67,20 +67,31 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     // Fetch challenges
     const fetchChallenges = async () => {
-      const q = query(collection(db, 'challenges'), where('active', '==', true));
-      const snap = await getDocs(q);
-      setChallenges(snap.docs.map(d => ({ id: d.id, ...d.data() } as Challenge)));
+      if (!user) return; // Wait for user to avoid permission errors on login page
+      try {
+        const q = query(collection(db, 'challenges'), where('active', '==', true));
+        const snap = await getDocs(q);
+        setChallenges(snap.docs.map(d => ({ id: d.id, ...d.data() } as Challenge)));
+      } catch (e) {
+        // Silently fail if not logged in yet, otherwise log
+        if (user) handleFirestoreError(e, OperationType.GET, 'challenges');
+      }
     };
 
     // Fetch badges
     const fetchBadges = async () => {
-      const snap = await getDocs(collection(db, 'badges'));
-      setBadges(snap.docs.map(d => ({ id: d.id, ...d.data() } as Badge)));
+      if (!user) return; // Wait for user
+      try {
+        const snap = await getDocs(collection(db, 'badges'));
+        setBadges(snap.docs.map(d => ({ id: d.id, ...d.data() } as Badge)));
+      } catch (e) {
+        if (user) handleFirestoreError(e, OperationType.GET, 'badges');
+      }
     };
 
     fetchChallenges();
     fetchBadges();
-  }, []);
+  }, [user]);
 
   const createPost = React.useCallback(async (content: string, relatedBookId?: string, communityId?: string) => {
     if (!user || !db) return;
@@ -166,17 +177,27 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const getComments = React.useCallback(async (feedItemId: string) => {
     if (!db) return [];
-    const q = query(collection(db, 'comments'), where('feedItemId', '==', feedItemId), limit(100));
-    const snap = await getDocs(q);
-    const comments = snap.docs.map(d => ({ id: d.id, ...d.data() } as Comment));
-    return comments.sort((a, b) => a.createdAt - b.createdAt);
+    try {
+      const q = query(collection(db, 'comments'), where('feedItemId', '==', feedItemId), limit(100));
+      const snap = await getDocs(q);
+      const comments = snap.docs.map(d => ({ id: d.id, ...d.data() } as Comment));
+      return comments.sort((a, b) => a.createdAt - b.createdAt);
+    } catch (e) {
+      handleFirestoreError(e, OperationType.GET, 'comments');
+      return [];
+    }
   }, [db]);
 
   const getLikes = React.useCallback(async (feedItemId: string) => {
     if (!db) return [];
-    const q = query(collection(db, 'likes'), where('feedItemId', '==', feedItemId));
-    const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() } as Like));
+    try {
+      const q = query(collection(db, 'likes'), where('feedItemId', '==', feedItemId));
+      const snap = await getDocs(q);
+      return snap.docs.map(d => ({ id: d.id, ...d.data() } as Like));
+    } catch (e) {
+      handleFirestoreError(e, OperationType.GET, 'likes');
+      return [];
+    }
   }, [db]);
 
   const joinChallenge = React.useCallback(async (challengeId: string) => {
@@ -448,9 +469,14 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const getCommunityMembers = React.useCallback(async (communityId: string) => {
     if (!db) return [];
-    const q = query(collection(db, 'communityMembers'), where('communityId', '==', communityId), orderBy('joinedAt', 'asc'));
-    const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() } as CommunityMember));
+    try {
+      const q = query(collection(db, 'communityMembers'), where('communityId', '==', communityId), orderBy('joinedAt', 'asc'));
+      const snap = await getDocs(q);
+      return snap.docs.map(d => ({ id: d.id, ...d.data() } as CommunityMember));
+    } catch (e) {
+      handleFirestoreError(e, OperationType.GET, 'communityMembers');
+      return [];
+    }
   }, [db]);
 
   const regenerateInviteCode = React.useCallback(async (communityId: string) => {

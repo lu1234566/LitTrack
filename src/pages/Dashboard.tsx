@@ -98,8 +98,16 @@ export const Dashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
-        <div className="animate-spin text-amber-500">
-          <BookOpen size={48} />
+        <div className="w-16 h-16 bg-white p-1 rounded-2xl shadow-xl shadow-amber-500/20 animate-pulse">
+          <img 
+            src="/logo.png" 
+            alt="Loading..." 
+            className="w-full h-full object-contain rounded-xl"
+            onError={(e) => {
+              e.currentTarget.src = 'https://api.dicebear.com/7.x/initials/svg?seed=LT&backgroundColor=f59e0b';
+            }}
+            referrerPolicy="no-referrer"
+          />
         </div>
       </div>
     );

@@ -97,6 +97,47 @@
         "commentsCount": { "type": "number" }
       },
       "required": ["userId", "type", "content"]
+    },
+    "BackupHistory": {
+      "title": "Backup History",
+      "description": "Log of backup exports and imports",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "actionType": { "type": "string" },
+        "format": { "type": "string" },
+        "status": { "type": "string" },
+        "details": { "type": "string" },
+        "affectedRecords": { "type": "number" },
+        "createdAt": { "type": "number" },
+        "fileName": { "type": "string" },
+        "scope": { "type": "string" }
+      },
+      "required": ["userId", "actionType", "status", "createdAt"]
+    },
+    "Challenge": {
+      "title": "Challenge",
+      "description": "Global reading challenge",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "goalType": { "type": "string", "enum": ["books_read", "pages_read", "streak"] },
+        "goalValue": { "type": "number" },
+        "active": { "type": "boolean" },
+        "reward": { "type": "string" }
+      }
+    },
+    "Badge": {
+      "title": "Badge",
+      "description": "Achievement badge definition",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "icon": { "type": "string" },
+        "requirement": { "type": "object" }
+      }
     }
   },
   "firestore": {
@@ -123,6 +164,18 @@
     "/communityFeed/{itemId}": {
       "schema": "FeedItem",
       "description": "Community activity feed items"
+    },
+    "/challenges/{challengeId}": {
+      "schema": "Challenge",
+      "description": "Global challenges for users"
+    },
+    "/badges/{badgeId}": {
+      "schema": "Badge",
+      "description": "Achievement badges definitions"
+    },
+    "/backupHistory/{id}": {
+      "schema": "BackupHistory",
+      "description": "Backup and import logs"
     }
   }
 }

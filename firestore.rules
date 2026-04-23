@@ -50,6 +50,10 @@ service cloud.firestore {
     //
     // Collection: comments
     // Document ID: {id}
+    //
+    // Collection: backupHistory
+    // Document ID: {id}
+    // Fields: userId, actionType, format, status, details, affectedRecords, createdAt, fileName, scope
     // ===============================================================
 
     // Helper Functions
@@ -69,28 +73,38 @@ service cloud.firestore {
       return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
     }
 
+    function isAdmin() {
+      return isAuthenticated() && 
+             (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' || 
+              (request.auth.token.email == "barcelar34@gmail.com" && request.auth.token.email_verified == true));
+    }
+
     // Domain Validators
     function isValidUser(data) {
-      return data.keys().hasAll(['id', 'email']) &&
-             data.id is string &&
+      return data.id is string &&
              isValidEmail(data.email);
     }
 
     function isValidBook(data) {
-      return data.keys().hasAll(['userId', 'titulo', 'autor']) &&
-             data.userId == request.auth.uid &&
-             data.titulo is string && data.titulo.size() > 0 && data.titulo.size() < 200 &&
-             data.autor is string && data.autor.size() > 0 && data.autor.size() < 200;
+      return data.userId == request.auth.uid &&
+             data.titulo is string && data.titulo.size() > 0 && data.titulo.size() < 500 &&
+             data.autor is string && data.autor.size() > 0 && data.autor.size() < 500;
+    }
+
+    match /test/{docId} {
+      allow read: if true;
     }
 
     // Rules
     match /users/{userId} {
-      allow read: if isAuthenticated();
+      allow get: if isAuthenticated();
+      allow list: if isAuthenticated();
       allow create, update: if isOwner(userId) && isValidUser(request.resource.data);
     }
 
     match /books/{bookId} {
-      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow get: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow list: if isAuthenticated();
       allow create: if isAuthenticated() && isValidBook(request.resource.data);
       allow update: if isDocOwner() && isValidBook(request.resource.data);
       allow delete: if isDocOwner();
@@ -107,7 +121,8 @@ service cloud.firestore {
     }
 
     match /userGoals/{goalId} {
-      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow get: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow list: if isAuthenticated();
       allow write: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
     }
 
@@ -118,17 +133,18 @@ service cloud.firestore {
     }
 
     match /challenges/{challengeId} {
-      allow read: if isAuthenticated();
-      allow write: if false; // Only admin (manual)
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     match /badges/{badgeId} {
-      allow read: if isAuthenticated();
-      allow write: if false; // Only admin (manual)
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     match /userChallenges/{id} {
-      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow get: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow list: if isAuthenticated();
       allow write: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
     }
 
@@ -148,7 +164,7 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
       allow update: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
-      allow delete: if false;
+      allow delete: if isAdmin();
     }
 
     match /communityMembers/{id} {
@@ -167,6 +183,13 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /backupHistory/{id} {
+      allow get: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow list: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false;
     }
   }
 }

@@ -5,7 +5,7 @@ import { useBooks } from '../context/BookContext';
 import { useAuth } from '../context/AuthContext';
 import { Book, BookGenre } from '../types';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { useNavigate } from 'react-router-dom';
 import { safeParseNumber } from '../lib/statsUtils';
 
@@ -13,7 +13,7 @@ type ExportScope = 'all' | 'read' | 'current_year' | 'specific_year' | 'favorite
 type ImportMode = 'merge' | 'replace';
 
 export const ExportData: React.FC = () => {
-  const { books, loading, userGoal, literaryProfile, importData } = useBooks();
+  const { books, loading, userGoal, literaryProfile, importData, backupHistory, logBackupAction } = useBooks();
   const { user } = useAuth();
   const navigate = useNavigate();
   
@@ -25,6 +25,11 @@ export const ExportData: React.FC = () => {
   const [isExportingJSON, setIsExportingJSON] = useState(false);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [exportStatus, setExportStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+
+  // History filters
+  const [historyFilterAction, setHistoryFilterAction] = useState<string>('all');
+  const [historyFilterStatus, setHistoryFilterStatus] = useState<string>('all');
+  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
 
   // Import states
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -66,6 +71,7 @@ export const ExportData: React.FC = () => {
     
     setIsExportingJSON(true);
     setExportStatus(null);
+    const fileName = `littrack-backup-${new Date().getFullYear()}-${new Date().getTime()}.json`;
     
     try {
       const exportData = {
@@ -87,16 +93,37 @@ export const ExportData: React.FC = () => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `littrack-backup-${new Date().getFullYear()}-${new Date().getTime()}.json`;
+      link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       
       setExportStatus({ type: 'success', message: 'Backup JSON gerado com sucesso!' });
+      
+      // Log history
+      await logBackupAction({
+        actionType: 'export_json',
+        format: 'json',
+        status: 'sucesso',
+        details: `${filteredBooks.length} livros exportados`,
+        affectedRecords: filteredBooks.length,
+        fileName,
+        scope: scope === 'all' ? 'Biblioteca Completa' : scope === 'favorites' ? 'Apenas Favoritos' : scope === 'read' ? 'Apenas Lidos' : `Ano: ${selectedYear}`
+      });
     } catch (error) {
       console.error('Export error:', error);
       setExportStatus({ type: 'error', message: 'Não foi possível gerar o arquivo JSON agora. Tente novamente.' });
+      
+      // Log failure
+      await logBackupAction({
+        actionType: 'export_json',
+        format: 'json',
+        status: 'falha',
+        details: 'Erro ao gerar backup JSON',
+        affectedRecords: 0,
+        errorMessage: error instanceof Error ? error.message : String(error)
+      });
     } finally {
       setIsExportingJSON(false);
     }
@@ -107,6 +134,7 @@ export const ExportData: React.FC = () => {
     
     setIsExportingPDF(true);
     setExportStatus(null);
+    const fileName = `littrack-relatorio-${new Date().getFullYear()}.pdf`;
     
     try {
       const doc = new jsPDF();
@@ -163,7 +191,7 @@ export const ExportData: React.FC = () => {
         safeParseNumber(b.pageCount).toString()
       ]);
 
-      (doc as any).autoTable({
+      autoTable(doc, {
         startY: yPos,
         head: [['Título', 'Autor', 'Gênero', 'Status', 'Nota', 'Págs']],
         body: tableData,
@@ -173,11 +201,32 @@ export const ExportData: React.FC = () => {
         styles: { fontSize: 9, cellPadding: 3 }
       });
 
-      doc.save(`littrack-relatorio-${new Date().getFullYear()}.pdf`);
+      doc.save(fileName);
       setExportStatus({ type: 'success', message: 'Relatório PDF gerado com sucesso!' });
+      
+      // Log history
+      await logBackupAction({
+        actionType: 'export_pdf',
+        format: 'pdf',
+        status: 'sucesso',
+        details: `Relatório PDF gerado com ${filteredBooks.length} livros`,
+        affectedRecords: filteredBooks.length,
+        fileName,
+        scope: scope === 'all' ? 'Biblioteca Completa' : scope === 'favorites' ? 'Apenas Favoritos' : scope === 'read' ? 'Apenas Lidos' : `Ano: ${selectedYear}`
+      });
     } catch (error) {
       console.error('Export error:', error);
       setExportStatus({ type: 'error', message: 'Não foi possível gerar o relatório PDF agora. Tente novamente.' });
+      
+      // Log failure
+      await logBackupAction({
+        actionType: 'export_pdf',
+        format: 'pdf',
+        status: 'falha',
+        details: 'Erro ao gerar relatório PDF',
+        affectedRecords: 0,
+        errorMessage: error instanceof Error ? error.message : String(error)
+      });
     } finally {
       setIsExportingPDF(false);
     }
@@ -624,6 +673,166 @@ export const ExportData: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Backup History Section */}
+      <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8 shadow-xl space-y-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <h2 className="text-2xl font-serif font-bold text-neutral-100 flex items-center gap-3">
+            <RefreshCw className="text-amber-500" />
+            Histórico de Backups
+          </h2>
+
+          <div className="flex flex-wrap gap-2">
+            <select 
+              value={historyFilterAction}
+              onChange={(e) => setHistoryFilterAction(e.target.value)}
+              className="bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-1.5 text-xs text-neutral-300 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+            >
+              <option value="all">Todas as ações</option>
+              <option value="export_json">Exportação JSON</option>
+              <option value="export_pdf">Exportação PDF</option>
+              <option value="import_json">Importação JSON</option>
+              <option value="restore_backup">Restauração</option>
+            </select>
+
+            <select 
+              value={historyFilterStatus}
+              onChange={(e) => setHistoryFilterStatus(e.target.value)}
+              className="bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-1.5 text-xs text-neutral-300 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+            >
+              <option value="all">Todos os status</option>
+              <option value="sucesso">Sucesso</option>
+              <option value="falha">Falha</option>
+              <option value="parcial">Parcial</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {backupHistory.filter(h => {
+            if (historyFilterAction !== 'all' && h.actionType !== historyFilterAction) return false;
+            if (historyFilterStatus !== 'all' && h.status !== historyFilterStatus) return false;
+            return true;
+          }).length > 0 ? (
+            backupHistory
+              .filter(h => {
+                if (historyFilterAction !== 'all' && h.actionType !== historyFilterAction) return false;
+                if (historyFilterStatus !== 'all' && h.status !== historyFilterStatus) return false;
+                return true;
+              })
+              .map((item) => (
+                <div 
+                  key={item.id}
+                  className="bg-neutral-950 border border-neutral-800 rounded-2xl overflow-hidden transition-all hover:border-neutral-700"
+                >
+                  <div 
+                    className="p-4 flex items-center gap-4 cursor-pointer"
+                    onClick={() => setExpandedHistoryId(expandedHistoryId === item.id ? null : item.id)}
+                  >
+                    <div className={`p-2 rounded-xl ${
+                      item.actionType.startsWith('export') ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'
+                    }`}>
+                      {item.actionType === 'export_json' && <FileJson size={20} />}
+                      {item.actionType === 'export_pdf' && <FileText size={20} />}
+                      {item.actionType === 'import_json' && <Upload size={20} />}
+                      {item.actionType === 'restore_backup' && <RefreshCw size={20} />}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="font-bold text-neutral-200 text-sm">
+                          {item.actionType === 'export_json' && 'Exportação JSON'}
+                          {item.actionType === 'export_pdf' && 'Exportação PDF'}
+                          {item.actionType === 'import_json' && 'Importação JSON'}
+                          {item.actionType === 'restore_backup' && 'Restauração de Biblioteca'}
+                        </span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                          item.status === 'sucesso' ? 'bg-emerald-500/10 text-emerald-500' : 
+                          item.status === 'falha' ? 'bg-rose-500/10 text-rose-500' : 
+                          'bg-amber-500/10 text-amber-500'
+                        }`}>
+                          {item.status}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-neutral-500">
+                        <span className="flex items-center gap-1">
+                          <Calendar size={12} />
+                          {new Date(item.createdAt).toLocaleString('pt-BR')}
+                        </span>
+                        <span className="truncate">{item.details}</span>
+                      </div>
+                    </div>
+
+                    <ChevronRight 
+                      size={20} 
+                      className={`text-neutral-600 transition-transform ${expandedHistoryId === item.id ? 'rotate-90' : ''}`} 
+                    />
+                  </div>
+
+                  <AnimatePresence>
+                    {expandedHistoryId === item.id && (
+                      <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="border-t border-neutral-800 bg-neutral-900/30 overflow-hidden"
+                      >
+                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                          <div className="space-y-2">
+                            <p className="text-neutral-500 flex items-center gap-2">
+                              <Info size={14} />
+                              Detalhes da Operação
+                            </p>
+                            <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800 space-y-1">
+                              <div className="flex justify-between">
+                                <span className="text-neutral-500">Registros Afetados:</span>
+                                <span className="text-neutral-200 font-medium">{item.affectedRecords}</span>
+                              </div>
+                              {item.fileName && (
+                                <div className="flex justify-between">
+                                  <span className="text-neutral-500">Arquivo:</span>
+                                  <span className="text-neutral-200 font-medium truncate ml-4">{item.fileName}</span>
+                                </div>
+                              )}
+                              {item.scope && (
+                                <div className="flex justify-between">
+                                  <span className="text-neutral-500">Escopo:</span>
+                                  <span className="text-neutral-200 font-medium">{item.scope}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {item.errorMessage && (
+                            <div className="space-y-2">
+                              <p className="text-rose-500 flex items-center gap-2">
+                                <AlertCircle size={14} />
+                                Mensagem de Erro
+                              </p>
+                              <div className="bg-rose-500/5 p-3 rounded-xl border border-rose-500/10 text-rose-400 text-xs font-mono">
+                                {item.errorMessage}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ))
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
+              <div className="p-4 bg-neutral-950 rounded-full border border-neutral-800">
+                <RefreshCw size={32} className="text-neutral-700" />
+              </div>
+              <div>
+                <p className="text-neutral-300 font-medium">Nenhum histórico de backup ainda.</p>
+                <p className="text-sm text-neutral-500">Suas exportações e importações aparecerão aqui.</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </motion.div>
   );
 };

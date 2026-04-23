@@ -67,8 +67,16 @@ export const Retrospective: React.FC = () => {
   if (loading || isGenerating) {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] space-y-6">
-        <div className="animate-spin text-amber-500">
-          <BookOpen size={64} />
+        <div className="w-20 h-20 bg-white p-1 rounded-3xl shadow-2xl shadow-amber-500/20 animate-pulse">
+          <img 
+            src="/logo.png" 
+            alt="Loading..." 
+            className="w-full h-full object-contain rounded-2xl"
+            onError={(e) => {
+              e.currentTarget.src = 'https://api.dicebear.com/7.x/initials/svg?seed=LT&backgroundColor=f59e0b';
+            }}
+            referrerPolicy="no-referrer"
+          />
         </div>
         <p className="text-neutral-400 font-serif italic animate-pulse">Preparando sua retrospectiva literária...</p>
       </div>
