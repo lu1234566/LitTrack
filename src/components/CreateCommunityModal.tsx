@@ -66,7 +66,7 @@ export const CreateCommunityModal: React.FC<CreateCommunityModalProps> = ({ isOp
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Ex: Clube do Mistério 2026"
+              placeholder="Ex: Clube do Mistério"
               className="w-full bg-neutral-950 border border-neutral-800 rounded-2xl p-4 text-neutral-200 placeholder-neutral-600 focus:outline-none focus:border-amber-500/50"
               required
             />

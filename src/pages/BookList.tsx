@@ -84,7 +84,7 @@ export const BookList: React.FC = () => {
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4 md:mb-8">
         <div>
           <h1 className="text-3xl md:text-4xl font-serif font-bold text-neutral-100 tracking-tight">Meus Livros</h1>
-          <p className="text-neutral-400 mt-1 md:mt-2 text-base md:text-lg">Sua biblioteca pessoal de 2026.</p>
+          <p className="text-neutral-400 mt-1 md:mt-2 text-base md:text-lg">Sua biblioteca pessoal.</p>
         </div>
         <Link to="/adicionar" className="w-full md:w-auto bg-amber-500 hover:bg-amber-600 text-neutral-950 px-6 py-3 md:py-3 rounded-xl font-medium transition-colors inline-flex items-center justify-center gap-2">
           <BookOpen size={20} />

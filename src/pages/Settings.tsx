@@ -101,7 +101,7 @@ export const Settings: React.FC = () => {
           <SettingsIcon size={36} className="text-amber-500" />
           Configurações
         </h1>
-        <p className="text-neutral-400 mt-2 text-lg">Personalize sua experiência no LitTrack.</p>
+        <p className="text-neutral-400 mt-2 text-lg">Personalize sua experiência no Readora.</p>
       </header>
 
       {/* Goals Section */}

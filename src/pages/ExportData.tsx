@@ -71,7 +71,7 @@ export const ExportData: React.FC = () => {
     
     setIsExportingJSON(true);
     setExportStatus(null);
-    const fileName = `littrack-backup-${new Date().getFullYear()}-${new Date().getTime()}.json`;
+    const fileName = `readora-backup-${new Date().getFullYear()}-${new Date().getTime()}.json`;
     
     try {
       const exportData = {
@@ -134,7 +134,7 @@ export const ExportData: React.FC = () => {
     
     setIsExportingPDF(true);
     setExportStatus(null);
-    const fileName = `littrack-relatorio-${new Date().getFullYear()}.pdf`;
+    const fileName = `readora-relatorio-${new Date().getFullYear()}.pdf`;
     
     try {
       const doc = new jsPDF();
@@ -147,7 +147,7 @@ export const ExportData: React.FC = () => {
       doc.setTextColor(245, 158, 11); // Amber 500
       doc.setFontSize(24);
       doc.setFont('helvetica', 'bold');
-      doc.text('LitTrack 2026', 20, 25);
+      doc.text('Readora', 20, 25);
       
       doc.setTextColor(163, 163, 163); // Neutral 400
       doc.setFontSize(10);
@@ -237,7 +237,7 @@ export const ExportData: React.FC = () => {
     if (!file) return;
 
     if (file.type !== 'application/json') {
-      setExportStatus({ type: 'error', message: 'Arquivo inválido. Selecione um backup JSON do LitTrack.' });
+      setExportStatus({ type: 'error', message: 'Arquivo inválido. Selecione um backup JSON do Readora.' });
       return;
     }
 
@@ -252,7 +252,7 @@ export const ExportData: React.FC = () => {
         setShowImportPreview(true);
         setExportStatus(null);
       } catch (error) {
-        setExportStatus({ type: 'error', message: 'Arquivo inválido ou corrompido. Selecione um backup JSON do LitTrack.' });
+        setExportStatus({ type: 'error', message: 'Arquivo inválido ou corrompido. Selecione um backup JSON do Readora.' });
       }
     };
     reader.readAsText(file);
@@ -383,7 +383,7 @@ export const ExportData: React.FC = () => {
                 >
                   <option value="all">Todos os livros</option>
                   <option value="read">Apenas livros lidos</option>
-                  <option value="current_year">Apenas ano atual (2026)</option>
+                  <option value="current_year">Apenas ano atual</option>
                   <option value="specific_year">Ano específico</option>
                   <option value="favorites">Apenas favoritos</option>
                 </select>

@@ -82,7 +82,7 @@ export const Retrospective: React.FC = () => {
         <div className="bg-neutral-900 p-6 rounded-full mb-6">
           <Calendar size={64} className="text-neutral-700" />
         </div>
-        <h2 className="text-2xl font-serif font-bold text-neutral-200 mb-4">Sua Retrospectiva 2026</h2>
+        <h2 className="text-2xl font-serif font-bold text-neutral-200 mb-4">Sua Retrospectiva</h2>
         <p className="text-neutral-500 leading-relaxed mb-8">
           A retrospectiva será criada conforme você registrar suas leituras. Adicione pelo menos 3 livros lidos para desbloquear sua jornada visual.
         </p>
@@ -92,7 +92,7 @@ export const Retrospective: React.FC = () => {
 
   const slides = [
     {
-      title: "Seu 2026 Literário",
+      title: "Seu Ano Literário",
       content: (
         <div className="text-center space-y-6">
           <div className="text-8xl font-serif font-black text-amber-500 mb-4">{stats?.totalLidos}</div>
@@ -204,7 +204,7 @@ export const Retrospective: React.FC = () => {
         <div className="bg-amber-500 text-neutral-950 p-2 rounded-lg">
           <BookOpen size={24} />
         </div>
-        <div className="text-xl font-serif font-bold text-neutral-100">LitTrack Wrapped</div>
+        <div className="text-xl font-serif font-bold text-neutral-100">Readora Wrapped</div>
       </div>
 
       <div className="absolute top-8 right-8 flex items-center gap-2 z-20">

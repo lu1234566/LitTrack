@@ -12,14 +12,14 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [layoutMode, setLayoutMode] = useState<LayoutMode>(() => {
-    const saved = localStorage.getItem('litTrack_layoutMode');
+    const saved = localStorage.getItem('readora_layoutMode');
     return (saved as LayoutMode) || 'auto';
   });
 
   const [isMobileScreen, setIsMobileScreen] = useState(window.innerWidth < 768);
 
   useEffect(() => {
-    localStorage.setItem('litTrack_layoutMode', layoutMode);
+    localStorage.setItem('readora_layoutMode', layoutMode);
   }, [layoutMode]);
 
   useEffect(() => {

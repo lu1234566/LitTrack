@@ -151,7 +151,7 @@ export const BookForm: React.FC = () => {
     titulo: '',
     autor: '',
     mesLeitura: MONTHS[new Date().getMonth()],
-    anoLeitura: 2026,
+    anoLeitura: new Date().getFullYear(),
     genero: 'Ficção',
     status: 'lido',
     notaGeral: 0,

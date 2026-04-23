@@ -1,89 +1,102 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    
     // ===============================================================
-    // Assumed Data Model
+    // GLOBAL HELPERS
     // ===============================================================
-    // Collection: users
-    // Document ID: {userId}
-    // Fields: id, displayName, email, photoURL, bio, booksRead, pagesRead, etc.
-    //
-    // Collection: books
-    // Document ID: {bookId}
-    // Fields: userId, titulo, autor, status, pageCount, etc.
-    //
-    // Collection: profiles
-    // Document ID: {userId}
-    //
-    // Collection: recommendations
-    // Document ID: {userId}
-    //
-    // Collection: userGoals
-    // Document ID: {userId}_{year}
-    //
-    // Collection: communityFeed
-    // Document ID: {itemId}
-    //
-    // Collection: challenges
-    // Document ID: {challengeId}
-    //
-    // Collection: badges
-    // Document ID: {badgeId}
-    //
-    // Collection: userChallenges
-    // Document ID: {id}
-    //
-    // Collection: userBadges
-    // Document ID: {id}
-    //
-    // Collection: follows
-    // Document ID: {id}
-    //
-    // Collection: communities
-    // Document ID: {id}
-    //
-    // Collection: communityMembers
-    // Document ID: {id}
-    //
-    // Collection: likes
-    // Document ID: {id}
-    //
-    // Collection: comments
-    // Document ID: {id}
-    //
-    // Collection: backupHistory
-    // Document ID: {id}
-    // Fields: userId, actionType, format, status, details, affectedRecords, createdAt, fileName, scope
-    // ===============================================================
-
-    // Helper Functions
-    function isAuthenticated() {
+    
+    function isSignedIn() {
       return request.auth != null;
     }
 
     function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
+      return isSignedIn() && request.auth.uid == userId;
     }
 
     function isDocOwner() {
-      return isAuthenticated() && request.auth.uid == resource.data.userId;
+      return isSignedIn() && request.auth.uid == resource.data.userId;
     }
 
-    function isValidEmail(email) {
-      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
     function isAdmin() {
-      return isAuthenticated() && 
-             (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' || 
-              (request.auth.token.email == "barcelar34@gmail.com" && request.auth.token.email_verified == true));
+      return isSignedIn() && 
+             (request.auth.token.email == "barcelar34@gmail.com" && request.auth.token.email_verified == true);
     }
 
-    // Domain Validators
-    function isValidUser(data) {
-      return data.id is string &&
-             isValidEmail(data.email);
+    // ===============================================================
+    // DEFAULT DENY
+    // ===============================================================
+    match /{document=**} {
+      allow read, write: if false;
     }
+
+    // ===============================================================
+    // CONNECTION TEST
+    // ===============================================================
+    match /test/connection {
+      allow read: if true;
+    }
+
+    // ===============================================================
+    // USERS & PROFILES
+    // ===============================================================
+    
+    function isValidUser(data) {
+      return data.id == request.auth.uid &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 256 &&
+             data.email is string && data.email.size() > 0 && data.email.size() < 256;
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn(); // Used for community and search
+      // Only the owner can write to their profile
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) && isValidUser(incoming()) && (incoming().diff(existing()).affectedKeys().hasOnly(['name', 'profilePhoto', 'bio', 'booksRead', 'pagesRead', 'averageRating', 'favoriteGenre', 'lastReadDate', 'updatedAt', 'communityPublic', 'showBooksPublicly', 'showStatsPublicly']));
+    }
+
+    match /profiles/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isOwner(userId);
+    }
+
+    match /recommendations/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) || isAdmin();
+    }
+
+    // ===============================================================
+    // GOALS & TRACKING
+    // ===============================================================
+
+    function isValidGoal(data) {
+      return data.userId == request.auth.uid &&
+             data.year is int && data.year >= 2020 && data.year <= 2100 &&
+             data.booksGoal is int && data.booksGoal >= 0 &&
+             data.pagesGoal is int && data.pagesGoal >= 0;
+    }
+
+    match /userGoals/{goalId} {
+      allow get: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create, update: if isSignedIn() && isValidGoal(incoming());
+    }
+
+    // ===============================================================
+    // BOOKS
+    // ===============================================================
 
     function isValidBook(data) {
       return data.userId == request.auth.uid &&
@@ -91,105 +104,100 @@ service cloud.firestore {
              data.autor is string && data.autor.size() > 0 && data.autor.size() < 500;
     }
 
-    match /test/{docId} {
-      allow read: if true;
-    }
-
-    // Rules
-    match /users/{userId} {
-      allow get: if isAuthenticated();
-      allow list: if isAuthenticated();
-      allow create, update: if isOwner(userId) && isValidUser(request.resource.data);
-    }
-
     match /books/{bookId} {
-      allow get: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
-      allow list: if isAuthenticated();
-      allow create: if isAuthenticated() && isValidBook(request.resource.data);
-      allow update: if isDocOwner() && isValidBook(request.resource.data);
+      allow get: if isSignedIn();
+      allow list: if isSignedIn(); // Filtering is handled by client, but rules secure access if needed
+      allow create: if isSignedIn() && isValidBook(incoming());
+      allow update: if isDocOwner() && isValidBook(incoming()) && incoming().userId == existing().userId;
       allow delete: if isDocOwner();
     }
 
-    match /profiles/{userId} {
-      allow read: if isAuthenticated();
-      allow write: if isOwner(userId);
-    }
-
-    match /recommendations/{userId} {
-      allow read: if isOwner(userId);
-      allow write: if isOwner(userId);
-    }
-
-    match /userGoals/{goalId} {
-      allow get: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
-      allow list: if isAuthenticated();
-      allow write: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-    }
+    // ===============================================================
+    // COMMUNITY FEED
+    // ===============================================================
 
     match /communityFeed/{itemId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      // Allow updates for counts or by owner
+      allow update: if isDocOwner() || (isSignedIn() && incoming().diff(existing()).affectedKeys().hasOnly(['likesCount', 'commentsCount']));
+      allow delete: if isDocOwner();
     }
 
+    match /likes/{likeId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow update, delete: if isDocOwner();
+    }
+
+    match /comments/{commentId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow update, delete: if isDocOwner();
+    }
+
+    // ===============================================================
+    // CHALLENGES & BADGES
+    // ===============================================================
+
     match /challenges/{challengeId} {
-      allow read: if true;
+      allow read: if isSignedIn();
       allow write: if isAdmin();
     }
 
     match /badges/{badgeId} {
-      allow read: if true;
+      allow read: if isSignedIn();
       allow write: if isAdmin();
     }
 
     match /userChallenges/{id} {
-      allow get: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
-      allow list: if isAuthenticated();
-      allow write: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow delete: if isAdmin();
     }
 
     match /userBadges/{id} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow delete: if isAdmin();
     }
+
+    // ===============================================================
+    // SOCIAL (FOLLOWS)
+    // ===============================================================
 
     match /follows/{id} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.followerId == request.auth.uid;
-      allow delete: if isAuthenticated() && (resource.data.followerId == request.auth.uid || resource.data.followingId == request.auth.uid);
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && incoming().followerId == request.auth.uid;
+      allow delete: if isSignedIn() && (existing().followerId == request.auth.uid || existing().followingId == request.auth.uid);
     }
 
+    // ===============================================================
+    // COMMUNITIES
+    // ===============================================================
+
     match /communities/{id} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
-      allow update: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && incoming().ownerId == request.auth.uid;
+      allow update: if isSignedIn() && existing().ownerId == request.auth.uid;
       allow delete: if isAdmin();
     }
 
     match /communityMembers/{id} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || get(/databases/$(database)/documents/communities/$(resource.data.communityId)).data.ownerId == request.auth.uid);
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      // Allow member to leave or owner to moderate
+      allow update, delete: if isSignedIn() && (existing().userId == request.auth.uid || get(/databases/$(database)/documents/communities/$(existing().communityId)).data.ownerId == request.auth.uid);
     }
 
-    match /likes/{id} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
-    }
-
-    match /comments/{id} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
-    }
+    // ===============================================================
+    // BACKUP & HISTORY
+    // ===============================================================
 
     match /backupHistory/{id} {
-      allow get: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
-      allow list: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if false;
+      allow read: if isDocOwner();
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
     }
   }
 }

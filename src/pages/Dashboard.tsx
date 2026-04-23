@@ -117,25 +117,41 @@ export const Dashboard: React.FC = () => {
     const today = new Date();
     const endOfYear = new Date(currentYear, 11, 31);
     const diffTime = Math.abs(endOfYear.getTime() - today.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
     
-    const booksRemaining = Math.max(0, userGoal.booksGoal - stats.totalLidosEsteAno);
-    const pagesRemaining = Math.max(0, userGoal.pagesGoal - stats.paginasLidasEsteAno);
+    const booksGoal = safeParseNumber(userGoal.booksGoal);
+    const pagesGoal = safeParseNumber(userGoal.pagesGoal);
     
-    const monthsRemaining = 12 - today.getMonth();
-    const booksPerMonth = (booksRemaining / monthsRemaining).toFixed(1);
+    // Safety check for zero goals
+    if (booksGoal <= 0 && pagesGoal <= 0) {
+      return { diffDays, booksRemaining: 0, pagesRemaining: 0, message: "Defina suas metas anuais para acompanhar seu ritmo de leitura." };
+    }
+
+    const booksRemaining = Math.max(0, booksGoal - stats.totalLidosEsteAno);
+    const pagesRemaining = Math.max(0, pagesGoal - stats.paginasLidasEsteAno);
     
+    const monthsRemaining = Math.max(1, 12 - today.getMonth());
     const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 1000 / 60 / 60 / 24);
     const expectedProgress = dayOfYear / 365;
-    const actualBooksProgress = stats.totalLidosEsteAno / userGoal.booksGoal;
     
     let message = "";
-    if (actualBooksProgress >= 1) {
-      message = "Parabéns! Você já bateu sua meta de livros!";
-    } else if (actualBooksProgress >= expectedProgress) {
-      message = "Você está adiantado em relação ao esperado. Continue assim!";
-    } else {
-      message = `Você precisará ler cerca de ${booksPerMonth} livros por mês para alcançar sua meta.`;
+    
+    if (booksGoal > 0) {
+      const actualBooksProgress = stats.totalLidosEsteAno / booksGoal;
+      const booksPerMonth = (booksRemaining / monthsRemaining).toFixed(1);
+      
+      if (actualBooksProgress >= 1) {
+        message = "Parabéns! Você já bateu sua meta de livros!";
+      } else if (actualBooksProgress >= expectedProgress) {
+        message = "Você está adiantado em relação ao esperado. Continue assim!";
+      } else {
+        message = `Você precisará ler cerca de ${booksPerMonth} livros por mês para alcançar sua meta.`;
+      }
+    } else if (pagesGoal > 0) {
+      const pagesPerDay = (pagesRemaining / diffDays).toFixed(0);
+      message = pagesRemaining > 0 
+        ? `Você precisa ler cerca de ${formatPagesLong(Number(pagesPerDay))} por dia para atingir sua meta.` 
+        : "Meta de páginas do ano concluída!";
     }
     
     return { diffDays, booksRemaining, pagesRemaining, message };
@@ -203,72 +219,90 @@ export const Dashboard: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
               {/* Books Progress */}
               <div className="space-y-4">
-                <div className="flex justify-between items-end">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-neutral-400 uppercase tracking-wider flex items-center gap-2">
-                      <BookOpen size={16} className="text-amber-500" />
-                      Livros Lidos
-                    </p>
-                    <h4 className="text-3xl font-bold text-neutral-100">
-                      {stats.totalLidosEsteAno} <span className="text-neutral-600 text-xl font-medium">/ {userGoal.booksGoal}</span>
-                    </h4>
+                {safeParseNumber(userGoal.booksGoal) > 0 ? (
+                  <>
+                    <div className="flex justify-between items-end">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-neutral-400 uppercase tracking-wider flex items-center gap-2">
+                          <BookOpen size={16} className="text-amber-500" />
+                          Livros Lidos
+                        </p>
+                        <h4 className="text-3xl font-bold text-neutral-100">
+                          {stats.totalLidosEsteAno} <span className="text-neutral-600 text-xl font-medium">/ {userGoal.booksGoal}</span>
+                        </h4>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-amber-500">
+                          {Math.min(100, Math.round((stats.totalLidosEsteAno / userGoal.booksGoal) * 100))}%
+                        </p>
+                        <p className="text-xs text-neutral-500">concluído</p>
+                      </div>
+                    </div>
+                    <div className="relative h-4 bg-neutral-800 rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min(100, (stats.totalLidosEsteAno / userGoal.booksGoal) * 100)}%` }}
+                        transition={{ duration: 1, ease: "easeOut" }}
+                        className={`absolute h-full rounded-full ${stats.totalLidosEsteAno >= userGoal.booksGoal ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.4)]'}`}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs font-medium">
+                      <span className="text-neutral-500">
+                        {stats.totalLidosEsteAno >= userGoal.booksGoal ? 'Meta alcançada!' : `Faltam ${userGoal.booksGoal - stats.totalLidosEsteAno} livros`}
+                      </span>
+                      <span className="text-neutral-400">Objetivo: {userGoal.booksGoal}</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="bg-neutral-950/20 border border-dashed border-neutral-800 rounded-2xl p-6 h-full flex flex-col items-center justify-center text-center">
+                    <p className="text-sm text-neutral-500 mb-2">Meta de livros não definida.</p>
+                    <Link to="/configuracoes" className="text-xs font-bold text-amber-500 hover:underline">Configurar Meta</Link>
                   </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-amber-500">
-                      {Math.min(100, Math.round((stats.totalLidosEsteAno / userGoal.booksGoal) * 100))}%
-                    </p>
-                    <p className="text-xs text-neutral-500">concluído</p>
-                  </div>
-                </div>
-                <div className="relative h-4 bg-neutral-800 rounded-full overflow-hidden">
-                  <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.min(100, (stats.totalLidosEsteAno / userGoal.booksGoal) * 100)}%` }}
-                    transition={{ duration: 1, ease: "easeOut" }}
-                    className={`absolute h-full rounded-full ${stats.totalLidosEsteAno >= userGoal.booksGoal ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.4)]'}`}
-                  />
-                </div>
-                <div className="flex justify-between text-xs font-medium">
-                  <span className="text-neutral-500">
-                    {stats.totalLidosEsteAno >= userGoal.booksGoal ? 'Meta alcançada!' : `Faltam ${userGoal.booksGoal - stats.totalLidosEsteAno} livros`}
-                  </span>
-                  <span className="text-neutral-400">Objetivo: {userGoal.booksGoal}</span>
-                </div>
+                )}
               </div>
 
               {/* Pages Progress */}
               <div className="space-y-4">
-                <div className="flex justify-between items-end">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-neutral-400 uppercase tracking-wider flex items-center gap-2">
-                      <FileText size={16} className="text-blue-500" />
-                      Páginas Lidas
-                    </p>
-                    <h4 className="text-3xl font-bold text-neutral-100">
-                      {formatPages(stats.paginasLidasEsteAno)} <span className="text-neutral-600 text-xl font-medium">/ {formatPages(userGoal.pagesGoal)}</span>
-                    </h4>
+                {safeParseNumber(userGoal.pagesGoal) > 0 ? (
+                  <>
+                    <div className="flex justify-between items-end">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-neutral-400 uppercase tracking-wider flex items-center gap-2">
+                          <FileText size={16} className="text-blue-500" />
+                          Páginas Lidas
+                        </p>
+                        <h4 className="text-3xl font-bold text-neutral-100">
+                          {formatPages(stats.paginasLidasEsteAno)} <span className="text-neutral-600 text-xl font-medium">/ {formatPages(userGoal.pagesGoal)}</span>
+                        </h4>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-blue-500">
+                          {Math.min(100, Math.round((stats.paginasLidasEsteAno / userGoal.pagesGoal) * 100))}%
+                        </p>
+                        <p className="text-xs text-neutral-500">concluído</p>
+                      </div>
+                    </div>
+                    <div className="relative h-4 bg-neutral-800 rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min(100, (stats.paginasLidasEsteAno / userGoal.pagesGoal) * 100)}%` }}
+                        transition={{ duration: 1, ease: "easeOut" }}
+                        className={`absolute h-full rounded-full ${stats.paginasLidasEsteAno >= userGoal.pagesGoal ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.4)]'}`}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs font-medium">
+                      <span className="text-neutral-500">
+                        {stats.paginasLidasEsteAno >= userGoal.pagesGoal ? 'Meta alcançada!' : `Faltam ${formatPagesLong(userGoal.pagesGoal - stats.paginasLidasEsteAno)}`}
+                      </span>
+                      <span className="text-neutral-400">Objetivo: {formatPages(userGoal.pagesGoal)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="bg-neutral-950/20 border border-dashed border-neutral-800 rounded-2xl p-6 h-full flex flex-col items-center justify-center text-center">
+                    <p className="text-sm text-neutral-500 mb-2">Meta de páginas não definida.</p>
+                    <Link to="/configuracoes" className="text-xs font-bold text-amber-500 hover:underline">Configurar Meta</Link>
                   </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-blue-500">
-                      {Math.min(100, Math.round((stats.paginasLidasEsteAno / userGoal.pagesGoal) * 100))}%
-                    </p>
-                    <p className="text-xs text-neutral-500">concluído</p>
-                  </div>
-                </div>
-                <div className="relative h-4 bg-neutral-800 rounded-full overflow-hidden">
-                  <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.min(100, (stats.paginasLidasEsteAno / userGoal.pagesGoal) * 100)}%` }}
-                    transition={{ duration: 1, ease: "easeOut" }}
-                    className={`absolute h-full rounded-full ${stats.paginasLidasEsteAno >= userGoal.pagesGoal ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.4)]'}`}
-                  />
-                </div>
-                <div className="flex justify-between text-xs font-medium">
-                  <span className="text-neutral-500">
-                    {stats.paginasLidasEsteAno >= userGoal.pagesGoal ? 'Meta alcançada!' : `Faltam ${formatPages(userGoal.pagesGoal - stats.paginasLidasEsteAno)} páginas`}
-                  </span>
-                  <span className="text-neutral-400">Objetivo: {formatPages(userGoal.pagesGoal)}</span>
-                </div>
+                )}
               </div>
             </div>
 
@@ -364,7 +398,7 @@ export const Dashboard: React.FC = () => {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard icon={BookOpen} label="Total Lidos" value={stats.totalLidos.toString()} color="text-amber-500" bg="bg-amber-500/10" />
-        <StatCard icon={FileText} label="Páginas Lidas" value={formatPages(stats.totalPaginas)} color="text-blue-500" bg="bg-blue-500/10" />
+        <StatCard icon={FileText} label="Total de Páginas" value={formatPagesLong(stats.totalPaginas)} color="text-blue-500" bg="bg-blue-500/10" />
         <StatCard icon={Star} label="Média Geral" value={stats.mediaGeral.toFixed(1)} color="text-rose-500" bg="bg-rose-500/10" />
         <StatCard icon={TrendingUp} label="Autor Mais Lido" value={stats.autorMaisLido || '-'} subValue={stats.generoMaisLido ? `Gênero: ${stats.generoMaisLido}` : ''} color="text-emerald-500" bg="bg-emerald-500/10" />
       </div>
@@ -377,7 +411,7 @@ export const Dashboard: React.FC = () => {
           </div>
           <div>
             <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Média / Livro</p>
-            <h3 className="text-xl font-bold text-neutral-100">{formatPagesShort(Math.round(stats.mediaPaginas))}</h3>
+            <h3 className="text-xl font-bold text-neutral-100">{formatPagesPerBook(Math.round(stats.mediaPaginas))}</h3>
           </div>
         </div>
         <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-6 shadow-xl flex items-center gap-4">

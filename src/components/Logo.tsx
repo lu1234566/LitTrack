@@ -23,8 +23,8 @@ export const Logo: React.FC<LogoProps> = ({ className = '', collapsed = false })
       {/* Text Portion */}
       {!collapsed && (
         <div className="flex flex-col leading-tight whitespace-nowrap">
-          <span className="font-serif text-xl font-bold tracking-tight text-neutral-100">LitTrack</span>
-          <span className="font-serif text-sm font-medium tracking-widest text-amber-500/80 uppercase">2026</span>
+          <span className="font-serif text-2xl font-bold tracking-tight text-neutral-100 italic">Readora</span>
+          <span className="font-serif text-[10px] font-medium tracking-[0.25em] text-amber-500/80 uppercase">Diário Literário</span>
         </div>
       )}
     </Link>

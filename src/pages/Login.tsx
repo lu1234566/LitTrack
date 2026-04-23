@@ -60,8 +60,8 @@ export const Login: React.FC = () => {
           </div>
         </div>
 
-        <h1 className="text-4xl font-serif font-bold tracking-tight text-neutral-100 mb-2">LitTrack</h1>
-        <p className="text-neutral-400 mb-8">Seu diário literário pessoal na nuvem.</p>
+        <h1 className="text-4xl font-serif font-bold tracking-tight text-neutral-100 mb-2">Readora</h1>
+        <p className="text-neutral-400 mb-8 italic">Seu diário literário na nuvem.</p>
 
         {error && (
           <div className="mb-6 bg-rose-500/10 border border-rose-500/20 rounded-2xl p-4 text-left flex items-start gap-3 text-rose-500">

@@ -19,7 +19,7 @@ const navItems = [
   { icon: Users, label: 'Comunidade', path: '/comunidade' },
   { icon: UserCircle, label: 'Perfil Literário', path: '/perfil-literario' },
   { icon: History, label: 'Linha do Tempo', path: '/linha-do-tempo' },
-  { icon: Calendar, label: 'Retrospectiva 2026', path: '/retrospectiva' },
+  { icon: Calendar, label: 'Retrospectiva', path: '/retrospectiva' },
   { icon: Sparkles, label: 'Recomendações', path: '/recomendacoes' },
   { icon: Download, label: 'Backup e Exportação', path: '/exportar' },
   { icon: ImageIcon, label: 'Galeria', path: '/galeria' },
