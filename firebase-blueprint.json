@@ -1,69 +1,49 @@
 {
   "entities": {
-    "User": {
-      "title": "User",
+    "UserProfile": {
+      "title": "User Profile",
       "description": "User profile and statistics",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
         "displayName": { "type": "string" },
-        "email": { "type": "string", "format": "email" },
         "photoURL": { "type": "string" },
         "bio": { "type": "string" },
         "communityPublic": { "type": "boolean" },
         "showBooksPublicly": { "type": "boolean" },
         "showStatsPublicly": { "type": "boolean" },
-        "booksRead": { "type": "number" },
-        "pagesRead": { "type": "number" },
+        "booksRead": { "type": "integer" },
+        "pagesRead": { "type": "integer" },
         "averageRating": { "type": "number" },
         "favoriteGenre": { "type": "string" },
-        "readingStreak": { "type": "number" },
-        "lastReadDate": { "type": "number" },
-        "createdAt": { "type": "number" },
-        "updatedAt": { "type": "number" }
+        "favoriteBookId": { "type": "string" },
+        "readingStreak": { "type": "integer" },
+        "lastReadDate": { "type": "integer" },
+        "createdAt": { "type": "integer" },
+        "updatedAt": { "type": "integer" }
       },
-      "required": ["id", "email"]
+      "required": ["id", "displayName", "photoURL", "createdAt", "updatedAt"]
     },
     "Book": {
       "title": "Book",
-      "description": "A book in the user's library",
+      "description": "A book log entry",
       "type": "object",
       "properties": {
+        "id": { "type": "string" },
         "userId": { "type": "string" },
         "titulo": { "type": "string" },
         "autor": { "type": "string" },
-        "genero": { "type": "string" },
-        "status": { "type": "string", "enum": ["lido", "lendo", "quero_ler"] },
-        "pageCount": { "type": "number" },
-        "notaGeral": { "type": "number" },
-        "favorito": { "type": "boolean" },
-        "resenha": { "type": "string" },
-        "coverUrl": { "type": "string" },
-        "anoLeitura": { "type": "number" },
         "mesLeitura": { "type": "string" },
-        "createdAt": { "type": "object" }
+        "anoLeitura": { "type": "integer" },
+        "genero": { "type": "string" },
+        "status": { "type": "string" },
+        "notaGeral": { "type": "number" },
+        "resenha": { "type": "string" },
+        "favorito": { "type": "boolean" },
+        "createdAt": { "type": "object" },
+        "dataCadastro": { "type": "integer" }
       },
-      "required": ["userId", "titulo", "autor"]
-    },
-    "Profile": {
-      "title": "Literary Profile",
-      "description": "User's literary preferences and profile",
-      "type": "object",
-      "properties": {
-        "favoriteAuthors": { "type": "array", "items": { "type": "string" } },
-        "favoriteGenres": { "type": "array", "items": { "type": "string" } },
-        "readingGoals": { "type": "string" },
-        "updatedAt": { "type": "number" }
-      }
-    },
-    "Recommendation": {
-      "title": "Recommendations",
-      "description": "AI generated book recommendations for the user",
-      "type": "object",
-      "properties": {
-        "list": { "type": "array" },
-        "updatedAt": { "type": "object" }
-      }
+      "required": ["userId", "titulo", "autor", "status"]
     },
     "UserGoal": {
       "title": "User Goal",
@@ -72,110 +52,110 @@
       "properties": {
         "id": { "type": "string" },
         "userId": { "type": "string" },
-        "year": { "type": "number" },
-        "booksGoal": { "type": "number" },
-        "pagesGoal": { "type": "number" },
-        "createdAt": { "type": "number" },
-        "updatedAt": { "type": "number" }
+        "year": { "type": "integer" },
+        "booksGoal": { "type": "integer" },
+        "pagesGoal": { "type": "integer" },
+        "createdAt": { "type": "integer" },
+        "updatedAt": { "type": "integer" }
       },
       "required": ["userId", "year"]
     },
-    "FeedItem": {
-      "title": "Feed Item",
-      "description": "An item in the community activity feed",
+    "Community": {
+      "title": "Community",
+      "description": "A reading community",
       "type": "object",
       "properties": {
-        "userId": { "type": "string" },
-        "userDisplayName": { "type": "string" },
-        "userPhotoURL": { "type": "string" },
-        "type": { "type": "string" },
-        "content": { "type": "string" },
-        "relatedBookId": { "type": "string" },
-        "metadata": { "type": "object" },
-        "createdAt": { "type": "number" },
-        "likesCount": { "type": "number" },
-        "commentsCount": { "type": "number" }
-      },
-      "required": ["userId", "type", "content"]
-    },
-    "BackupHistory": {
-      "title": "Backup History",
-      "description": "Log of backup exports and imports",
-      "type": "object",
-      "properties": {
-        "userId": { "type": "string" },
-        "actionType": { "type": "string" },
-        "format": { "type": "string" },
-        "status": { "type": "string" },
-        "details": { "type": "string" },
-        "affectedRecords": { "type": "number" },
-        "createdAt": { "type": "number" },
-        "fileName": { "type": "string" },
-        "scope": { "type": "string" }
-      },
-      "required": ["userId", "actionType", "status", "createdAt"]
-    },
-    "Challenge": {
-      "title": "Challenge",
-      "description": "Global reading challenge",
-      "type": "object",
-      "properties": {
-        "title": { "type": "string" },
-        "description": { "type": "string" },
-        "goalType": { "type": "string", "enum": ["books_read", "pages_read", "streak"] },
-        "goalValue": { "type": "number" },
-        "active": { "type": "boolean" },
-        "reward": { "type": "string" }
-      }
-    },
-    "Badge": {
-      "title": "Badge",
-      "description": "Achievement badge definition",
-      "type": "object",
-      "properties": {
+        "id": { "type": "string" },
         "name": { "type": "string" },
         "description": { "type": "string" },
-        "icon": { "type": "string" },
-        "requirement": { "type": "object" }
-      }
+        "ownerId": { "type": "string" },
+        "visibility": { "type": "string" },
+        "inviteCode": { "type": "string" },
+        "createdAt": { "type": "integer" },
+        "memberCount": { "type": "integer" }
+      },
+      "required": ["name", "ownerId", "visibility", "inviteCode"]
+    },
+    "CommunityFeedItem": {
+      "title": "Community Feed Item",
+      "description": "An update in the community feed",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "content": { "type": "string" },
+        "type": { "type": "string" },
+        "createdAt": { "type": "integer" },
+        "likesCount": { "type": "integer" },
+        "commentsCount": { "type": "integer" }
+      },
+      "required": ["userId", "content", "type", "createdAt"]
     }
   },
   "firestore": {
     "/users/{userId}": {
-      "schema": "User",
-      "description": "User profile data"
+      "schema": "UserProfile",
+      "description": "User account data and stats"
+    },
+    "/profiles/{userId}": {
+      "schema": "LiteraryProfile",
+      "description": "Literary DNA and AI profile"
     },
     "/books/{bookId}": {
       "schema": "Book",
-      "description": "Books in users' libraries"
-    },
-    "/profiles/{userId}": {
-      "schema": "Profile",
-      "description": "Users' literary profiles"
-    },
-    "/recommendations/{userId}": {
-      "schema": "Recommendation",
-      "description": "AI book recommendations"
+      "description": "Books in user libraries"
     },
     "/userGoals/{goalId}": {
       "schema": "UserGoal",
       "description": "Annual reading goals"
     },
-    "/communityFeed/{itemId}": {
-      "schema": "FeedItem",
-      "description": "Community activity feed items"
-    },
-    "/challenges/{challengeId}": {
-      "schema": "Challenge",
-      "description": "Global challenges for users"
-    },
-    "/badges/{badgeId}": {
-      "schema": "Badge",
-      "description": "Achievement badges definitions"
-    },
-    "/backupHistory/{id}": {
+    "/backupHistory/{backupId}": {
       "schema": "BackupHistory",
-      "description": "Backup and import logs"
+      "description": "User backup logs"
+    },
+    "/recommendations/{userId}": {
+      "schema": "Recommendation",
+      "description": "AI book recommendations"
+    },
+    "/communityFeed/{itemId}": {
+      "schema": "CommunityFeedItem",
+      "description": "Social feed items"
+    },
+    "/communities/{communityId}": {
+      "schema": "Community",
+      "description": "Reading communities"
+    },
+    "/communityMembers/{memberId}": {
+      "schema": "CommunityMember",
+      "description": "Members of communities"
+    },
+    "/likes/{likeId}": {
+      "schema": "Like",
+      "description": "Reactions to feed items"
+    },
+    "/comments/{commentId}": {
+      "schema": "Comment",
+      "description": "Comments on feed items"
+    },
+    "/follows/{followId}": {
+      "schema": "Follow",
+      "description": "User follow relationships"
+    },
+    "/userChallenges/{id}": {
+      "schema": "UserChallenge",
+      "description": "Tracked challenges for users"
+    },
+    "/userBadges/{id}": {
+      "schema": "UserBadge",
+      "description": "Badges earned by users"
+    },
+    "/challenges/{id}": {
+      "schema": "Challenge",
+      "description": "Global challenges"
+    },
+    "/badges/{id}": {
+      "schema": "Badge",
+      "description": "Global badges"
     }
   }
 }

@@ -127,8 +127,8 @@ export const Dashboard: React.FC = () => {
       return { diffDays, booksRemaining: 0, pagesRemaining: 0, message: "Defina suas metas anuais para acompanhar seu ritmo de leitura." };
     }
 
-    const booksRemaining = Math.max(0, booksGoal - stats.totalLidosEsteAno);
-    const pagesRemaining = Math.max(0, pagesGoal - stats.paginasLidasEsteAno);
+    const booksRemaining = booksGoal > 0 ? Math.max(0, booksGoal - stats.totalLidosEsteAno) : 0;
+    const pagesRemaining = pagesGoal > 0 ? Math.max(0, pagesGoal - stats.paginasLidasEsteAno) : 0;
     
     const monthsRemaining = Math.max(1, 12 - today.getMonth());
     const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 1000 / 60 / 60 / 24);
@@ -143,14 +143,14 @@ export const Dashboard: React.FC = () => {
       if (actualBooksProgress >= 1) {
         message = "Parabéns! Você já bateu sua meta de livros!";
       } else if (actualBooksProgress >= expectedProgress) {
-        message = "Você está adiantado em relação ao esperado. Continue assim!";
+        message = "Você está em um ótimo ritmo! Continue assim.";
       } else {
-        message = `Você precisará ler cerca de ${booksPerMonth} livros por mês para alcançar sua meta.`;
+        message = `Você precisará ler cerca de ${booksPerMonth.replace('.', ',')} livros por mês para alcançar sua meta.`;
       }
     } else if (pagesGoal > 0) {
-      const pagesPerDay = (pagesRemaining / diffDays).toFixed(0);
+      const pagesPerDay = Math.ceil(pagesRemaining / diffDays);
       message = pagesRemaining > 0 
-        ? `Você precisa ler cerca de ${formatPagesLong(Number(pagesPerDay))} por dia para atingir sua meta.` 
+        ? `Você precisa ler cerca de ${formatPagesLong(pagesPerDay)} por dia para atingir sua meta.` 
         : "Meta de páginas do ano concluída!";
     }
     
@@ -233,7 +233,7 @@ export const Dashboard: React.FC = () => {
                       </div>
                       <div className="text-right">
                         <p className="text-2xl font-bold text-amber-500">
-                          {Math.min(100, Math.round((stats.totalLidosEsteAno / userGoal.booksGoal) * 100))}%
+                          {userGoal.booksGoal > 0 ? Math.min(100, Math.round((stats.totalLidosEsteAno / userGoal.booksGoal) * 100)) : 0}%
                         </p>
                         <p className="text-xs text-neutral-500">concluído</p>
                       </div>
@@ -241,14 +241,14 @@ export const Dashboard: React.FC = () => {
                     <div className="relative h-4 bg-neutral-800 rounded-full overflow-hidden">
                       <motion.div 
                         initial={{ width: 0 }}
-                        animate={{ width: `${Math.min(100, (stats.totalLidosEsteAno / userGoal.booksGoal) * 100)}%` }}
+                        animate={{ width: `${userGoal.booksGoal > 0 ? Math.min(100, (stats.totalLidosEsteAno / userGoal.booksGoal) * 100) : 0}%` }}
                         transition={{ duration: 1, ease: "easeOut" }}
-                        className={`absolute h-full rounded-full ${stats.totalLidosEsteAno >= userGoal.booksGoal ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.4)]'}`}
+                        className={`absolute h-full rounded-full ${stats.totalLidosEsteAno >= (userGoal.booksGoal || 0) && (userGoal.booksGoal || 0) > 0 ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.4)]'}`}
                       />
                     </div>
                     <div className="flex justify-between text-xs font-medium">
                       <span className="text-neutral-500">
-                        {stats.totalLidosEsteAno >= userGoal.booksGoal ? 'Meta alcançada!' : `Faltam ${userGoal.booksGoal - stats.totalLidosEsteAno} livros`}
+                        {stats.totalLidosEsteAno >= (userGoal.booksGoal || 0) && (userGoal.booksGoal || 0) > 0 ? 'Meta alcançada!' : `Faltam ${Math.max(0, (userGoal.booksGoal || 0) - stats.totalLidosEsteAno)} livros`}
                       </span>
                       <span className="text-neutral-400">Objetivo: {userGoal.booksGoal}</span>
                     </div>
@@ -277,7 +277,7 @@ export const Dashboard: React.FC = () => {
                       </div>
                       <div className="text-right">
                         <p className="text-2xl font-bold text-blue-500">
-                          {Math.min(100, Math.round((stats.paginasLidasEsteAno / userGoal.pagesGoal) * 100))}%
+                          {userGoal.pagesGoal > 0 ? Math.min(100, Math.round((stats.paginasLidasEsteAno / userGoal.pagesGoal) * 100)) : 0}%
                         </p>
                         <p className="text-xs text-neutral-500">concluído</p>
                       </div>
@@ -285,14 +285,14 @@ export const Dashboard: React.FC = () => {
                     <div className="relative h-4 bg-neutral-800 rounded-full overflow-hidden">
                       <motion.div 
                         initial={{ width: 0 }}
-                        animate={{ width: `${Math.min(100, (stats.paginasLidasEsteAno / userGoal.pagesGoal) * 100)}%` }}
+                        animate={{ width: `${userGoal.pagesGoal > 0 ? Math.min(100, (stats.paginasLidasEsteAno / userGoal.pagesGoal) * 100) : 0}%` }}
                         transition={{ duration: 1, ease: "easeOut" }}
-                        className={`absolute h-full rounded-full ${stats.paginasLidasEsteAno >= userGoal.pagesGoal ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.4)]'}`}
+                        className={`absolute h-full rounded-full ${stats.paginasLidasEsteAno >= (userGoal.pagesGoal || 0) && (userGoal.pagesGoal || 0) > 0 ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.4)]'}`}
                       />
                     </div>
                     <div className="flex justify-between text-xs font-medium">
                       <span className="text-neutral-500">
-                        {stats.paginasLidasEsteAno >= userGoal.pagesGoal ? 'Meta alcançada!' : `Faltam ${formatPagesLong(userGoal.pagesGoal - stats.paginasLidasEsteAno)}`}
+                        {stats.paginasLidasEsteAno >= (userGoal.pagesGoal || 0) && (userGoal.pagesGoal || 0) > 0 ? 'Meta alcançada!' : `Faltam ${formatPagesLong(Math.max(0, (userGoal.pagesGoal || 0) - stats.paginasLidasEsteAno))}`}
                       </span>
                       <span className="text-neutral-400">Objetivo: {formatPages(userGoal.pagesGoal)}</span>
                     </div>
