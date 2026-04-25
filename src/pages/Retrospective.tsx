@@ -189,23 +189,29 @@ export const Retrospective: React.FC = () => {
     );
   }
 
-  const slides = [];
+  const slides: { title: string; content: React.ReactNode; bg: string; layout?: 'hero' | 'wide' }[] = [];
 
   slides.push({
-    title: "Como foi seu ano?",
+    title: "Introdução",
+    layout: 'hero',
     content: (
-      <div className="text-center space-y-4 md:space-y-6 flex flex-col items-center h-full justify-center">
-        <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ delay: 0.2, type: "spring" }} className="text-7xl md:text-8xl font-serif font-black text-amber-500 mb-2 drop-shadow-lg">
-          {stats?.totalLidos}
-        </motion.div>
-        <div className="text-2xl md:text-3xl font-serif font-bold text-neutral-100 uppercase tracking-widest">
-          Livros Lidos
+      <div className="text-center space-y-8 md:space-y-10 flex flex-col items-center h-full justify-center px-4">
+        <div className="space-y-2 relative">
+           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 md:w-64 md:h-64 bg-amber-500/20 blur-[60px] rounded-full pointer-events-none" />
+           <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ delay: 0.2, type: "spring" }} className="text-8xl md:text-[10rem] leading-none font-serif font-black text-amber-500 relative z-10 drop-shadow-2xl">
+             {stats?.totalLidos}
+           </motion.div>
+           <div className="text-xl md:text-2xl font-serif font-bold text-neutral-100 uppercase tracking-[0.2em] relative z-10">
+             Livros Lidos
+           </div>
         </div>
-        <div className="text-lg md:text-xl font-medium text-amber-500/80">
-          e {formatPagesLong(stats?.totalPaginas || 0)}
+        <div className="inline-flex items-center justify-center px-6 py-2.5 border border-neutral-700/50 bg-neutral-800/30 rounded-full backdrop-blur">
+          <span className="text-sm md:text-base text-neutral-300 font-serif italic drop-shadow">
+            Através de <span className="text-amber-500 font-bold not-italic">{formatPagesLong(stats?.totalPaginas || 0)}</span>
+          </span>
         </div>
-        <p className="text-neutral-400 text-base md:text-lg max-w-xs mx-auto mt-6">
-          Você explorou novos mundos e viveu mil vidas este ano.
+        <p className="text-neutral-300 text-lg md:text-xl font-serif italic max-w-sm mx-auto mt-2 leading-relaxed drop-shadow-md pb-4">
+          Entre páginas e emoções, este foi o seu ano literário.
         </p>
       </div>
     ),
@@ -214,7 +220,7 @@ export const Retrospective: React.FC = () => {
 
   if ((stats?.totalPaginas || 0) > 0) {
     slides.push({
-      title: "Sua Maratona",
+      title: "Volume de Leitura",
       content: (
         <div className="text-center space-y-6 w-full h-full flex flex-col items-center justify-center">
           <FileText size={64} className="text-amber-500 mb-2 drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]" strokeWidth={1.5} />
@@ -225,7 +231,7 @@ export const Retrospective: React.FC = () => {
             Páginas Lidas
           </div>
           {stats?.mediaPaginas ? (
-            <p className="text-neutral-400 text-lg md:text-xl uppercase tracking-widest font-medium">Média de {formatPages(stats.mediaPaginas)} por livro</p>
+            <p className="text-neutral-400 text-lg md:text-xl font-serif italic">Com média de {formatPages(stats.mediaPaginas)} páginas por obra.</p>
           ) : null}
         </div>
       ),
@@ -234,7 +240,8 @@ export const Retrospective: React.FC = () => {
   }
 
   slides.push({
-    title: "A Essência do Seu Ano",
+    title: "Retrato Literário",
+    layout: 'hero',
     content: (
       <div className="w-full h-full flex flex-col items-center justify-center relative px-6">
         {narratives.length > 0 ? (
@@ -266,7 +273,7 @@ export const Retrospective: React.FC = () => {
   });
 
   slides.push({
-    title: "Seu Nível de Exigência",
+    title: "Critério Pessoal",
     content: (
       <div className="text-center space-y-6 w-full h-full flex flex-col items-center justify-center">
         <div className="flex justify-center gap-2 md:gap-3 mb-2">
@@ -283,8 +290,8 @@ export const Retrospective: React.FC = () => {
           {stats?.mediaGeral.toFixed(1)}
         </div>
         <p className="text-neutral-400 text-lg md:text-xl uppercase tracking-widest font-medium">de 5 estrelas</p>
-        <p className="text-amber-500/80 text-base max-w-xs">
-          Seu ano literário foi marcado por curiosidade, seletividade e opiniões fortes.
+        <p className="text-amber-500/80 text-base md:text-lg font-serif italic max-w-sm">
+          Sua curadoria refletiu um gosto refinado e opiniões marcantes.
         </p>
       </div>
     ),
@@ -292,11 +299,11 @@ export const Retrospective: React.FC = () => {
   });
   if (stats?.autorMaisLido) {
     slides.push({
-      title: "Autor do Ano",
+      title: "Voz Favorita",
       content: (
         <div className="text-center space-y-6 w-full h-full flex flex-col items-center justify-center">
           <User size={64} className="text-rose-500 mb-2 drop-shadow-[0_0_15px_rgba(244,63,94,0.5)]" strokeWidth={1.5} />
-          <p className="text-neutral-400 text-base md:text-lg mb-2 uppercase tracking-widest">A voz que mais ecoou</p>
+          <p className="text-neutral-400 text-base md:text-lg mb-2 font-serif italic">O autor que mais te cativou nesta jornada</p>
           <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ delay: 0.2, type: "spring" }} className="text-4xl md:text-6xl font-serif font-black text-neutral-100 leading-tight">
             {stats.autorMaisLido}
           </motion.div>
@@ -311,12 +318,13 @@ export const Retrospective: React.FC = () => {
 
   if (stats?.generoMaisLido) {
     slides.push({
-      title: "Gênero do Ano",
+      title: "Refúgio Literário",
+      layout: 'hero',
       content: (
         <div className="text-center space-y-6 w-full h-full flex flex-col items-center justify-center">
           <Bookmark size={64} className="text-indigo-500 mb-2 drop-shadow-[0_0_15px_rgba(99,102,241,0.5)]" strokeWidth={1.5} />
-          <p className="text-neutral-400 text-base md:text-lg mb-2 uppercase tracking-widest">Sua zona de conforto literária</p>
-          <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ delay: 0.2, type: "spring" }} className="text-5xl md:text-7xl font-serif font-black text-neutral-100 uppercase">
+          <p className="text-neutral-400 text-base md:text-lg mb-2 font-serif italic">O gênero onde você sempre encontrou abrigo.</p>
+          <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ delay: 0.2, type: "spring" }} className="text-4xl md:text-6xl xl:text-7xl px-4 font-serif font-black text-neutral-100 uppercase text-balance text-center w-full break-words">
             {stats.generoMaisLido}
           </motion.div>
           <div className="text-xl md:text-2xl font-bold text-indigo-500">
@@ -330,11 +338,12 @@ export const Retrospective: React.FC = () => {
 
   if (stats?.mesMaisAtivo) {
     slides.push({
-      title: "Mês Mais Intenso",
+      title: "Ápice Literário",
+      layout: 'hero',
       content: (
         <div className="text-center space-y-6 w-full h-full flex flex-col items-center justify-center">
           <Calendar size={64} className="text-emerald-500 mb-2 drop-shadow-[0_0_15px_rgba(16,185,129,0.5)]" strokeWidth={1.5} />
-          <p className="text-neutral-400 text-base md:text-lg mb-2 uppercase tracking-widest">Quando a leitura decolou</p>
+          <p className="text-neutral-400 text-base md:text-lg mb-2 font-serif italic">O momento em que as páginas viraram mais rápido.</p>
           <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ delay: 0.2, type: "spring" }} className="text-5xl md:text-7xl font-serif font-black text-neutral-100 uppercase">
             {stats.mesMaisAtivo}
           </motion.div>
@@ -352,7 +361,8 @@ export const Retrospective: React.FC = () => {
     const pagesPercent = userGoal.pagesGoal > 0 ? Math.min(100, Math.round((stats.totalPaginas / userGoal.pagesGoal) * 100)) : 0;
     
     slides.push({
-      title: "Suas Metas",
+      title: "Metas e Conquistas",
+      layout: 'hero',
       content: (
         <div className="text-center space-y-8 w-full max-w-md mx-auto h-full flex flex-col items-center justify-center">
           <Target size={64} className="text-blue-500 mb-2 drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]" strokeWidth={1.5} />
@@ -393,65 +403,76 @@ export const Retrospective: React.FC = () => {
   }
 
   slides.push({
-    title: "A Leitura do Ano",
+    title: "Obra-Prima",
+    layout: 'wide',
     content: (
-      <div className="flex flex-col items-center justify-center text-center w-full max-w-md mx-auto h-full space-y-6 md:space-y-8">
-        <p className="text-neutral-400 text-base md:text-lg mb-2">
-          Houve muitas histórias, mas esta ressoou mais alto.
-        </p>
-        <div className="relative group perspective-1000 mt-4 md:mt-0">
-          <div className="absolute -inset-8 bg-amber-500/20 blur-3xl rounded-full animate-pulse opacity-70" />
+      <div className="flex flex-col md:flex-row items-center justify-center text-center md:text-left w-full h-full md:gap-16 px-4 md:px-12 py-6">
+        <div className="md:flex-1 w-full max-w-[280px] md:max-w-none flex flex-col justify-center items-center md:items-end order-2 md:order-1 mt-6 md:mt-0">
+          <p className="text-neutral-400 text-sm md:text-xl xl:text-2xl mb-4 md:mb-8 font-serif italic text-center md:text-right">
+            Houve muitas histórias, mas esta ressoou mais alto.
+          </p>
+          <div className="space-y-4 w-full text-center md:text-right">
+            <div className="inline-block px-5 py-2 mb-2 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-full font-bold text-[10px] md:text-xs uppercase tracking-widest text-center shadow-[0_0_20px_rgba(245,158,11,0.15)]">
+              Melhor Livro do Ano
+            </div>
+            <h3 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-serif font-black text-neutral-100 leading-snug line-clamp-3 md:line-clamp-4">
+              {stats?.melhorLivro?.titulo}
+            </h3>
+            <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-neutral-400 font-serif italic line-clamp-2">
+              por {stats?.melhorLivro?.autor}
+            </p>
+          </div>
+        </div>
+        
+        <div className="relative group perspective-1000 md:flex-1 flex justify-center md:justify-start order-1 md:order-2 shrink-0">
+          <div className="absolute inset-0 bg-amber-500/20 blur-[50px] rounded-full animate-pulse opacity-60 scale-150" />
           <motion.div 
             initial={{ rotateY: 15, rotateX: 5 }}
             animate={{ rotateY: 0, rotateX: 0 }}
             transition={{ duration: 1.5, ease: "easeOut" }}
-            className="w-48 h-72 md:w-56 md:h-80 rounded-lg overflow-hidden border border-neutral-700/50 shadow-2xl relative z-10 bg-neutral-900"
+            className="w-40 h-60 sm:w-48 sm:h-72 md:w-64 md:h-96 lg:w-[320px] lg:h-[480px] rounded-lg md:rounded-2xl overflow-hidden border border-neutral-700/50 shadow-2xl relative z-10 bg-neutral-900 shrink-0"
           >
             {stats?.melhorLivro?.coverUrl || stats?.melhorLivro?.ilustracaoUrl ? (
               <CoverImage 
                 coverUrl={stats?.melhorLivro?.coverUrl}
                 coverSource={stats?.melhorLivro?.coverSource}
                 fallbackUrl={stats?.melhorLivro?.ilustracaoUrl}
-                alt={stats?.melhorLivro?.titulo} 
+                alt={stats?.melhorLivro?.titulo || "Capa do livro"} 
                 className="w-full h-full object-cover" 
               />
             ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center border-2 border-neutral-800 text-neutral-700">
-                <BookOpen size={48} />
+              <div className="w-full h-full flex flex-col items-center justify-center border-2 border-neutral-800 bg-neutral-950 text-neutral-800">
+                <BookOpen size={64} className="mb-4 text-neutral-700 opacity-50" />
+                <div className="w-1/2 h-1 bg-neutral-800 rounded-full mb-2" />
+                <div className="w-1/3 h-1 bg-neutral-800 rounded-full" />
               </div>
             )}
           </motion.div>
         </div>
-        <div className="space-y-3 px-4 w-full">
-          <div className="inline-block px-4 py-1.5 mb-2 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-full font-bold text-[10px] md:text-xs uppercase tracking-widest">
-            A Obra-Prima
-          </div>
-          <h3 className="text-2xl md:text-3xl font-serif font-bold text-neutral-100 line-clamp-2 leading-tight">
-            {stats?.melhorLivro?.titulo}
-          </h3>
-          <p className="text-base md:text-xl text-neutral-400 font-serif italic truncate">
-            por {stats?.melhorLivro?.autor}
-          </p>
-        </div>
       </div>
     ),
-    bg: "bg-gradient-to-br from-amber-900/30 via-neutral-900 to-neutral-950"
+    bg: "bg-gradient-to-r from-neutral-950 via-neutral-900 to-amber-950/30"
   });
 
   if (stats?.melhorCitacao) {
     slides.push({
-      title: "Palavras que Ficam",
+      title: "Ecos da Leitura",
+      layout: 'wide',
       content: (
-        <div className="text-center space-y-6 w-full max-w-2xl mx-auto h-full flex flex-col items-center justify-center px-4">
-          <BookOpen size={48} className="text-amber-500/50 mb-4" strokeWidth={1} />
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-xl md:text-3xl font-serif italic text-neutral-100 leading-relaxed relative">
-            <span className="text-4xl text-amber-500/30 absolute -top-4 -left-6">"</span>
-            {stats.melhorCitacao.citacaoFavorita}
-            <span className="text-4xl text-amber-500/30 absolute -bottom-4 -right-6">"</span>
+        <div className="text-center space-y-6 w-full max-w-lg md:max-w-3xl mx-auto h-full flex flex-col items-center justify-center px-6">
+          <BookOpen size={40} className="text-amber-500/30 mb-2 md:mb-6 shrink-0" strokeWidth={1} />
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-lg md:text-2xl lg:text-3xl font-serif italic text-neutral-100 leading-relaxed relative flex-1 min-h-[120px] max-h-[300px] overflow-hidden flex flex-col justify-center">
+            <div className="relative inline-block w-full">
+              <span className="text-3xl md:text-5xl text-amber-500/20 absolute -top-4 -left-6 md:-top-6 md:-left-8 font-sans">"</span>
+              <div className="line-clamp-[8] md:line-clamp-6 text-balance break-words pb-2">
+                {stats.melhorCitacao.citacaoFavorita}
+              </div>
+              <span className="text-3xl md:text-5xl text-amber-500/20 absolute bottom-0 -right-4 font-sans leading-none translate-y-1/2">"</span>
+            </div>
           </motion.div>
-          <div className="mt-8 text-neutral-400">
-            <p className="font-bold text-amber-500">{stats.melhorCitacao.titulo}</p>
-            <p className="text-sm">{stats.melhorCitacao.autor}</p>
+          <div className="mt-6 md:mt-8 text-neutral-400 shrink-0">
+            <p className="font-bold text-amber-500 line-clamp-1">{stats.melhorCitacao.titulo}</p>
+            <p className="text-sm md:text-base line-clamp-1 truncate text-neutral-500 mt-1">{stats.melhorCitacao.autor}</p>
           </div>
         </div>
       ),
@@ -460,7 +481,8 @@ export const Retrospective: React.FC = () => {
   }
 
   slides.push({
-    title: "Amor à Primeira Página",
+    title: "Coleção de Afetos",
+    layout: 'hero',
     content: (
       <div className="flex flex-col items-center justify-center text-center space-y-10 h-full">
         <div className="flex justify-center relative">
@@ -478,8 +500,8 @@ export const Retrospective: React.FC = () => {
         </div>
         <div className="space-y-4">
           <div className="text-3xl md:text-4xl font-serif font-bold text-neutral-100">Favoritados</div>
-          <p className="text-neutral-400 text-base md:text-lg max-w-sm mx-auto px-4">
-            Nem todo livro fica. Estas foram as histórias que se provaram inesquecíveis.
+          <p className="text-neutral-400 text-base md:text-lg max-w-sm mx-auto px-4 font-serif italic">
+            Nem todo livro permanece. Estes, porém, ganharam morada em você.
           </p>
         </div>
       </div>
@@ -488,25 +510,31 @@ export const Retrospective: React.FC = () => {
   });
 
   slides.push({
-    title: "Os Inesquecíveis",
+    title: "A Elite do Ano",
+    layout: 'wide',
     content: (
-      <div className="w-full max-w-md md:max-w-xl mx-auto flex flex-col justify-center h-full text-center">
-        <p className="text-neutral-400 text-base md:text-lg font-serif italic mb-6">
-          Sua curadoria pessoal dos melhores momentos literários do ano.
+      <div className="w-full max-w-3xl mx-auto flex flex-col justify-center h-full px-4 md:px-8">
+        <p className="text-neutral-400 text-sm md:text-lg lg:text-xl font-serif italic mb-6 md:mb-10 text-center w-full shrink-0">
+          A curadoria dos momentos que mais ressoaram com você.
         </p>
-        <div className="space-y-3">
+        <div className="flex flex-col gap-3 md:gap-4 w-full flex-1 overflow-hidden justify-center min-h-0">
           {stats?.top5.map((book, i) => (
             <motion.div 
               key={book.id} 
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.15 + 0.3 }}
-              className="flex items-center gap-4 py-2 md:p-3 bg-neutral-900/40 md:bg-neutral-900/60 border border-neutral-800/80 rounded-2xl md:rounded-xl shadow-lg px-3 text-left"
+              transition={{ delay: i * 0.1 }}
+              className={`flex items-center gap-4 p-3 md:p-4 bg-neutral-900/40 border border-neutral-800/80 rounded-2xl md:rounded-[20px] shadow-lg text-left relative overflow-hidden transition-all shrink-0 ${
+                i === 0 ? 'bg-gradient-to-r from-amber-950/40 via-neutral-900/60 to-neutral-900/60 border-amber-900/40 shadow-amber-900/5 md:flex-row' : ''
+              }`}
             >
-              <div className="text-xl md:text-3xl font-serif font-black text-amber-500/50 w-6 md:w-8 shrink-0 text-center">
+              {i === 0 && <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-amber-400 to-amber-600 rounded-l-full" />}
+              
+              <div className={`font-serif font-black text-center shrink-0 pr-2 md:pr-4 flex items-center justify-center ${i === 0 ? 'text-4xl md:text-6xl text-amber-500 drop-shadow-md w-12 md:w-20 pl-2' : 'text-2xl md:text-4xl text-neutral-600 w-10 md:w-16'}`}>
                 {i + 1}
               </div>
-              <div className="w-10 h-14 md:w-12 md:h-16 shrink-0 rounded overflow-hidden bg-neutral-800 border border-neutral-700/50">
+              
+              <div className={`shrink-0 rounded-lg overflow-hidden bg-neutral-800 border border-neutral-700/50 shadow-md ${i === 0 ? 'w-16 h-24 md:w-20 md:h-32' : 'w-12 h-16 md:w-16 md:h-24'}`}>
                  {book.coverUrl || book.ilustracaoUrl ? (
                    <CoverImage 
                     coverUrl={book.coverUrl}
@@ -516,19 +544,21 @@ export const Retrospective: React.FC = () => {
                     className="w-full h-full object-cover"
                    />
                  ) : (
-                   <div className="w-full h-full flex items-center justify-center text-neutral-600"><BookOpen size={16} /></div>
+                   <div className="w-full h-full flex items-center justify-center text-neutral-600"><BookOpen size={i === 0 ? 32 : 20} className="opacity-50" /></div>
                  )}
               </div>
-              <div className="flex-1 min-w-0 pr-2">
-                <div className="font-bold text-neutral-100 truncate text-sm md:text-base leading-tight md:leading-normal">
+              
+              <div className="flex-1 min-w-0 pr-2 md:pr-4 flex flex-col justify-center h-full">
+                <div className={`font-bold text-neutral-100 truncate w-full tracking-tight ${i === 0 ? 'text-lg md:text-2xl mb-1' : 'text-base md:text-lg'}`}>
                   {book.titulo}
                 </div>
-                <div className="text-xs md:text-sm text-neutral-400 truncate mt-0.5 md:mt-0 text-ellipsis">
-                  {book.autor}
+                <div className={`text-neutral-400 truncate w-full font-serif italic ${i === 0 ? 'text-sm md:text-lg' : 'text-xs md:text-base'}`}>
+                  por {book.autor}
                 </div>
               </div>
-              <div className="flex items-center gap-1 text-amber-500 font-bold bg-amber-500/10 px-2 py-1.5 md:py-1 rounded-lg text-xs shrink-0 self-center border border-amber-500/10">
-                <Star size={12} fill="currentColor" />
+              
+              <div className={`flex flex-col items-center justify-center gap-1 font-bold bg-neutral-950/50 rounded-xl shrink-0 border border-neutral-800 ${i === 0 ? 'text-amber-500 px-3 md:px-4 py-2 md:py-3 text-sm md:text-lg shadow-inner' : 'text-amber-500/80 px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm'}`}>
+                <Star size={i === 0 ? 18 : 14} fill="currentColor" className={i===0 ? "drop-shadow-sm mb-0.5" : "mb-0.5"} />
                 {book.notaGeral.toFixed(1)}
               </div>
             </motion.div>
@@ -542,7 +572,7 @@ export const Retrospective: React.FC = () => {
   if (literaryProfile?.estiloLeitor || stats?.generoMaisLido) {
     const readerTitle = literaryProfile?.estiloLeitor || `O Curador de ${stats?.generoMaisLido}`;
     slides.push({
-      title: "Sua Identidade",
+      title: "Perfil Literário",
       content: (
         <div className="flex flex-col items-center justify-center text-center space-y-8 h-full w-full">
           <div className="relative">
@@ -561,7 +591,7 @@ export const Retrospective: React.FC = () => {
                 <h3 className="text-2xl md:text-3xl font-serif font-black text-neutral-100">{readerTitle}</h3>
                 {literaryProfile?.generoFavorito && (
                   <p className="text-sm text-neutral-400 mt-4 p-3 bg-neutral-950 rounded-lg border border-neutral-800/80 italic">
-                    Tendência marcada por <span className="text-amber-500">{literaryProfile.generoFavorito}</span>.
+                    Sua biblioteca respira <span className="text-amber-500">{literaryProfile.generoFavorito}</span>.
                   </p>
                 )}
               </div>
@@ -574,42 +604,43 @@ export const Retrospective: React.FC = () => {
   }
 
   slides.push({
-    title: "Fim da Jornada",
+    title: "Epílogo",
+    layout: 'hero',
     content: (
-      <div className="flex flex-col items-center justify-center text-center h-full w-full">
-        <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-amber-500/20 bg-neutral-900 shadow-[0_0_40px_rgba(245,158,11,0.15)] flex items-center justify-center mb-6">
-          <BookOpen size={48} className="text-amber-500" strokeWidth={1.5} />
-        </div>
-        <div className="space-y-4 max-w-sm px-4 mb-10">
-          <h2 className="text-3xl md:text-5xl font-serif font-black text-neutral-100 leading-tight">
-            Apenas o Começo
-          </h2>
-          <div className="w-12 h-1 bg-amber-500 mx-auto rounded-full mt-4 mb-6" />
-          <p className="text-lg md:text-xl text-neutral-300 font-serif italic mb-2">
-            Seu ano foi marcante.
-          </p>
-          <p className="text-sm md:text-base text-neutral-500">
-            Continue explorando, porque a próxima história já está esperando.
-          </p>
+      <div className="flex flex-col items-center justify-center text-center h-full w-full relative">
+        <div className="absolute inset-0 bg-amber-500/5 blur-[100px] rounded-full pointer-events-none" />
+        <div className="flex-1 flex flex-col items-center justify-center z-10 w-full mt-4">
+            <div className="w-20 h-20 md:w-28 md:h-28 rounded-full border border-amber-500/30 bg-neutral-950/50 backdrop-blur shadow-[0_0_50px_rgba(245,158,11,0.1)] flex items-center justify-center mb-6 md:mb-8">
+              <Logomark className="w-10 h-10 md:w-14 md:h-14" />
+            </div>
+            <div className="space-y-4 max-w-[280px] md:max-w-md px-4 mb-4">
+               <h2 className="text-3xl md:text-5xl font-serif font-black text-neutral-100 leading-tight text-balance">
+                O Próximo Capítulo Aguarda
+              </h2>
+              <div className="w-12 h-1 bg-amber-500/50 mx-auto rounded-full mt-6 mb-6" />
+               <p className="text-lg md:text-2xl text-neutral-300 font-serif italic mb-2 leading-relaxed">
+                Cada livro deixou um traço. Este foi o mapa do seu ano.
+              </p>
+            </div>
         </div>
         
-        <div className={`flex flex-col w-full gap-3 px-8 mt-auto mb-8 transition-opacity duration-300 ${isExporting ? 'opacity-0' : 'opacity-100'}`}>
+        <div className={`w-full flex flex-col md:flex-row items-center justify-center gap-3 md:gap-4 px-6 md:px-12 mt-auto pb-4 md:mb-8 z-10 transition-opacity duration-300 ${isExporting ? 'opacity-0' : 'opacity-100'}`}>
           <button 
             onClick={handleShare}
             disabled={isExporting}
-            className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold rounded-2xl transition-all disabled:opacity-50"
+            className="w-full md:w-auto min-w-[220px] flex items-center justify-center gap-2 px-6 py-4 bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold rounded-2xl transition-all disabled:opacity-50 shadow-[0_0_20px_rgba(245,158,11,0.2)] md:text-lg"
           >
-            <Share2 size={20} />
-            Compartilhar Retrospectiva
+            <Share2 size={20} className="shrink-0" />
+            <span>Compartilhar</span>
           </button>
           
           <button 
             onClick={handleExport}
             disabled={isExporting}
-            className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-neutral-800 hover:bg-neutral-700 text-white font-bold rounded-2xl border border-neutral-700 transition-all disabled:opacity-50"
+            className="w-full md:w-auto min-w-[220px] flex items-center justify-center gap-2 px-6 py-4 bg-neutral-900 border border-neutral-700 hover:bg-neutral-800 text-white font-bold rounded-2xl transition-all disabled:opacity-50 shadow-xl md:text-lg"
           >
-            <Download size={20} />
-            Baixar como Imagem
+            <Download size={20} className="shrink-0" />
+            <span>Salvar Imagem</span>
           </button>
         </div>
       </div>
@@ -651,11 +682,36 @@ export const Retrospective: React.FC = () => {
         </button>
       </div>
 
-      <div className="flex-1 w-full flex flex-col items-center justify-center relative px-2 pt-24 pb-8 min-h-0">
-        <div 
+      <div className="flex-1 w-full flex flex-col items-center justify-center relative px-2 md:px-12 pt-24 pb-8 min-h-0">
+        <div className="absolute left-6 md:left-12 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-4 z-40">
+           <button 
+             onClick={() => setCurrentSlide(prev => Math.max(0, prev - 1))}
+             disabled={currentSlide === 0}
+             className="w-14 h-14 bg-neutral-900/80 backdrop-blur border border-neutral-800 rounded-full text-neutral-400 hover:text-white disabled:opacity-0 transition-all flex items-center justify-center hover:scale-110 shadow-xl"
+           >
+             <ChevronLeft size={28} />
+           </button>
+        </div>
+
+        <div className="absolute right-6 md:right-12 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-4 z-40">
+           <button 
+             onClick={() => setCurrentSlide(prev => Math.min(slides.length - 1, prev + 1))}
+             disabled={currentSlide === slides.length - 1}
+             className="w-14 h-14 bg-amber-500/90 backdrop-blur text-neutral-950 border border-amber-400 rounded-full disabled:opacity-0 transition-all flex items-center justify-center hover:scale-110 hover:bg-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.3)]"
+           >
+             <ChevronRight size={28} />
+           </button>
+        </div>
+
+        <motion.div 
+          layout
           ref={slideRef} 
-          className="relative flex justify-center w-full max-w-[420px] aspect-[9/16] shrink-0" 
-          style={{ maxHeight: 'min(75vh, 800px)' }}
+          className="relative flex justify-center w-full shrink-0 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]" 
+          style={{ 
+            maxWidth: slides[currentSlide].layout === 'wide' ? '1000px' : '420px',
+            aspectRatio: window.innerWidth >= 768 ? (slides[currentSlide].layout === 'wide' ? '16/9' : '9/16') : '9/16',
+            maxHeight: slides[currentSlide].layout === 'wide' ? 'min(75vh, 600px)' : 'min(75vh, 800px)' 
+          }}
         >
           <AnimatePresence mode="wait">
             <motion.div
@@ -677,15 +733,15 @@ export const Retrospective: React.FC = () => {
               </div>
             </motion.div>
           </AnimatePresence>
-        </div>
+        </motion.div>
 
         {/* Progress Bars */}
-        <div className="flex gap-2 w-full max-w-[360px] md:max-w-[420px] mt-6 z-30">
+        <div className="flex gap-2 w-full max-w-[360px] md:max-w-2xl mt-8 z-30">
           {slides.map((_, i) => (
             <button 
               key={i} 
               onClick={() => setCurrentSlide(i)} 
-              className="h-1.5 flex-1 rounded-full overflow-hidden relative cursor-pointer" 
+              className="h-1.5 flex-1 rounded-full overflow-hidden relative cursor-pointer opacity-80 hover:opacity-100 transition-opacity" 
               title={`Ir para slide ${i + 1}`}
             >
               <div className="absolute inset-0 bg-neutral-800" />
@@ -700,18 +756,19 @@ export const Retrospective: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex gap-4 mb-4 z-20">
+      {/* Mobile Navigation (Hidden on Desktop) */}
+      <div className="flex md:hidden gap-4 mb-4 z-20 w-full px-6 justify-between max-w-[420px]">
         <button 
           onClick={() => setCurrentSlide(prev => Math.max(0, prev - 1))}
           disabled={currentSlide === 0}
-          className="p-4 bg-neutral-900 border border-neutral-800 rounded-2xl text-neutral-400 hover:text-white disabled:opacity-30 transition-all"
+          className="p-4 bg-neutral-900 border border-neutral-800 rounded-2xl text-neutral-400 hover:text-white disabled:opacity-0 transition-opacity"
         >
           <ChevronLeft size={24} />
         </button>
         <button 
           onClick={() => setCurrentSlide(prev => Math.min(slides.length - 1, prev + 1))}
           disabled={currentSlide === slides.length - 1}
-          className="p-4 bg-amber-500 text-neutral-950 rounded-2xl hover:bg-amber-600 disabled:opacity-30 transition-all"
+          className="p-4 bg-amber-500 text-neutral-950 rounded-2xl hover:bg-amber-600 disabled:opacity-0 transition-opacity"
         >
           <ChevronRight size={24} />
         </button>
