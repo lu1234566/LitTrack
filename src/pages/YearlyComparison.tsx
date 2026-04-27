@@ -11,7 +11,7 @@ import {
   Users, Bookmark, Clock
 } from 'lucide-react';
 import { safeParseNumber, formatPagesLong, formatPages } from '../lib/statsUtils';
-import { aiService } from '../services/aiService';
+import { analysisService } from '../services/analysisService';
 import { Link } from 'react-router-dom';
 
 const METRIC_LABELS = {
@@ -106,7 +106,9 @@ export const YearlyComparison: React.FC = () => {
       if (statsA.metrics.booksTotal > 0 || statsB.metrics.booksTotal > 0) {
         setIsGenerating(true);
         try {
-          const res = await aiService.generateYearComparisonInsights(statsA, statsB);
+          // Small delay for UI feedback
+          await new Promise(resolve => setTimeout(resolve, 800));
+          const res = analysisService.generateYearComparisonInsights(statsA, statsB);
           setInsights(res);
         } catch (error) {
           console.error("Error generating comparison insights:", error);
@@ -217,7 +219,7 @@ export const YearlyComparison: React.FC = () => {
         />
       </div>
 
-      {/* AI Insights Section */}
+      {/* Comparison Insights Section */}
       <AnimatePresence mode="wait">
         {(isGenerating || insights.length > 0) && (
           <motion.div 

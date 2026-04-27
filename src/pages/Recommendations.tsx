@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useBooks } from '../context/BookContext';
-import { aiService } from '../services/aiService';
+import { analysisService } from '../services/analysisService';
 import { Sparkles, Loader2, RefreshCw, BookOpen, Star, Heart, TrendingUp, Brain, Filter, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Logomark } from '../components/Logomark';
@@ -17,7 +17,9 @@ export const Recommendations: React.FC = () => {
     }
     setIsGenerating(true);
     try {
-      const recs = await aiService.generateRecommendations(books);
+      // Small timeout for UI feedback
+      await new Promise(resolve => setTimeout(resolve, 800));
+      const recs = analysisService.generateRecommendations(books);
       await saveRecommendations(recs);
     } catch (error) {
       console.error("Error generating recommendations:", error);
@@ -62,7 +64,7 @@ export const Recommendations: React.FC = () => {
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h1 className="text-4xl font-serif font-bold text-neutral-100 tracking-tight">Recomendações</h1>
-          <p className="text-neutral-400 mt-2 text-lg">Livros selecionados pela nossa IA com base no seu DNA de leitor.</p>
+          <p className="text-neutral-400 mt-2 text-lg">Livros selecionados pelo nosso motor de análise com base no seu DNA de leitor.</p>
         </div>
         <button 
           onClick={handleGenerateRecommendations}
@@ -95,7 +97,7 @@ export const Recommendations: React.FC = () => {
         <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-12 text-center">
           <Brain size={48} className="mx-auto text-amber-500/30 mb-4" />
           <h3 className="text-xl font-serif font-medium text-neutral-300 mb-2">O que ler em seguida?</h3>
-          <p className="text-neutral-500 mb-8 max-w-sm mx-auto">Nossa IA analisará seus livros favoritos, gêneros mais lidos e padrões de notas para sugerir sua próxima grande leitura.</p>
+          <p className="text-neutral-500 mb-8 max-w-sm mx-auto">Analisaremos seus livros favoritos, gêneros mais lidos e padrões de notas para sugerir sua próxima jornada literária.</p>
           <button 
             onClick={handleGenerateRecommendations}
             disabled={isGenerating}

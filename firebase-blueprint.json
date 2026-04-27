@@ -137,7 +137,7 @@
     },
     "/profiles/{userId}": {
       "schema": "LiteraryProfile",
-      "description": "Literary DNA and AI profile"
+      "description": "Literary DNA and reading analytics"
     },
     "/books/{bookId}": {
       "schema": "Book",
@@ -157,7 +157,7 @@
     },
     "/recommendations/{userId}": {
       "schema": "Recommendation",
-      "description": "AI book recommendations"
+      "description": "Analysis-based book recommendations"
     },
     "/communityFeed/{itemId}": {
       "schema": "CommunityFeedItem",

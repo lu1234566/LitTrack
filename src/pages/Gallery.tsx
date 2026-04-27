@@ -39,7 +39,7 @@ export const Gallery: React.FC = () => {
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
         <div>
           <h1 className="text-4xl font-serif font-bold text-neutral-100 tracking-tight">Galeria Visual</h1>
-          <p className="text-neutral-400 mt-2 text-lg">Artes conceituais geradas por IA inspiradas nas suas leituras.</p>
+          <p className="text-neutral-400 mt-2 text-lg">Coleção de artes conceituais inspiradas nas suas leituras.</p>
         </div>
       </header>
 
@@ -89,9 +89,7 @@ export const Gallery: React.FC = () => {
             
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
               <div className="flex justify-between items-start mb-2">
-                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-500 capitalize">
-                  {book.estiloIlustracao}
-                </span>
+                <div></div>
                 {book.favorito && <Heart size={18} className="text-rose-500 fill-rose-500" />}
               </div>
               <h3 className="text-lg font-serif font-bold text-neutral-100 line-clamp-2 mb-1">{book.titulo}</h3>
@@ -105,7 +103,7 @@ export const Gallery: React.FC = () => {
         <div className="text-center py-20 bg-neutral-900/30 rounded-3xl border border-neutral-800 border-dashed">
           <ImageIcon size={48} className="mx-auto text-neutral-700 mb-4" />
           <h3 className="text-xl font-serif font-medium text-neutral-300">Nenhuma ilustração encontrada</h3>
-          <p className="text-neutral-500 mt-2">Gere ilustrações na página de detalhes de cada livro.</p>
+          <p className="text-neutral-500 mt-2">Suas ilustrações salvas aparecerão aqui.</p>
         </div>
       )}
 
@@ -135,7 +133,6 @@ export const Gallery: React.FC = () => {
                       <div className="w-full md:w-96 bg-neutral-900/80 p-8 flex flex-col justify-center border-l border-neutral-800">
                         <div className="flex items-center gap-3 mb-4">
                           <span className="px-3 py-1 bg-neutral-800 text-neutral-300 rounded-full text-xs font-medium uppercase tracking-wider">{book.genero}</span>
-                          <span className="px-3 py-1 bg-amber-500/10 text-amber-500 rounded-full text-xs font-medium capitalize">{book.estiloIlustracao}</span>
                         </div>
                         <h2 className="text-3xl font-serif font-bold text-neutral-100 mb-2">{book.titulo}</h2>
                         <p className="text-lg text-neutral-400 font-serif italic mb-6">{book.autor}</p>

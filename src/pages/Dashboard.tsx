@@ -308,7 +308,7 @@ export const Dashboard: React.FC = () => {
             to="/retrospectiva" 
             className="bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-neutral-300 px-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
           >
-            <Sparkles size={20} />
+            <History size={20} />
             Retrospectiva
           </Link>
         </div>
@@ -447,7 +447,7 @@ export const Dashboard: React.FC = () => {
             {insights && (
               <div className="bg-neutral-950/50 border border-neutral-800/50 rounded-2xl p-6 flex items-start gap-4">
                 <div className="p-3 bg-amber-500/10 text-amber-500 rounded-xl">
-                  <Sparkles size={24} />
+                  <TrendingUp size={24} />
                 </div>
                 <div>
                   <h5 className="text-neutral-200 font-bold mb-1">Insights de Ritmo</h5>

@@ -2,8 +2,8 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useBooks } from '../context/BookContext';
 import { useGoals } from '../context/GoalsContext';
 import { useLiteraryProfile } from '../context/LiteraryProfileContext';
-import { aiService } from '../services/aiService';
-import { BookOpen, Star, Award, Calendar, TrendingUp, Heart, ChevronRight, ChevronLeft, Share2, Download, Brain, User, Target, Bookmark, FileText } from 'lucide-react';
+import { analysisService } from '../services/analysisService';
+import { BookOpen, Star, Award, Calendar, TrendingUp, Heart, ChevronRight, ChevronLeft, Share2, Download, Brain, User, Target, Bookmark, FileText, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Logomark } from '../components/Logomark';
@@ -14,14 +14,20 @@ import { toPng, toBlob } from 'html-to-image';
 const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
 export const Retrospective: React.FC = () => {
-  const { books, loading, quotes } = useBooks();
+  const { books, loading, quotes, narratives: cachedNarratives, saveRetrospectiveNarratives } = useBooks();
   const { userGoal } = useGoals();
   const { literaryProfile } = useLiteraryProfile();
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [narratives, setNarratives] = useState<string[]>([]);
+  const [narratives, setNarratives] = useState<string[]>(cachedNarratives || []);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const slideRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (cachedNarratives && cachedNarratives.length > 0) {
+      setNarratives(cachedNarratives);
+    }
+  }, [cachedNarratives]);
 
   const handleExport = async () => {
     if (!slideRef.current) return;
@@ -85,23 +91,32 @@ export const Retrospective: React.FC = () => {
   };
 
   const lidos = useMemo(() => books.filter(b => b.status === 'lido'), [books]);
+  const currentYear = new Date().getFullYear();
+
+  const generateNarratives = async (force = false) => {
+    if (lidos.length >= 3 && (force || narratives.length === 0)) {
+      setIsGenerating(true);
+      try {
+        // Small delay for UI feedback
+        await new Promise(resolve => setTimeout(resolve, 800));
+        const result = analysisService.generateRetrospectiveNarrative(lidos);
+        setNarratives(result);
+        if (saveRetrospectiveNarratives) {
+          await saveRetrospectiveNarratives(currentYear, result);
+        }
+      } catch (error) {
+        console.error("Error generating narratives:", error);
+      } finally {
+        setIsGenerating(false);
+      }
+    }
+  };
 
   useEffect(() => {
-    const generateNarratives = async () => {
-      if (lidos.length >= 3) {
-        setIsGenerating(true);
-        try {
-          const result = await aiService.generateRetrospectiveNarrative(lidos);
-          setNarratives(result);
-        } catch (error) {
-          console.error("Error generating narratives:", error);
-        } finally {
-          setIsGenerating(false);
-        }
-      }
-    };
-    generateNarratives();
-  }, [lidos]);
+    if (lidos.length >= 3 && narratives.length === 0) {
+      generateNarratives();
+    }
+  }, [lidos.length, narratives.length]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -168,7 +183,7 @@ export const Retrospective: React.FC = () => {
     };
   }, [lidos]);
 
-  if (loading || isGenerating) {
+  if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] space-y-6">
         <div className="w-24 h-24 bg-neutral-900 border border-neutral-800 p-2 rounded-3xl shadow-2xl shadow-amber-500/10 animate-pulse flex items-center justify-center">
@@ -248,7 +263,12 @@ export const Retrospective: React.FC = () => {
     layout: 'hero',
     content: (
       <div className="w-full h-full flex flex-col items-center justify-center relative px-6">
-        {narratives.length > 0 ? (
+        {isGenerating ? (
+          <div className="space-y-4 text-center">
+            <div className="w-12 h-12 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-neutral-500 font-serif italic">Tecendo sua jornada em palavras...</p>
+          </div>
+        ) : narratives.length > 0 ? (
           <div className="space-y-6 md:space-y-10 text-center w-full z-10">
             <Brain size={48} className="text-neutral-500/30 mx-auto mb-2" strokeWidth={1} />
             {narratives.map((text, i) => (
@@ -262,6 +282,13 @@ export const Retrospective: React.FC = () => {
                 "{text}"
               </motion.div>
             ))}
+            <button 
+              onClick={() => generateNarratives(true)}
+              className="mt-8 text-[10px] font-black text-amber-500/50 uppercase tracking-[0.2em] hover:text-amber-500 transition-colors flex items-center gap-2 mx-auto"
+            >
+              <RefreshCw size={10} />
+              Redefinir Narrativa
+            </button>
           </div>
         ) : (
           <div className="text-center space-y-6 flex flex-col items-center justify-center z-10">

@@ -13,24 +13,6 @@ export type BookGenre =
   | 'Autoajuda'
   | 'Outro';
 
-export type IllustrationStyle =
-  | 'aquarela'
-  | 'fantasia sombria'
-  | 'thriller cinematográfico'
-  | 'minimalista'
-  | 'clássico editorial'
-  | 'dreamlike'
-  | 'Dark Fantasy'
-  | 'Vintage Book Illustration'
-  | 'Minimalist Poster'
-  | 'Surreal Dreamlike'
-  | 'Anime Inspired'
-  | 'Oil Painting'
-  | 'Watercolor'
-  | 'Noir Thriller';
-
-export type ImageAspectRatio = '1:1' | '3:4' | '4:3' | '9:16' | '16:9';
-
 export interface BookRatings {
   historia: number;
   personagens: number;
@@ -139,8 +121,6 @@ export interface Book {
   favorito: boolean;
   notasDetalhadas: BookRatings;
   ilustracaoUrl?: string;
-  estiloIlustracao?: IllustrationStyle;
-  proporcaoIlustracao?: ImageAspectRatio;
   coverUrl?: string;
   coverSource?: 'automatic' | 'url' | 'local' | 'placeholder' | 'manual';
   pageCount?: number;

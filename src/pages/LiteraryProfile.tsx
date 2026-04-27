@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useBooks } from '../context/BookContext';
 import { ReadingHeatmap } from '../components/ReadingHeatmap';
 import { StreakCard } from '../components/StreakCard';
-import { aiService } from '../services/aiService';
+import { analysisService } from '../services/analysisService';
 import { 
   UserCircle, Sparkles, Loader2, RefreshCw, BookOpen, Star, Heart, TrendingUp, 
   Brain, Award, ShieldAlert, Activity, Smile, History, Ghost, Zap, Wind, 
@@ -29,7 +29,9 @@ export const LiteraryProfile: React.FC = () => {
     }
     setIsAnalyzing(true);
     try {
-      const profile = await aiService.generateLiteraryProfile(books);
+      // Small timeout to give feedback of "processing"
+      await new Promise(resolve => setTimeout(resolve, 800));
+      const profile = analysisService.analyzeLiteraryProfile(books);
       await saveLiteraryProfile(profile);
     } catch (error) {
       console.error("Error updating analysis:", error);
@@ -60,7 +62,7 @@ export const LiteraryProfile: React.FC = () => {
         </div>
         <h2 className="text-2xl font-serif font-bold text-neutral-200 mb-4">Seu Perfil Literário está sendo construído</h2>
         <p className="text-neutral-500 leading-relaxed mb-8">
-          Precisamos de um pouco mais de dados para entender seu gosto. Adicione pelo menos 3 livros com resenhas e notas detalhadas para gerar sua análise de IA.
+          Precisamos de um pouco mais de dados para entender seu gosto. Adicione pelo menos 3 livros com resenhas e notas detalhadas para gerar sua análise literária.
         </p>
         <button 
           disabled
@@ -145,12 +147,12 @@ export const LiteraryProfile: React.FC = () => {
           <div className="absolute inset-0 bg-gradient-to-b from-amber-500/5 to-transparent" />
           <Sparkles size={64} className="mx-auto text-amber-500/20 mb-6" />
           <h3 className="text-3xl font-serif font-bold text-neutral-100 mb-4">Pronto para encontrar seu Arquétipo?</h3>
-          <p className="text-neutral-400 mb-10 max-w-md mx-auto text-lg">Nossa IA analisará seus humores literários, padrões emocionais e nível de rigor para criar sua identidade única.</p>
+          <p className="text-neutral-400 mb-10 max-w-md mx-auto text-lg">Nosso motor de análise identificará seus humores literários, padrões emocionais e nível de rigor para criar sua identidade única.</p>
           <button 
             onClick={handleUpdateAnalysis}
             className="px-10 py-5 bg-amber-500 rounded-2xl text-neutral-950 font-black uppercase tracking-widest text-sm hover:scale-105 transition-all shadow-2xl shadow-amber-500/20"
           >
-            Iniciar Análise Social
+            Iniciar Análise Literária
           </button>
         </div>
       ) : (

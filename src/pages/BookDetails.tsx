@@ -3,8 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useBooks } from '../context/BookContext';
 import { Book, Edit, Trash2, Star, Heart, Image as ImageIcon, Loader2, ArrowLeft, Calendar, BookOpen, Quote as QuoteIcon, RefreshCw, Clock, Plus, History, BookmarkPlus, Edit3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GoogleGenAI } from '@google/genai';
-import { IllustrationStyle, ImageAspectRatio, Quote } from '../types';
+import { Quote } from '../types';
 import { CoverImage } from '../components/CoverImage';
 import { ReadingSessionModal } from '../components/ReadingSessionModal';
 import { AddToShelfModal } from '../components/AddToShelfModal';
@@ -18,9 +17,6 @@ export const BookDetails: React.FC = () => {
   const sessions = getSessionsByBook(id || '');
   const bookQuotes = getQuotesByBook(id || '');
 
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [selectedStyle, setSelectedStyle] = useState<IllustrationStyle>('thriller cinematográfico');
-  const [selectedAspectRatio, setSelectedAspectRatio] = useState<ImageAspectRatio>('3:4');
   const [isDeleting, setIsDeleting] = useState(false);
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [showShelfModal, setShowShelfModal] = useState(false);
@@ -58,105 +54,6 @@ export const BookDetails: React.FC = () => {
       alert("Erro ao excluir o livro.");
     }
   };
-
-  const handleGenerateIllustration = async () => {
-    setIsGenerating(true);
-    try {
-      const apiKey = process.env.GEMINI_API_KEY;
-      const ai = apiKey ? new GoogleGenAI({ apiKey }) : new GoogleGenAI({});
-      
-      const prompt = `Ilustração conceitual original inspirada em um livro do gênero ${book.genero}.
-      Atmosfera e emoção baseadas na resenha: "${book.resenha}".
-      Estilo visual: ${selectedStyle}.
-      Regras estritas: Não reproduzir capas existentes, não copiar personagens oficiais, sem texto, sem capa oficial. Composição elegante focada no clima, ritmo e tom da leitura.`;
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: {
-          parts: [{ text: prompt }],
-        },
-        config: {
-          imageConfig: {
-            aspectRatio: selectedAspectRatio,
-          }
-        }
-      });
-
-      let imageUrl = '';
-      for (const part of response.candidates?.[0]?.content?.parts || []) {
-        if (part.inlineData) {
-          imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-          break;
-        }
-      }
-
-      if (imageUrl) {
-        // Compress image before saving to avoid Firestore 1MB limit
-        const compressedImageUrl = await compressImage(imageUrl);
-        await updateBook(book.id, { ilustracaoUrl: compressedImageUrl, estiloIlustracao: selectedStyle, proporcaoIlustracao: selectedAspectRatio });
-      } else {
-        alert('Não foi possível gerar a imagem. Tente novamente.');
-      }
-    } catch (error) {
-      console.error('Erro ao gerar ilustração:', error);
-      alert('Ocorreu um erro ao gerar a ilustração.');
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const compressImage = (base64Str: string): Promise<string> => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.src = base64Str;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 800;
-        const MAX_HEIGHT = 800;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
-          }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, width, height);
-        
-        // Use JPEG with 0.7 quality to significantly reduce size
-        resolve(canvas.toDataURL('image/jpeg', 0.7));
-      };
-      img.onerror = () => resolve(base64Str); // Fallback to original if error
-    });
-  };
-
-  const styles: IllustrationStyle[] = [
-    'aquarela', 
-    'fantasia sombria', 
-    'thriller cinematográfico', 
-    'minimalista', 
-    'clássico editorial', 
-    'dreamlike',
-    'Dark Fantasy',
-    'Vintage Book Illustration',
-    'Minimalist Poster',
-    'Surreal Dreamlike',
-    'Anime Inspired',
-    'Oil Painting',
-    'Watercolor',
-    'Noir Thriller'
-  ];
-  const aspectRatios: ImageAspectRatio[] = ['1:1', '3:4', '4:3', '9:16', '16:9'];
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-5xl mx-auto space-y-8 pb-12">
@@ -254,7 +151,7 @@ export const BookDetails: React.FC = () => {
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        {/* Left Column: Image & AI */}
+        {/* Left Column: Image */}
         <div className="lg:col-span-5 space-y-6">
           <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl overflow-hidden shadow-2xl relative flex flex-col items-center justify-center group w-full p-6">
             {book.coverUrl ? (
@@ -278,59 +175,13 @@ export const BookDetails: React.FC = () => {
           </div>
 
           <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl overflow-hidden shadow-2xl relative flex flex-col items-center justify-center group w-full">
-            {book.ilustracaoUrl ? (
+            {book.ilustracaoUrl && (
               <>
                 <img src={book.ilustracaoUrl} alt={`Ilustração para ${book.titulo}`} className="w-full h-auto object-contain" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
-                  <p className="text-sm text-neutral-300 font-medium">Estilo: <span className="capitalize text-amber-500">{book.estiloIlustracao}</span></p>
                 </div>
               </>
-            ) : (
-              <div className="text-center p-8 aspect-[3/4] flex flex-col items-center justify-center w-full">
-                <ImageIcon size={64} className="mx-auto text-neutral-700 mb-4" />
-                <p className="text-neutral-500 font-medium">Nenhuma ilustração gerada ainda.</p>
-              </div>
             )}
-          </div>
-
-          <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-6 shadow-xl">
-            <h3 className="text-lg font-serif font-semibold text-amber-500 mb-4 flex items-center gap-2">
-              <ImageIcon size={18} />
-              Gerar Ilustração com IA
-            </h3>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-neutral-400 uppercase tracking-wider">Estilo Visual</label>
-                <select 
-                  value={selectedStyle} 
-                  onChange={(e) => setSelectedStyle(e.target.value as IllustrationStyle)}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-neutral-200 focus:outline-none focus:ring-2 focus:ring-amber-500/50 appearance-none capitalize"
-                >
-                  {styles.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-neutral-400 uppercase tracking-wider">Proporção</label>
-                <select 
-                  value={selectedAspectRatio} 
-                  onChange={(e) => setSelectedAspectRatio(e.target.value as ImageAspectRatio)}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-neutral-200 focus:outline-none focus:ring-2 focus:ring-amber-500/50 appearance-none"
-                >
-                  {aspectRatios.map(ar => <option key={ar} value={ar}>{ar}</option>)}
-                </select>
-              </div>
-              <button 
-                onClick={handleGenerateIllustration} 
-                disabled={isGenerating}
-                className="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-neutral-800 disabled:text-neutral-500 text-neutral-950 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 disabled:shadow-none"
-              >
-                {isGenerating ? (
-                  <><Loader2 size={18} className="animate-spin" /> Gerando Arte...</>
-                ) : (
-                  <><ImageIcon size={18} /> Gerar Nova Arte</>
-                )}
-              </button>
-            </div>
           </div>
         </div>
 

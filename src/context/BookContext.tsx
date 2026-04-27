@@ -11,6 +11,7 @@ import { BackupProvider, useBackup } from './BackupContext';
 import { ReadingSessionsProvider, useReadingSessions } from './ReadingSessionsContext';
 import { ShelvesProvider, useShelves } from './ShelvesContext';
 import { QuotesProvider, useQuotes } from './QuotesContext';
+import { RetrospectiveProvider, useRetrospective } from './RetrospectiveContext';
 
 interface BookContextType {
   books: Book[];
@@ -22,6 +23,8 @@ interface BookContextType {
   sessions: ReadingSession[];
   shelves: Shelf[];
   quotes: Quote[];
+  narratives: string[];
+  saveRetrospectiveNarratives: (year: number, narratives: string[]) => Promise<void>;
   addBook: (book: Omit<Book, 'id' | 'userId' | 'dataCadastro'>) => Promise<void>;
   updateBook: (id: string, book: Partial<Book>) => Promise<void>;
   deleteBook: (id: string) => Promise<void>;
@@ -53,6 +56,7 @@ const BookContextBridge: React.FC<{ children: React.ReactNode }> = ({ children }
   const { sessions, addSession, getSessionsByBook } = useReadingSessions();
   const { shelves, loading: shelvesLoading, createShelf, updateShelf, deleteShelf, addBookToShelf, removeBookFromShelf } = useShelves();
   const { quotes, addQuote, updateQuote, deleteQuote, getQuotesByBook } = useQuotes();
+  const { getNarratives, saveNarratives } = useRetrospective();
 
   const importData = useCallback(async (data: any, mode: 'merge' | 'replace') => {
     if (!user || !db) throw new Error("Usuário não autenticado");
@@ -161,6 +165,8 @@ const BookContextBridge: React.FC<{ children: React.ReactNode }> = ({ children }
     sessions,
     shelves,
     quotes,
+    narratives: getNarratives(new Date().getFullYear()),
+    saveRetrospectiveNarratives: saveNarratives,
     addBook,
     updateBook,
     deleteBook,
@@ -183,7 +189,7 @@ const BookContextBridge: React.FC<{ children: React.ReactNode }> = ({ children }
     deleteQuote,
     getQuotesByBook
   }), [
-    books, loading, literaryProfile, recommendations, userGoal, backupHistory, sessions, shelves, quotes,
+    books, loading, literaryProfile, recommendations, userGoal, backupHistory, sessions, shelves, quotes, getNarratives, saveNarratives,
     addBook, updateBook, deleteBook, deleteMultipleBooks, getBook,
     saveLiteraryProfile, saveRecommendations, saveUserGoal, importData, logBackupAction,
     addSession, getSessionsByBook,
@@ -200,7 +206,8 @@ export const BookProvider: React.FC<{ children: React.ReactNode }> = ({ children
       <ShelvesProvider>
         <ReadingSessionsProvider>
           <QuotesProvider>
-            <GoalsProvider>
+            <RetrospectiveProvider>
+              <GoalsProvider>
               <LiteraryProfileProvider>
                 <RecommendationsProvider>
                   <BackupProvider>
@@ -209,7 +216,8 @@ export const BookProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 </RecommendationsProvider>
               </LiteraryProfileProvider>
             </GoalsProvider>
-          </QuotesProvider>
+          </RetrospectiveProvider>
+        </QuotesProvider>
         </ReadingSessionsProvider>
       </ShelvesProvider>
     </BooksProvider>

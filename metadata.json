@@ -1,5 +1,5 @@
 {
   "name": "Readora",
-  "description": "Seu diário literário na nuvem. Controle de leitura, análises e comunidade.",
+  "description": "Seu diário literário definitivo. Acompanhamento de metas, análises locais profundas e comunidade sem dependências externas.",
   "requestFramePermissions": ["camera"]
 }
