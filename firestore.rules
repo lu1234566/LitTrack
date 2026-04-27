@@ -96,7 +96,10 @@ service cloud.firestore {
       return data.userId == request.auth.uid &&
              data.titulo is string && data.titulo.size() > 0 && data.titulo.size() <= 500 &&
              data.autor is string && data.autor.size() > 0 && data.autor.size() <= 500 &&
-             (data.pageCount == null || data.pageCount is number);
+             (data.pageCount == null || data.pageCount is number) &&
+             (data.currentPage == null || data.currentPage is number) &&
+             (data.totalPages == null || data.totalPages is number) &&
+             (data.progressPercentage == null || data.progressPercentage is number);
     }
 
     match /books/{bookId} {
@@ -112,10 +115,31 @@ service cloud.firestore {
                       'notaGeral', 'resenha', 'pontosFortes', 'pontosFracos', 'citacaoFavorita', 
                       'favorito', 'notasDetalhadas', 'ilustracaoUrl', 'estiloIlustracao', 
                       'proporcaoIlustracao', 'coverUrl', 'coverSource', 'pageCount', 'description', 
-                      'isbn', 'publisher', 'publishedDate', 'createdAt', 'updatedAt'
+                      'isbn', 'publisher', 'publishedDate', 'createdAt', 'updatedAt',
+                      'currentPage', 'totalPages', 'progressPercentage', 'startedAt', 'finishedAt'
                     ]);
       
       allow delete: if isOwner(existing().userId);
+    }
+
+    // ===============================================================
+    // READING SESSIONS
+    // ===============================================================
+
+    function isValidSession(data) {
+      return data.userId == request.auth.uid &&
+             data.bookId is string &&
+             data.pagesRead is number &&
+             data.endPage is number &&
+             data.date is number;
+    }
+
+    match /reading_sessions/{sessionId} {
+      allow get: if isDocOwner();
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidSession(incoming());
+      allow update: if isDocOwner() && isValidSession(incoming());
+      allow delete: if isDocOwner();
     }
 
     // ===============================================================
@@ -173,13 +197,20 @@ service cloud.firestore {
     match /communities/{id} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && incoming().ownerId == request.auth.uid;
-      allow update: if isSignedIn() && existing().ownerId == request.auth.uid;
+      allow update: if isSignedIn() && (
+        existing().ownerId == request.auth.uid ||
+        incoming().diff(existing()).affectedKeys().hasOnly(['memberCount'])
+      );
       allow delete: if isAdmin();
     }
 
     match /communityMembers/{id} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && (
+        (existing().userId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['sharedBookProgress', 'sharedBookFinished', 'lastProgressUpdate'])) ||
+        (get(/databases/$(database)/documents/communities/$(existing().communityId)).data.ownerId == request.auth.uid)
+      );
       allow delete: if isSignedIn() && (
         existing().userId == request.auth.uid || 
         get(/databases/$(database)/documents/communities/$(existing().communityId)).data.ownerId == request.auth.uid

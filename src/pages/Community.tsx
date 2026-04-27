@@ -12,9 +12,19 @@ import { Badges } from '../components/Badges';
 import { CreateCommunityModal } from '../components/CreateCommunityModal';
 import { JoinCommunityModal } from '../components/JoinCommunityModal';
 import { CommunitySidebar } from '../components/CommunitySidebar';
+import { useAuth } from '../context/AuthContext';
+import { useBooks } from '../context/BookContext';
+import { ClubSharedRead } from '../components/ClubSharedRead';
 
 export const Community: React.FC = () => {
-  const { feed, createPost, activeCommunity, setActiveCommunity, getCommunityMembers, regenerateInviteCode, leaveCommunity } = useCommunity();
+  const { feed, createPost, activeCommunity, setActiveCommunity, 
+    getCommunityMembers, 
+    regenerateInviteCode, 
+    leaveCommunity,
+    updateSharedBook,
+    updateMemberProgress,
+    removeMember
+  } = useCommunity();
   const [searchParams, setSearchParams] = useSearchParams();
   const [topReaders, setTopReaders] = useState<UserProfile[]>([]);
   const [highlights, setHighlights] = useState<any>({});
@@ -22,13 +32,39 @@ export const Community: React.FC = () => {
   const [isCreatingPost, setIsCreatingPost] = useState(false);
   const [newPostContent, setNewPostContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<'feed' | 'challenges' | 'badges' | 'members'>('feed');
+  const [activeTab, setActiveTab] = useState<'feed' | 'challenges' | 'badges' | 'members' | 'shared_read'>('feed');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [communityMembers, setCommunityMembers] = useState<CommunityMember[]>([]);
   const [isCopied, setIsCopied] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [initialInviteCode, setInitialInviteCode] = useState('');
+  const { user } = useAuth();
+  const { books } = useBooks();
+
+  // Sync progress if shared read is active
+  useEffect(() => {
+    if (activeCommunity?.sharedBook && user) {
+      const match = books.find(b => 
+        b.titulo.toLowerCase() === activeCommunity.sharedBook!.title.toLowerCase() &&
+        b.autor.toLowerCase() === activeCommunity.sharedBook!.author.toLowerCase()
+      );
+      
+      if (match) {
+        const myMembership = communityMembers.find(m => m.userId === user.userId);
+        if (myMembership && (
+           myMembership.sharedBookProgress !== (match.progressPercentage || 0) || 
+           myMembership.sharedBookFinished !== (match.status === 'lido')
+        )) {
+          updateMemberProgress(
+            activeCommunity.id, 
+            match.progressPercentage || 0, 
+            match.status === 'lido'
+          );
+        }
+      }
+    }
+  }, [activeCommunity, user, books, communityMembers, updateMemberProgress]);
 
   useEffect(() => {
     const code = searchParams.get('code');
@@ -132,43 +168,71 @@ export const Community: React.FC = () => {
         </div>
       ) : (
         <>
-          <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-4xl font-serif font-bold text-neutral-100 tracking-tight flex items-center gap-3">
-            {activeCommunity ? (
-              <>
-                <img src={activeCommunity.imageUrl} alt={activeCommunity.name} className="w-12 h-12 rounded-2xl object-cover border border-neutral-800" />
-                {activeCommunity.name}
-              </>
-            ) : (
-              <>
-                <Users size={36} className="text-amber-500" />
-                Comunidade
-              </>
-            )}
-          </h1>
-          <p className="text-neutral-400 mt-2 text-lg">
-            {activeCommunity ? activeCommunity.description : 'Conecte-se com outros leitores e acompanhe o progresso do clube.'}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {activeCommunity && (
-            <button 
-              onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-              className="p-3 bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-amber-500 rounded-xl transition-colors"
-            >
-              <Settings size={20} />
-            </button>
+          {activeCommunity ? (
+            <header className="relative mb-8 rounded-[2.5rem] overflow-hidden border border-neutral-800 shadow-2xl bg-neutral-900">
+               {/* Banner */}
+               <div className="h-48 md:h-64 relative">
+                 <img 
+                   src={activeCommunity.bannerUrl || `https://picsum.photos/seed/${activeCommunity.id}/1200/400?blur=2`} 
+                   className="w-full h-full object-cover opacity-50 transition-all hover:opacity-70"
+                   alt="Community Banner"
+                 />
+                 <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 via-transparent to-transparent" />
+               </div>
+               
+               {/* Info Overlay */}
+               <div className="p-8 -mt-20 relative flex flex-col md:flex-row md:items-end gap-6">
+                 <img 
+                   src={activeCommunity.imageUrl} 
+                   alt={activeCommunity.name} 
+                   className="w-32 h-32 rounded-3xl object-cover border-4 border-neutral-900 shadow-2xl z-10" 
+                 />
+                 <div className="flex-1 pb-2">
+                   <div className="flex items-center gap-3 mb-2">
+                     <h1 className="text-4xl font-serif font-bold text-neutral-100 tracking-tight">
+                       {activeCommunity.name}
+                     </h1>
+                     <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
+                       activeCommunity.visibility === 'private' ? 'bg-amber-500/10 text-amber-500' : 'bg-neutral-800 text-neutral-400'
+                     }`}>
+                       {activeCommunity.visibility === 'private' ? 'Clube Privado' : 'Comunidade Pública'}
+                     </span>
+                   </div>
+                   <p className="text-neutral-300 text-lg max-w-2xl">{activeCommunity.description}</p>
+                 </div>
+                 
+                 <div className="flex items-center gap-3 pb-2">
+                    {activeCommunity && (
+                      <button 
+                        onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                        className="p-3 bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-amber-500 rounded-xl transition-colors shadow-xl"
+                      >
+                        <Settings size={20} />
+                      </button>
+                    )}
+                    <button 
+                      onClick={() => setIsCreatingPost(true)}
+                      className="bg-amber-500 hover:bg-amber-600 text-neutral-950 px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 shadow-xl shadow-amber-500/20 whitespace-nowrap"
+                    >
+                      <Edit3 size={20} />
+                      Nova Publicação
+                    </button>
+                 </div>
+               </div>
+            </header>
+          ) : (
+            <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-4xl font-serif font-bold text-neutral-100 tracking-tight flex items-center gap-3">
+                  <Users size={36} className="text-amber-500" />
+                  Comunidade
+                </h1>
+                <p className="text-neutral-400 mt-2 text-lg">
+                  Conecte-se com outros leitores e acompanhe o progresso do clube.
+                </p>
+              </div>
+            </header>
           )}
-          <button 
-            onClick={() => setIsCreatingPost(true)}
-            className="bg-amber-500 hover:bg-amber-600 text-neutral-950 px-6 py-3 rounded-xl font-medium transition-colors flex items-center gap-2 shadow-lg shadow-amber-500/20 whitespace-nowrap"
-          >
-            <Edit3 size={20} />
-            Criar Publicação
-          </button>
-        </div>
-      </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Column: Sidebar & Navigation */}
@@ -177,6 +241,59 @@ export const Community: React.FC = () => {
             onCreateClick={() => setIsCreateModalOpen(true)} 
             onJoinClick={() => setIsJoinModalOpen(true)} 
           />
+
+          {activeCommunity && activeCommunity.sharedBook && (
+            <motion.section 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 shadow-xl relative overflow-hidden group"
+            >
+              <div className="absolute top-0 right-0 p-3">
+                <div className="bg-amber-500/10 text-amber-500 p-2 rounded-xl">
+                  <BookOpen size={16} />
+                </div>
+              </div>
+              
+              <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-4">Livro do Mês</h3>
+              
+              <div className="flex gap-4 mb-4">
+                <img 
+                  src={activeCommunity.sharedBook.coverUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(activeCommunity.sharedBook.title)}&background=222`} 
+                  alt={activeCommunity.sharedBook.title}
+                  className="w-16 h-24 object-cover rounded-lg shadow-2xl transition-transform group-hover:scale-105"
+                />
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-neutral-100 truncate group-hover:text-amber-500 transition-colors">{activeCommunity.sharedBook.title}</h4>
+                  <p className="text-xs text-neutral-400 italic truncate mb-3">{activeCommunity.sharedBook.author}</p>
+                  
+                  {user && communityMembers.find(m => m.userId === user.userId) && (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-[10px] font-bold">
+                        <span className="text-neutral-500 uppercase">Seu Progresso</span>
+                        <span className="text-amber-500">
+                          {communityMembers.find(m => m.userId === user.userId)?.sharedBookProgress || 0}%
+                        </span>
+                      </div>
+                      <div className="h-1 bg-neutral-800 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-amber-500" 
+                          style={{ width: `${communityMembers.find(m => m.userId === user.userId)?.sharedBookProgress || 0}%` }} 
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setActiveTab('shared_read')}
+                className="w-full py-2.5 bg-neutral-950 border border-neutral-800 hover:border-amber-500/30 text-xs font-bold text-neutral-300 rounded-xl transition-all flex items-center justify-center gap-2"
+              >
+                Detalhes da Leitura
+                <ChevronRight size={14} />
+              </button>
+            </motion.section>
+          )}
 
           {!activeCommunity && (
             <>
@@ -324,6 +441,17 @@ export const Community: React.FC = () => {
                 <span className="hidden sm:inline">Membros</span>
               </button>
             )}
+            {activeCommunity && (
+              <button
+                onClick={() => setActiveTab('shared_read')}
+                className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-medium text-sm transition-all ${
+                  activeTab === 'shared_read' ? 'bg-neutral-800 text-amber-500 shadow-sm' : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50'
+                }`}
+              >
+                <BookOpen size={18} />
+                <span className="hidden sm:inline">Leitura Coletiva</span>
+              </button>
+            )}
             <button
               onClick={() => setActiveTab('challenges')}
               className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-medium text-sm transition-all ${
@@ -344,25 +472,75 @@ export const Community: React.FC = () => {
             </button>
           </div>
 
+          {activeTab === 'shared_read' && activeCommunity && (
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+              <ClubSharedRead 
+                community={activeCommunity} 
+                members={communityMembers} 
+                isOwner={activeCommunity.ownerId === user?.userId}
+                onUpdateSharedBook={(sb) => updateSharedBook(activeCommunity.id, sb)}
+              />
+            </motion.div>
+          )}
+
           {activeTab === 'feed' && (
             <motion.section 
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-6 shadow-xl min-h-[400px]"
+              className="space-y-8"
             >
-              <h2 className="text-2xl font-serif font-semibold text-amber-500 flex items-center gap-2 mb-6">
-                <Activity size={24} />
-                Atividade {activeCommunity ? 'da Comunidade' : 'Recente'}
-              </h2>
-              
-              <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-neutral-800 before:to-transparent">
-                {feed.length > 0 ? feed.map((item) => (
-                  <FeedItem key={item.id} item={item} />
-                )) : (
-                  <div className="text-center py-12 text-neutral-500 relative z-10 bg-neutral-900/50 rounded-xl border border-dashed border-neutral-800">
-                    Nenhuma atividade recente nesta comunidade.
+              {activeCommunity && activeCommunity.sharedBook && (
+                <div className="bg-neutral-900 border border-neutral-800 rounded-[2rem] p-6 shadow-2xl flex flex-col md:flex-row gap-8 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-3xl -mr-16 -mt-16" />
+                  
+                  <div className="shrink-0">
+                    <img 
+                      src={activeCommunity.sharedBook.coverUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(activeCommunity.sharedBook.title)}&background=222`} 
+                      className="w-32 h-44 object-cover rounded-2xl shadow-xl border border-neutral-800 group-hover:scale-105 transition-transform"
+                      alt="Current Read"
+                    />
                   </div>
-                )}
+                  
+                  <div className="flex-1 space-y-4">
+                    <div>
+                      <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest bg-amber-500/10 px-3 py-1 rounded-full mb-3 inline-block">
+                        Leitura do Mês
+                      </span>
+                      <h3 className="text-2xl font-serif font-bold text-neutral-100">{activeCommunity.sharedBook.title}</h3>
+                      <p className="text-neutral-400 font-serif italic">{activeCommunity.sharedBook.author}</p>
+                    </div>
+                    
+                    {activeCommunity.sharedBook.discussionPrompt && (
+                      <div className="bg-neutral-950/50 p-4 rounded-xl border border-neutral-800/50 italic text-sm text-neutral-300">
+                        "{activeCommunity.sharedBook.discussionPrompt}"
+                      </div>
+                    )}
+                    
+                    <button 
+                      onClick={() => setActiveTab('shared_read')}
+                      className="text-amber-500 text-xs font-bold uppercase tracking-widest hover:underline flex items-center gap-1"
+                    >
+                      Acompanhar Progresso do Grupo <ChevronRight size={14} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-6 shadow-xl min-h-[400px]">
+                <h2 className="text-2xl font-serif font-semibold text-amber-500 flex items-center gap-2 mb-6">
+                  <Activity size={24} />
+                  Atividade {activeCommunity ? 'da Comunidade' : 'Recente'}
+                </h2>
+                
+                <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-neutral-800 before:to-transparent">
+                  {feed.length > 0 ? feed.map((item) => (
+                    <FeedItem key={item.id} item={item} />
+                  )) : (
+                    <div className="text-center py-12 text-neutral-500 relative z-10 bg-neutral-900/50 rounded-xl border border-dashed border-neutral-800">
+                      Nenhuma atividade recente nesta comunidade.
+                    </div>
+                  )}
+                </div>
               </div>
             </motion.section>
           )}
@@ -387,6 +565,21 @@ export const Community: React.FC = () => {
                         {member.role === 'owner' ? 'Proprietário' : member.role === 'admin' ? 'Admin' : 'Membro'}
                       </span>
                     </div>
+                    {activeCommunity.ownerId === user?.userId && member.userId !== user?.userId && (
+                      <button 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (confirm(`Remover ${member.userDisplayName} da comunidade?`)) {
+                            removeMember(activeCommunity.id, member.userId);
+                            setCommunityMembers(prev => prev.filter(m => m.userId !== member.userId));
+                          }
+                        }}
+                        className="p-2 text-neutral-600 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <X size={18} />
+                      </button>
+                    )}
                     <ChevronRight size={20} className="text-neutral-600 group-hover:text-amber-500 transition-colors" />
                   </div>
                 </Link>

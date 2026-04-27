@@ -163,10 +163,20 @@ export const BookForm: React.FC = () => {
     notasDetalhadas: initialRatings,
     coverUrl: '',
     pageCount: 0,
+    currentPage: 0,
+    totalPages: 0,
+    progressPercentage: 0,
+    startedAt: undefined,
+    finishedAt: undefined,
     description: '',
     isbn: '',
     publisher: '',
     publishedDate: '',
+    priority: 'medium',
+    reasonToRead: '',
+    discoveredFrom: '',
+    queueOrder: 0,
+    addedAt: Date.now(),
   });
 
   useEffect(() => {
@@ -177,12 +187,49 @@ export const BookForm: React.FC = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' 
-        ? (e.target as HTMLInputElement).checked 
-        : (name === 'pageCount' ? safeParseNumber(value) : value),
-    }));
+    setFormData((prev) => {
+      const newData: any = {
+        ...prev,
+        [name]: type === 'checkbox' 
+          ? (e.target as HTMLInputElement).checked 
+          : (['pageCount', 'currentPage', 'totalPages'].includes(name) ? safeParseNumber(value) : value),
+      };
+
+      // Auto-set startedAt when status changes to 'lendo'
+      if (name === 'status' && value === 'lendo' && !prev.startedAt) {
+        newData.startedAt = Date.now();
+      }
+
+      // Auto-set finishedAt when status changes to 'lido'
+      if (name === 'status' && value === 'lido' && !prev.finishedAt) {
+        newData.finishedAt = Date.now();
+      }
+
+      // If pageCount is updated and totalPages is 0, sync them
+      if (name === 'pageCount' && (!prev.totalPages || prev.totalPages === 0)) {
+        newData.totalPages = safeParseNumber(value);
+      }
+
+      // Recalculate progress
+      if (['currentPage', 'totalPages', 'pageCount'].includes(name) || name === 'status') {
+        const current = newData.currentPage || 0;
+        const total = newData.totalPages || newData.pageCount || 0;
+        
+        if (total > 0) {
+          newData.progressPercentage = Math.min(100, Math.max(0, Math.round((current / total) * 100)));
+        } else {
+          newData.progressPercentage = 0;
+        }
+
+        // Auto-complete if 100%
+        if (newData.progressPercentage === 100 && newData.status === 'lendo') {
+          newData.status = 'lido';
+          if (!newData.finishedAt) newData.finishedAt = Date.now();
+        }
+      }
+
+      return newData;
+    });
   };
 
   const handleRatingChange = (category: keyof BookRatings, value: number) => {
@@ -370,6 +417,11 @@ export const BookForm: React.FC = () => {
     // Ensure pageCount is a number
     if ('pageCount' in sanitized) {
       sanitized.pageCount = safeParseNumber(sanitized.pageCount);
+    }
+    
+    // Ensure priority is set for 'quero ler'
+    if (sanitized.status === 'quero ler' && !sanitized.addedAt) {
+      sanitized.addedAt = Date.now();
     }
 
     // Remove fields that shouldn't be updated directly
@@ -719,8 +771,130 @@ export const BookForm: React.FC = () => {
             </div>
           </div>
         </SectionWrapper>
+        
+        {/* Configuração da Fila (Apenas se for Quero Ler) */}
+        {formData.status === 'quero ler' && (
+          <SectionWrapper id="wishlist" title="Configuração da Fila" icon={RefreshCw} isMobileLayout={isMobileLayout} openSection={openSection} toggleSection={toggleSection} colorClass="text-blue-500">
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-neutral-400">Prioridade</label>
+                  <div className="flex bg-neutral-950 p-1 rounded-xl border border-neutral-800">
+                    {(['low', 'medium', 'high'] as const).map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, priority: p }))}
+                        className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                          formData.priority === p 
+                            ? (p === 'high' ? 'bg-rose-500 text-white' : p === 'medium' ? 'bg-amber-500 text-neutral-950' : 'bg-blue-500 text-white')
+                            : 'text-neutral-500 hover:text-neutral-300'
+                        }`}
+                      >
+                        {p === 'high' ? 'Alta' : p === 'medium' ? 'Média' : 'Baixa'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-neutral-400">Origem da Recomendação</label>
+                  <input 
+                    type="text" 
+                    name="discoveredFrom" 
+                    value={formData.discoveredFrom || ''} 
+                    onChange={handleChange} 
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all" 
+                    placeholder="Ex: Amigo, YouTube, TikTok..." 
+                  />
+                </div>
+              </div>
 
-        {/* Avaliação Detalhada */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-neutral-400">Por que quero ler?</label>
+                <textarea 
+                  name="reasonToRead" 
+                  value={formData.reasonToRead || ''} 
+                  onChange={handleChange} 
+                  rows={3} 
+                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all resize-none" 
+                  placeholder="Explique o que despertou seu interesse..."
+                ></textarea>
+              </div>
+            </div>
+          </SectionWrapper>
+        )}
+
+        {/* Progresso da Leitura (Apenas se estiver Lendo) */}
+        {formData.status === 'lendo' && (
+          <SectionWrapper id="progress" title="Progresso da Leitura" icon={RefreshCw} isMobileLayout={isMobileLayout} openSection={openSection} toggleSection={toggleSection} colorClass="text-emerald-500">
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-neutral-400">Página Atual</label>
+                  <input 
+                    type="number" 
+                    name="currentPage" 
+                    value={formData.currentPage || ''} 
+                    onChange={handleChange} 
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-neutral-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-mono" 
+                    placeholder="Ex: 142" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-neutral-400">Total de Páginas</label>
+                  <input 
+                    type="number" 
+                    name="totalPages" 
+                    value={formData.totalPages || formData.pageCount || ''} 
+                    onChange={handleChange} 
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-neutral-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-mono" 
+                    placeholder="Ex: 392" 
+                  />
+                </div>
+              </div>
+
+              <div className="bg-neutral-950/50 border border-neutral-800/50 rounded-2xl p-6 space-y-4">
+                <div className="flex justify-between items-end">
+                  <div className="space-y-1">
+                    <span className="text-xs uppercase tracking-wider text-neutral-500 font-bold">Status do Progresso</span>
+                    <div className="text-2xl font-serif font-black text-neutral-100 italic">
+                      {formData.progressPercentage}% concluído
+                    </div>
+                  </div>
+                  <div className="text-right space-y-1">
+                     <span className="text-xs uppercase tracking-wider text-neutral-500 font-bold">Faltam</span>
+                     <div className="text-xl font-mono text-emerald-500 font-bold">
+                       {(formData.totalPages || formData.pageCount || 0) - (formData.currentPage || 0) > 0 
+                         ? (formData.totalPages || formData.pageCount || 0) - (formData.currentPage || 0) 
+                         : 0} páginas
+                     </div>
+                  </div>
+                </div>
+
+                <div className="relative h-6 bg-neutral-900 rounded-full overflow-hidden border border-neutral-800 shadow-inner">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${formData.progressPercentage}%` }}
+                    className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-600 to-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.3)] flex items-center justify-end px-2"
+                  >
+                    {formData.progressPercentage! > 10 && (
+                      <div className="w-1 h-3 bg-white/30 rounded-full" />
+                    )}
+                  </motion.div>
+                </div>
+                
+                <div className="flex justify-between text-[10px] text-neutral-600 font-bold uppercase tracking-tighter">
+                  <span>Início</span>
+                  <span>Página {formData.currentPage || 0} de {formData.totalPages || formData.pageCount || 0}</span>
+                  <span>Fim</span>
+                </div>
+              </div>
+            </div>
+          </SectionWrapper>
+        )}
+
+         {/* Avaliação Detalhada */}
         <SectionWrapper id="quality" title="Controle de Qualidade" icon={Star} isMobileLayout={isMobileLayout} openSection={openSection} toggleSection={toggleSection}>
           <div className="flex items-center justify-between mb-6">
             <div className="bg-amber-500/10 text-amber-500 px-4 py-2 rounded-xl font-bold text-lg flex items-center gap-2">

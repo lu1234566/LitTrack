@@ -1,23 +1,31 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useBooks } from '../context/BookContext';
-import { Book, Edit, Trash2, Star, Heart, Image as ImageIcon, Loader2, ArrowLeft, Calendar, BookOpen, Quote } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Book, Edit, Trash2, Star, Heart, Image as ImageIcon, Loader2, ArrowLeft, Calendar, BookOpen, Quote as QuoteIcon, RefreshCw, Clock, Plus, History, BookmarkPlus, Edit3 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { GoogleGenAI } from '@google/genai';
-import { IllustrationStyle, ImageAspectRatio } from '../types';
+import { IllustrationStyle, ImageAspectRatio, Quote } from '../types';
 import { CoverImage } from '../components/CoverImage';
+import { ReadingSessionModal } from '../components/ReadingSessionModal';
+import { AddToShelfModal } from '../components/AddToShelfModal';
+import { QuoteModal } from '../components/QuoteModal';
 
 export const BookDetails: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getBook, deleteBook, updateBook, loading } = useBooks();
+  const { getBook, deleteBook, updateBook, loading, getSessionsByBook, shelves, books, getQuotesByBook, addQuote, updateQuote, deleteQuote } = useBooks();
   const book = getBook(id || '');
+  const sessions = getSessionsByBook(id || '');
+  const bookQuotes = getQuotesByBook(id || '');
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState<IllustrationStyle>('thriller cinematográfico');
   const [selectedAspectRatio, setSelectedAspectRatio] = useState<ImageAspectRatio>('3:4');
-
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showSessionModal, setShowSessionModal] = useState(false);
+  const [showShelfModal, setShowShelfModal] = useState(false);
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
 
   if (loading) {
     return (
@@ -187,7 +195,23 @@ export const BookDetails: React.FC = () => {
           <span>Voltar</span>
         </button>
         <div className="flex items-center gap-3">
-          <Link to={`/editar/${book.id}`} className="p-2.5 bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-amber-500 hover:border-amber-500/50 rounded-xl transition-all">
+          {book.status === 'lendo' && (
+            <button 
+              onClick={() => setShowSessionModal(true)}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20"
+            >
+              <Clock size={18} />
+              Registrar Sessão
+            </button>
+          )}
+              <button 
+                onClick={() => setShowShelfModal(true)}
+                className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl font-bold transition-all flex items-center gap-2"
+              >
+                <BookmarkPlus size={18} />
+                Estantes
+              </button>
+              <Link to={`/editar/${book.id}`} className="p-2.5 bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-amber-500 hover:border-amber-500/50 rounded-xl transition-all">
             <Edit size={18} />
           </Link>
           <button onClick={() => setIsDeleting(true)} className="p-2.5 bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-rose-500 hover:border-rose-500/50 rounded-xl transition-all">
@@ -195,6 +219,37 @@ export const BookDetails: React.FC = () => {
           </button>
         </div>
       </div>
+
+      <ReadingSessionModal isOpen={showSessionModal} onClose={() => setShowSessionModal(false)} initialBookId={book.id} />
+      <AddToShelfModal 
+        isOpen={showShelfModal} 
+        onClose={() => setShowShelfModal(false)} 
+        book={book} 
+        shelves={shelves} 
+      />
+      
+      <AnimatePresence>
+        {(showQuoteModal || editingQuote) && (
+          <QuoteModal 
+            quote={editingQuote}
+            books={books}
+            initialBookId={book.id}
+            onClose={() => {
+              setShowQuoteModal(false);
+              setEditingQuote(null);
+            }}
+            onSave={async (data) => {
+              if (editingQuote) {
+                await updateQuote(editingQuote.id, data);
+              } else {
+                await addQuote(data as any);
+              }
+              setShowQuoteModal(false);
+              setEditingQuote(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -292,29 +347,173 @@ export const BookDetails: React.FC = () => {
 
           <div className="flex flex-wrap gap-6 py-6 border-y border-neutral-800/50">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-amber-500/10 rounded-2xl text-amber-500"><Star size={24} fill="currentColor" /></div>
+              <div className="p-3 bg-neutral-800 rounded-2xl text-neutral-400">
+                {book.status === 'lido' ? <Star size={24} fill="currentColor" className="text-amber-500" /> : <Clock size={24} className={book.status === 'lendo' ? 'text-emerald-500' : 'text-neutral-500'} />}
+              </div>
               <div>
-                <p className="text-xs text-neutral-500 uppercase tracking-wider font-medium">Nota Geral</p>
-                <p className="text-2xl font-bold text-neutral-100">{book.notaGeral.toFixed(1)}</p>
+                <p className="text-xs text-neutral-500 uppercase tracking-wider font-medium">Status</p>
+                <p className="text-xl font-bold text-neutral-100 capitalize">{book.status}</p>
               </div>
             </div>
+            {book.status === 'lido' && (
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-amber-500/10 rounded-2xl text-amber-500"><Star size={24} fill="currentColor" /></div>
+                <div>
+                  <p className="text-xs text-neutral-500 uppercase tracking-wider font-medium">Nota Geral</p>
+                  <p className="text-2xl font-bold text-neutral-100">{book.notaGeral.toFixed(1)}</p>
+                </div>
+              </div>
+            )}
             <div className="flex items-center gap-3">
               <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-500"><Calendar size={24} /></div>
               <div>
-                <p className="text-xs text-neutral-500 uppercase tracking-wider font-medium">Lido em</p>
+                <p className="text-xs text-neutral-500 uppercase tracking-wider font-medium">{book.status === 'lido' ? 'Lido em' : (book.status === 'lendo' ? 'Começado em' : 'Adicionado em')}</p>
                 <p className="text-xl font-bold text-neutral-100">{book.mesLeitura} {book.anoLeitura}</p>
               </div>
             </div>
-            {book.pageCount && (
+            {(book.pageCount || book.totalPages) && (
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-emerald-500/10 rounded-2xl text-emerald-500"><BookOpen size={24} /></div>
                 <div>
                   <p className="text-xs text-neutral-500 uppercase tracking-wider font-medium">Páginas</p>
-                  <p className="text-xl font-bold text-neutral-100">{book.pageCount}</p>
+                  <p className="text-xl font-bold text-neutral-100">{book.totalPages || book.pageCount}</p>
                 </div>
               </div>
             )}
           </div>
+
+          {book.status === 'quero ler' && (
+            <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8 shadow-xl">
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-2xl font-serif font-semibold text-blue-500 flex items-center gap-3">
+                  <BookmarkPlus size={24} />
+                  Fila de Leitura
+                </h3>
+                <div className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest ${
+                  book.priority === 'high' ? 'bg-rose-500/10 text-rose-500' : 
+                  book.priority === 'medium' ? 'bg-amber-500/10 text-amber-500' : 
+                  'bg-blue-500/10 text-blue-500'
+                }`}>
+                  Prioridade {book.priority === 'high' ? 'Alta' : book.priority === 'medium' ? 'Média' : 'Baixa'}
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                {book.reasonToRead && (
+                  <div className="bg-neutral-950/50 p-6 rounded-2xl border border-neutral-800/50">
+                    <p className="text-xs text-neutral-500 uppercase font-black mb-3 tracking-widest">Por que quero ler?</p>
+                    <p className="text-neutral-200 italic leading-relaxed">"{book.reasonToRead}"</p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {book.discoveredFrom && (
+                    <div className="p-4 bg-neutral-950/50 rounded-2xl border border-neutral-800/50">
+                      <p className="text-xs text-neutral-500 uppercase font-bold mb-1">Origem da Recomendação</p>
+                      <p className="text-sm font-bold text-white">{book.discoveredFrom}</p>
+                    </div>
+                  )}
+                  {book.addedAt && (
+                    <div className="p-4 bg-neutral-950/50 rounded-2xl border border-neutral-800/50">
+                      <p className="text-xs text-neutral-500 uppercase font-bold mb-1">Adicionado em</p>
+                      <p className="text-sm font-bold text-white">{new Date(book.addedAt).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {book.status === 'lendo' && (
+            <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8 shadow-xl">
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-2xl font-serif font-semibold text-emerald-500 flex items-center gap-3">
+                  <RefreshCw size={24} className="animate-spin-slow" />
+                  Progresso da Leitura
+                </h3>
+                <div className="text-right">
+                   <p className="text-3xl font-black text-white italic">{book.progressPercentage || 0}%</p>
+                   <p className="text-xs text-neutral-500 font-bold uppercase tracking-wider">Concluído</p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="relative h-4 bg-neutral-950 rounded-full overflow-hidden border border-neutral-800">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${book.progressPercentage || 0}%` }}
+                    className="h-full bg-emerald-500 rounded-full shadow-[0_0_20px_rgba(16,185,129,0.4)]"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="p-4 bg-neutral-950/50 rounded-2xl border border-neutral-800/50">
+                    <p className="text-xs text-neutral-500 uppercase font-bold mb-1">Página Atual</p>
+                    <p className="text-xl font-mono font-bold text-white">{book.currentPage || 0}</p>
+                  </div>
+                  <div className="p-4 bg-neutral-950/50 rounded-2xl border border-neutral-800/50">
+                    <p className="text-xs text-neutral-500 uppercase font-bold mb-1">Total</p>
+                    <p className="text-xl font-mono font-bold text-white">{book.totalPages || book.pageCount || '?'}</p>
+                  </div>
+                  <div className="p-4 bg-neutral-950/50 rounded-2xl border border-neutral-800/50">
+                    <p className="text-xs text-neutral-500 uppercase font-bold mb-1">Faltam</p>
+                    <p className="text-xl font-mono font-bold text-emerald-500">
+                      {(book.totalPages || book.pageCount || 0) - (book.currentPage || 0) > 0 
+                        ? (book.totalPages || book.pageCount || 0) - (book.currentPage || 0) 
+                        : 0}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-neutral-950/50 rounded-2xl border border-neutral-800/50">
+                    <p className="text-xs text-neutral-500 uppercase font-bold mb-1">Início</p>
+                    <p className="text-xs font-bold text-neutral-300">
+                      {book.startedAt ? new Date(book.startedAt).toLocaleDateString('pt-BR') : 'Não registrado'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {sessions.length > 0 && (
+            <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8 shadow-xl">
+              <h3 className="text-xl font-serif font-semibold text-neutral-100 flex items-center gap-3 mb-6">
+                <History className="text-emerald-500" size={24} />
+                Histórico de Leitura
+              </h3>
+              <div className="space-y-4">
+                {sessions.map((session) => (
+                  <div key={session.id} className="p-4 bg-neutral-950/50 border border-neutral-800/50 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
+                    <div className="flex items-center gap-4">
+                      <div className="p-2.5 bg-emerald-500/10 text-emerald-500 rounded-xl">
+                        <Clock size={16} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-neutral-200">
+                          {new Date(session.date).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })}
+                        </p>
+                        <p className="text-xs text-neutral-500">
+                          Página {session.startPage} → {session.endPage} ({session.pagesRead} págs)
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      {session.durationMinutes && (
+                        <div className="flex items-center gap-1.5 text-neutral-500">
+                          <Clock size={14} />
+                          <span className="text-xs font-mono">{session.durationMinutes} min</span>
+                        </div>
+                      )}
+                      {session.note && (
+                        <div className="text-xs text-neutral-400 bg-neutral-900 px-3 py-1.5 rounded-lg border border-neutral-800 max-w-[200px] truncate">
+                          {session.note}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {book.description && (
             <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-6 shadow-xl">
@@ -327,27 +526,80 @@ export const BookDetails: React.FC = () => {
 
           {book.resenha && (
             <div className="relative">
-              <Quote className="absolute -top-4 -left-4 text-neutral-800/50 rotate-180" size={48} />
+              <QuoteIcon className="absolute -top-4 -left-4 text-neutral-800/50 rotate-180" size={48} />
               <p className="text-lg text-neutral-300 leading-relaxed relative z-10 pl-4 border-l-2 border-amber-500/30">
                 {book.resenha}
               </p>
             </div>
           )}
 
-          {book.citacaoFavorita && (
-            <div className="bg-amber-500/5 border border-amber-500/20 rounded-3xl p-8 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-                <Quote size={64} className="text-amber-500" />
-              </div>
-              <h4 className="text-amber-500 font-bold mb-4 uppercase tracking-wider text-xs flex items-center gap-2">
-                <Quote size={14} />
-                Citação Favorita
-              </h4>
-              <p className="text-xl font-serif italic text-neutral-200 leading-relaxed relative z-10">
-                "{book.citacaoFavorita}"
-              </p>
+          {/* New Quotes Section */}
+          <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8 shadow-xl">
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-2xl font-serif font-semibold text-amber-500 flex items-center gap-3">
+                <QuoteIcon size={24} />
+                Diário de Citações
+              </h3>
+              <button 
+                onClick={() => setShowQuoteModal(true)}
+                className="p-2.5 bg-amber-500 hover:bg-amber-600 text-neutral-950 rounded-xl transition-all shadow-lg shadow-amber-500/20"
+              >
+                <Plus size={20} />
+              </button>
             </div>
-          )}
+
+            {bookQuotes.length > 0 ? (
+              <div className="space-y-6">
+                {bookQuotes.sort((a, b) => (b.isFavorite ? 1 : 0) - (a.isFavorite ? 1 : 0)).map((q) => (
+                  <div key={q.id} className="relative p-6 bg-neutral-950/50 border border-neutral-800/50 rounded-2xl group transition-all hover:border-neutral-700">
+                    {q.isFavorite && (
+                      <div className="absolute top-4 right-4 text-amber-500">
+                        <Heart size={16} fill="currentColor" />
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 text-[10px] font-black text-neutral-600 uppercase tracking-widest mb-3">
+                      {q.page && <span>Pág. {q.page}</span>}
+                      {q.moodLabel && (
+                        <>
+                          <span className="opacity-30">•</span>
+                          <span className="text-amber-500/70">{q.moodLabel}</span>
+                        </>
+                      )}
+                    </div>
+                    <p className="text-lg font-serif italic text-neutral-200 leading-relaxed mb-4">
+                      "{q.text}"
+                    </p>
+                    {q.personalNote && (
+                      <div className="mt-4 p-4 bg-neutral-900/50 border-l-2 border-neutral-800 rounded-r-xl">
+                        <p className="text-sm text-neutral-400 italic">
+                          {q.personalNote}
+                        </p>
+                      </div>
+                    )}
+                    <div className="mt-4 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                       <button onClick={() => setEditingQuote(q)} className="p-2 text-neutral-500 hover:text-amber-500 transition-colors">
+                          <Edit3 size={16} />
+                       </button>
+                       <button onClick={() => deleteQuote(q.id)} className="p-2 text-neutral-500 hover:text-rose-500 transition-colors">
+                          <Trash2 size={16} />
+                       </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-10 border-2 border-dashed border-neutral-800 rounded-3xl">
+                <QuoteIcon size={40} className="mx-auto text-neutral-800 mb-4" />
+                <p className="text-neutral-500 text-sm">Nenhuma citação registrada para este livro.</p>
+                <button 
+                  onClick={() => setShowQuoteModal(true)}
+                  className="mt-4 text-amber-500 text-xs font-bold uppercase tracking-widest hover:underline"
+                >
+                  Adicionar primeira citação
+                </button>
+              </div>
+            )}
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {book.pontosFortes && (

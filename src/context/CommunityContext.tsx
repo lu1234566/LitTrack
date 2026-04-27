@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { collection, query, orderBy, limit, getDocs, getDoc, addDoc, updateDoc, doc, deleteDoc, where, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth, handleFirestoreError, OperationType } from './AuthContext';
-import { CommunityFeedItem, Comment, Like, Challenge, UserChallenge, Badge, UserBadge, Follow, UserProfile, Community, CommunityMember, CommunityVisibility, CommunityRole } from '../types';
+import { CommunityFeedItem, Comment, Like, Challenge, UserChallenge, Badge, UserBadge, Follow, UserProfile, Community, CommunityMember, CommunityVisibility, CommunityRole, SharedBook } from '../types';
 
 interface CommunityContextType {
   feed: CommunityFeedItem[];
@@ -36,6 +36,8 @@ interface CommunityContextType {
   getCommunityMembers: (communityId: string) => Promise<CommunityMember[]>;
   regenerateInviteCode: (communityId: string) => Promise<string>;
   removeMember: (communityId: string, userId: string) => Promise<void>;
+  updateSharedBook: (communityId: string, sharedBook: SharedBook | null) => Promise<void>;
+  updateMemberProgress: (communityId: string, progress: number, isFinished: boolean) => Promise<void>;
 }
 
 const CommunityContext = createContext<CommunityContextType | undefined>(undefined);
@@ -120,7 +122,8 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       await addDoc(collection(db, 'likes'), {
         feedItemId,
         userId: user.userId,
-        reactionType
+        reactionType,
+        createdAt: Date.now()
       });
       
       // Increment count
@@ -514,6 +517,63 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [user, db]);
 
+  const updateSharedBook = React.useCallback(async (communityId: string, sharedBook: SharedBook | null) => {
+    if (!user || !db) return;
+    
+    const commRef = doc(db, 'communities', communityId);
+    const commSnap = await getDoc(commRef);
+    
+    if (commSnap.exists()) {
+      const commData = commSnap.data() as Community;
+      const currentBook = commData.sharedBook;
+      const pastBooks = commData.pastSharedBooks || [];
+
+      let newPastBooks = [...pastBooks];
+      
+      // If we are setting a new book or clearing, and there was a current book, move it to past
+      if (currentBook && (sharedBook === null || sharedBook.title !== currentBook.title)) {
+        // Set end date for the old book if not set
+        const finishedBook = { ...currentBook, endDate: currentBook.endDate || Date.now() };
+        newPastBooks = [finishedBook, ...newPastBooks].slice(0, 20); // Keep last 20
+      }
+
+      await updateDoc(commRef, {
+        sharedBook,
+        pastSharedBooks: newPastBooks
+      });
+
+      if (sharedBook) {
+        await addDoc(collection(db, 'communityFeed'), {
+          userId: user.userId,
+          userDisplayName: user.name,
+          userPhotoURL: user.profilePhoto,
+          type: 'shared_book_updated',
+          content: `Nova Leitura Coletiva iniciada: ${sharedBook.title}`,
+          communityId,
+          metadata: sharedBook,
+          createdAt: Date.now(),
+          likesCount: 0,
+          commentsCount: 0
+        });
+      }
+    }
+  }, [user, db]);
+
+  const updateMemberProgress = React.useCallback(async (communityId: string, progress: number, isFinished: boolean) => {
+    if (!user || !db) return;
+    
+    const q = query(collection(db, 'communityMembers'), where('communityId', '==', communityId), where('userId', '==', user.userId));
+    const snap = await getDocs(q);
+    
+    if (!snap.empty) {
+      await updateDoc(doc(db, 'communityMembers', snap.docs[0].id), {
+        sharedBookProgress: progress,
+        sharedBookFinished: isFinished,
+        lastProgressUpdate: Date.now()
+      });
+    }
+  }, [user, db]);
+
 
   const checkAndAwardBadgesRef = React.useRef(checkAndAwardBadges);
   const updateChallengeProgressRef = React.useRef(updateChallengeProgress);
@@ -635,7 +695,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     joinChallenge, followUser, unfollowUser, getUserBadges, getFollowersCount, getFollowingCount,
     checkAndAwardBadges, updateChallengeProgress,
     createCommunity, joinCommunityByCode, leaveCommunity, getCommunityByCode, getCommunityMembers,
-    regenerateInviteCode, removeMember
+    regenerateInviteCode, removeMember, updateSharedBook, updateMemberProgress
   }), [
     feed, challenges, userChallenges, badges, userBadges, following, followers,
     userCommunities, activeCommunity, setActiveCommunity,
@@ -643,7 +703,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     joinChallenge, followUser, unfollowUser, getUserBadges, getFollowersCount, getFollowingCount,
     checkAndAwardBadges, updateChallengeProgress,
     createCommunity, joinCommunityByCode, leaveCommunity, getCommunityByCode, getCommunityMembers,
-    regenerateInviteCode, removeMember
+    regenerateInviteCode, removeMember, updateSharedBook, updateMemberProgress
   ]);
 
   return (

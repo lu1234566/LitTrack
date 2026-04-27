@@ -40,6 +40,12 @@
         "notaGeral": { "type": "number" },
         "resenha": { "type": "string" },
         "favorito": { "type": "boolean" },
+        "pageCount": { "type": "integer" },
+        "currentPage": { "type": "integer" },
+        "totalPages": { "type": "integer" },
+        "progressPercentage": { "type": "number" },
+        "startedAt": { "type": "integer" },
+        "finishedAt": { "type": "integer" },
         "createdAt": { "type": "object" },
         "dataCadastro": { "type": "integer" }
       },
@@ -62,7 +68,7 @@
     },
     "Community": {
       "title": "Community",
-      "description": "A reading community",
+      "description": "A reading community or private club",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -71,10 +77,42 @@
         "ownerId": { "type": "string" },
         "visibility": { "type": "string" },
         "inviteCode": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "bannerUrl": { "type": "string" },
         "createdAt": { "type": "integer" },
-        "memberCount": { "type": "integer" }
+        "memberCount": { "type": "integer" },
+        "sharedBook": {
+          "type": "object",
+          "properties": {
+            "title": { "type": "string" },
+            "author": { "type": "string" },
+            "coverUrl": { "type": "string" },
+            "startDate": { "type": "integer" },
+            "endDate": { "type": "integer" },
+            "discussionPrompt": { "type": "string" }
+          }
+        }
       },
       "required": ["name", "ownerId", "visibility", "inviteCode"]
+    },
+    "Quote": {
+      "title": "Quote",
+      "description": "A book quote with personal notes",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "bookId": { "type": "string" },
+        "bookTitle": { "type": "string" },
+        "bookAuthor": { "type": "string" },
+        "text": { "type": "string" },
+        "page": { "type": "integer" },
+        "personalNote": { "type": "string" },
+        "moodLabel": { "type": "string" },
+        "isFavorite": { "type": "boolean" },
+        "createdAt": { "type": "integer" }
+      },
+      "required": ["userId", "bookId", "text", "createdAt"]
     },
     "CommunityFeedItem": {
       "title": "Community Feed Item",
@@ -108,6 +146,10 @@
     "/userGoals/{goalId}": {
       "schema": "UserGoal",
       "description": "Annual reading goals"
+    },
+    "/quotes/{quoteId}": {
+      "schema": "Quote",
+      "description": "User book quotes and notes"
     },
     "/backupHistory/{backupId}": {
       "schema": "BackupHistory",

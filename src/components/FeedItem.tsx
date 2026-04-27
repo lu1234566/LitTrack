@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { CommunityFeedItem, Comment, Like } from '../types';
 import { useCommunity } from '../context/CommunityContext';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
-import { BookOpen, PlusCircle, Star, Award, TrendingUp, Activity, MessageSquare, Heart, Send } from 'lucide-react';
+import { BookOpen, PlusCircle, Star, Award, TrendingUp, Activity, MessageSquare, Heart, Send, Smile } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { ReactionPicker, REACTION_TYPES } from './ReactionPicker';
 
 interface FeedItemProps {
   item: CommunityFeedItem;
@@ -19,6 +20,7 @@ export const FeedItem: React.FC<FeedItemProps> = ({ item }) => {
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [isLiking, setIsLiking] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
 
   useEffect(() => {
     const fetchInteractions = async () => {
@@ -30,18 +32,43 @@ export const FeedItem: React.FC<FeedItemProps> = ({ item }) => {
     fetchInteractions();
   }, [item.id, getLikes, getComments]);
 
-  const hasLiked = user ? likes.some(l => l.userId === user.userId) : false;
+  const userReaction = user ? likes.find(l => l.userId === user.userId) : null;
+  const hasReacted = !!userReaction;
 
-  const handleLike = async () => {
+  const aggregatedReactions = useMemo(() => {
+    const counts: Record<string, { emoji: string; count: number; type: string }> = {};
+    likes.forEach(like => {
+      const reactionDef = REACTION_TYPES.find(r => r.type === like.reactionType);
+      if (reactionDef) {
+        if (!counts[like.reactionType]) {
+          counts[like.reactionType] = { emoji: reactionDef.emoji, count: 0, type: reactionDef.type };
+        }
+        counts[like.reactionType].count += 1;
+      }
+    });
+    return Object.values(counts);
+  }, [likes]);
+
+  const handleToggleReaction = async (reactionType: string) => {
     if (!user || isLiking) return;
     setIsLiking(true);
     try {
-      if (hasLiked) {
+      if (userReaction?.reactionType === reactionType) {
         await unlikePost(item.id);
         setLikes(likes.filter(l => l.userId !== user.userId));
       } else {
-        await likePost(item.id, 'like');
-        setLikes([...likes, { id: 'temp', feedItemId: item.id, userId: user.userId, reactionType: 'like' }]);
+        await likePost(item.id, reactionType);
+        const newLike: Like = { 
+          id: 'temp-' + Date.now(), 
+          feedItemId: item.id, 
+          userId: user.userId, 
+          reactionType,
+          createdAt: Date.now() 
+        };
+        setLikes(prev => [
+          ...prev.filter(l => l.userId !== user.userId),
+          newLike
+        ]);
       }
     } finally {
       setIsLiking(false);
@@ -70,12 +97,16 @@ export const FeedItem: React.FC<FeedItemProps> = ({ item }) => {
       case 'manual': return <MessageSquare size={16} className="text-indigo-500" />;
       case 'challenge_completed': return <Award size={16} className="text-amber-500" />;
       case 'badge_earned': return <Award size={16} className="text-amber-500" />;
+      case 'shared_book_updated': return <BookOpen size={16} className="text-amber-500" />;
+      case 'club_post': return <Activity size={16} className="text-violet-400" />;
       default: return <Activity size={16} className="text-neutral-500" />;
     }
   };
 
   const displayName = item.userDisplayName || 'Usuário';
   const photoURL = item.userPhotoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}`;
+
+  const userEmoji = userReaction ? REACTION_TYPES.find(r => r.type === userReaction.reactionType)?.emoji : null;
 
   return (
     <div className="relative flex items-start justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
@@ -91,24 +122,66 @@ export const FeedItem: React.FC<FeedItemProps> = ({ item }) => {
         
         <p className="text-sm text-neutral-300 leading-relaxed mb-4">{item.content}</p>
 
+        {item.type === 'shared_book_updated' && item.metadata && (
+          <div className="mb-4 bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden flex gap-3">
+            <img 
+              src={item.metadata.coverUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.metadata.title)}&background=222&color=fff`} 
+              className="w-16 h-20 object-cover border-r border-neutral-800" 
+            />
+            <div className="p-3 flex flex-col justify-center">
+              <p className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">Livro do Mês</p>
+              <p className="text-sm font-bold text-neutral-100">{item.metadata.title}</p>
+              <p className="text-xs text-neutral-400">{item.metadata.author}</p>
+            </div>
+          </div>
+        )}
+
         {/* Interaction Bar */}
-        <div className="flex items-center gap-4 pt-3 border-t border-neutral-800/50">
-          <button 
-            onClick={handleLike}
-            disabled={isLiking}
-            className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${hasLiked ? 'text-rose-500' : 'text-neutral-500 hover:text-rose-400'}`}
-          >
-            <Heart size={16} className={hasLiked ? 'fill-rose-500' : ''} />
-            {likes.length > 0 && <span>{likes.length}</span>}
-          </button>
-          
-          <button 
-            onClick={() => setShowComments(!showComments)}
-            className="flex items-center gap-1.5 text-xs font-medium text-neutral-500 hover:text-amber-500 transition-colors"
-          >
-            <MessageSquare size={16} />
-            {comments.length > 0 && <span>{comments.length}</span>}
-          </button>
+        <div className="flex flex-col gap-3 pt-3 border-t border-neutral-800/50">
+          {aggregatedReactions.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {aggregatedReactions.map(reaction => (
+                <button
+                  key={reaction.type}
+                  onClick={() => handleToggleReaction(reaction.type)}
+                  className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-bold transition-all ${userReaction?.reactionType === reaction.type ? 'bg-amber-500/10 border-amber-500 text-amber-500' : 'bg-neutral-900 border-neutral-800 text-neutral-500 hover:border-neutral-700'}`}
+                >
+                  <span>{reaction.emoji}</span>
+                  <span>{reaction.count}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <button 
+                onClick={() => setShowPicker(!showPicker)}
+                onMouseEnter={() => setShowPicker(true)}
+                className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${hasReacted ? 'text-amber-500' : 'text-neutral-500 hover:text-amber-400'}`}
+              >
+                {userEmoji ? <span className="text-base">{userEmoji}</span> : <Smile size={16} />}
+                <span>{hasReacted ? REACTION_TYPES.find(r => r.type === userReaction.reactionType)?.label : 'Expressar'}</span>
+              </button>
+              
+              {showPicker && (
+                <div onMouseLeave={() => setShowPicker(false)}>
+                  <ReactionPicker 
+                    onSelect={handleToggleReaction} 
+                    onClose={() => setShowPicker(false)} 
+                  />
+                </div>
+              )}
+            </div>
+            
+            <button 
+              onClick={() => setShowComments(!showComments)}
+              className="flex items-center gap-1.5 text-xs font-medium text-neutral-500 hover:text-amber-500 transition-colors"
+            >
+              <MessageSquare size={16} />
+              {comments.length > 0 && <span>{comments.length}</span>}
+            </button>
+          </div>
         </div>
 
         {/* Comments Section */}

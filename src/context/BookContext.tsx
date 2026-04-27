@@ -2,12 +2,15 @@ import React, { createContext, useContext, useMemo, useCallback } from 'react';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, doc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from './AuthContext';
-import { Book, LiteraryProfile, Recommendation, UserGoal, BackupHistory } from '../types';
+import { Book, LiteraryProfile, Recommendation, UserGoal, BackupHistory, ReadingSession, Shelf, Quote } from '../types';
 import { BooksProvider, useBooksState } from './BooksContext';
 import { GoalsProvider, useGoals } from './GoalsContext';
 import { LiteraryProfileProvider, useLiteraryProfile } from './LiteraryProfileContext';
 import { RecommendationsProvider, useRecommendations } from './RecommendationsContext';
 import { BackupProvider, useBackup } from './BackupContext';
+import { ReadingSessionsProvider, useReadingSessions } from './ReadingSessionsContext';
+import { ShelvesProvider, useShelves } from './ShelvesContext';
+import { QuotesProvider, useQuotes } from './QuotesContext';
 
 interface BookContextType {
   books: Book[];
@@ -16,6 +19,9 @@ interface BookContextType {
   recommendations: Recommendation[];
   userGoal: UserGoal | null;
   backupHistory: BackupHistory[];
+  sessions: ReadingSession[];
+  shelves: Shelf[];
+  quotes: Quote[];
   addBook: (book: Omit<Book, 'id' | 'userId' | 'dataCadastro'>) => Promise<void>;
   updateBook: (id: string, book: Partial<Book>) => Promise<void>;
   deleteBook: (id: string) => Promise<void>;
@@ -26,6 +32,13 @@ interface BookContextType {
   saveUserGoal: (goal: Omit<UserGoal, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   importData: (data: any, mode: 'merge' | 'replace') => Promise<{ imported: number, ignored: number, goals: number }>;
   logBackupAction: (action: Omit<BackupHistory, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
+  addSession: (session: Omit<ReadingSession, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
+  getSessionsByBook: (bookId: string) => ReadingSession[];
+  createShelf: (shelf: Omit<Shelf, 'id' | 'createdAt' | 'userId'>) => Promise<void>;
+  updateShelf: (id: string, shelf: Partial<Shelf>) => Promise<void>;
+  deleteShelf: (id: string) => Promise<void>;
+  addBookToShelf: (shelfId: string, bookId: string) => Promise<void>;
+  removeBookFromShelf: (shelfId: string, bookId: string) => Promise<void>;
 }
 
 const BookContext = createContext<BookContextType | undefined>(undefined);
@@ -37,6 +50,9 @@ const BookContextBridge: React.FC<{ children: React.ReactNode }> = ({ children }
   const { literaryProfile, saveLiteraryProfile } = useLiteraryProfile();
   const { recommendations, saveRecommendations } = useRecommendations();
   const { backupHistory, logBackupAction } = useBackup();
+  const { sessions, addSession, getSessionsByBook } = useReadingSessions();
+  const { shelves, loading: shelvesLoading, createShelf, updateShelf, deleteShelf, addBookToShelf, removeBookFromShelf } = useShelves();
+  const { quotes, addQuote, updateQuote, deleteQuote, getQuotesByBook } = useQuotes();
 
   const importData = useCallback(async (data: any, mode: 'merge' | 'replace') => {
     if (!user || !db) throw new Error("Usuário não autenticado");
@@ -142,6 +158,9 @@ const BookContextBridge: React.FC<{ children: React.ReactNode }> = ({ children }
     recommendations,
     userGoal,
     backupHistory,
+    sessions,
+    shelves,
+    quotes,
     addBook,
     updateBook,
     deleteBook,
@@ -151,11 +170,25 @@ const BookContextBridge: React.FC<{ children: React.ReactNode }> = ({ children }
     saveRecommendations,
     saveUserGoal,
     importData,
-    logBackupAction
+    logBackupAction,
+    addSession,
+    getSessionsByBook,
+    createShelf,
+    updateShelf,
+    deleteShelf,
+    addBookToShelf,
+    removeBookFromShelf,
+    addQuote,
+    updateQuote,
+    deleteQuote,
+    getQuotesByBook
   }), [
-    books, loading, literaryProfile, recommendations, userGoal, backupHistory,
+    books, loading, literaryProfile, recommendations, userGoal, backupHistory, sessions, shelves, quotes,
     addBook, updateBook, deleteBook, deleteMultipleBooks, getBook,
-    saveLiteraryProfile, saveRecommendations, saveUserGoal, importData, logBackupAction
+    saveLiteraryProfile, saveRecommendations, saveUserGoal, importData, logBackupAction,
+    addSession, getSessionsByBook,
+    createShelf, updateShelf, deleteShelf, addBookToShelf, removeBookFromShelf,
+    addQuote, updateQuote, deleteQuote, getQuotesByBook
   ]);
 
   return <BookContext.Provider value={value}>{children}</BookContext.Provider>;
@@ -164,15 +197,21 @@ const BookContextBridge: React.FC<{ children: React.ReactNode }> = ({ children }
 export const BookProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <BooksProvider>
-      <GoalsProvider>
-        <LiteraryProfileProvider>
-          <RecommendationsProvider>
-            <BackupProvider>
-              <BookContextBridge>{children}</BookContextBridge>
-            </BackupProvider>
-          </RecommendationsProvider>
-        </LiteraryProfileProvider>
-      </GoalsProvider>
+      <ShelvesProvider>
+        <ReadingSessionsProvider>
+          <QuotesProvider>
+            <GoalsProvider>
+              <LiteraryProfileProvider>
+                <RecommendationsProvider>
+                  <BackupProvider>
+                    <BookContextBridge>{children}</BookContextBridge>
+                  </BackupProvider>
+                </RecommendationsProvider>
+              </LiteraryProfileProvider>
+            </GoalsProvider>
+          </QuotesProvider>
+        </ReadingSessionsProvider>
+      </ShelvesProvider>
     </BooksProvider>
   );
 };

@@ -25,6 +25,8 @@ import { Community } from './pages/Community';
 import { PublicProfile } from './pages/PublicProfile';
 import { Timeline } from './pages/Timeline';
 import { ExportData } from './pages/ExportData';
+import { YearlyComparison } from './pages/YearlyComparison';
+import { Quotes } from './pages/Quotes';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 export default function App() {
@@ -47,6 +49,8 @@ export default function App() {
                     <Route path="galeria" element={<Gallery />} />
                     <Route path="perfil-literario" element={<LiteraryProfile />} />
                     <Route path="retrospectiva" element={<Retrospective />} />
+                    <Route path="comparativo-anual" element={<YearlyComparison />} />
+                    <Route path="citacoes" element={<Quotes />} />
                     <Route path="linha-do-tempo" element={<Timeline />} />
                     <Route path="recomendacoes" element={<Recommendations />} />
                     <Route path="exportar" element={<ExportData />} />

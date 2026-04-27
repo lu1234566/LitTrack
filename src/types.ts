@@ -45,6 +45,32 @@ export interface AuthorRanking {
   motivo: string;
 }
 
+export interface MoodActivity {
+  mood: string;
+  intensity: number;
+}
+
+export interface ReadingBehavior {
+  pattern: string;
+  description: string;
+}
+
+export interface GenreMetric {
+  genre: string;
+  intensity: number;
+  strictness: number;
+  averageRating: number;
+}
+
+export interface EvolutionMetric {
+  period: string; // Ex: "Jan 2024" ou "2024"
+  topGenre: string;
+  averageRating: number;
+  booksCount: number;
+  pagesRead: number;
+  averageBookLength: number;
+}
+
 export interface LiteraryProfile {
   generoFavorito: string;
   tipoNarrativaFavorita: string;
@@ -56,6 +82,20 @@ export interface LiteraryProfile {
   analiseDetalhada: string;
   rankingAutores: AuthorRanking[];
   dataAtualizacao: number;
+  
+  // Mood and advanced analysis
+  moodMap: MoodActivity[];
+  readingStyleBehavior: ReadingBehavior[];
+  genreMetrics: GenreMetric[];
+  evolutionData?: EvolutionMetric[];
+  evolutionInsights?: string[];
+  archetype: {
+    name: string;
+    description: string;
+    emotionalResonance: string;
+    demandingGenre: string;
+  };
+  preferredLength: 'short' | 'medium' | 'long' | 'varied';
 }
 
 export interface Recommendation {
@@ -67,6 +107,19 @@ export interface Recommendation {
   clima: string;
   tipoFinal: string;
   impactoEmocional: string;
+}
+
+export interface ReadingSession {
+  id: string;
+  userId: string;
+  bookId: string;
+  date: number;
+  startPage?: number;
+  endPage: number;
+  pagesRead: number;
+  durationMinutes?: number;
+  note?: string;
+  createdAt: any;
 }
 
 export interface Book {
@@ -91,6 +144,17 @@ export interface Book {
   coverUrl?: string;
   coverSource?: 'automatic' | 'url' | 'local' | 'placeholder' | 'manual';
   pageCount?: number;
+  currentPage?: number;
+  totalPages?: number;
+  progressPercentage?: number;
+  startedAt?: number;
+  finishedAt?: number;
+  // Wishlist / Queue fields
+  priority?: 'low' | 'medium' | 'high';
+  reasonToRead?: string;
+  discoveredFrom?: string;
+  queueOrder?: number;
+  addedAt?: number;
   description?: string;
   isbn?: string;
   publisher?: string;
@@ -118,21 +182,34 @@ export interface UserProfile {
   updatedAt: number;
 }
 
-export type FeedItemType = 'finished_book' | 'added_book' | 'rated_book' | 'milestone' | 'leaderboard' | 'manual' | 'challenge_completed' | 'badge_earned' | 'community_created';
+export type FeedItemType = 'finished_book' | 'added_book' | 'rated_book' | 'milestone' | 'leaderboard' | 'manual' | 'challenge_completed' | 'badge_earned' | 'community_created' | 'shared_book_updated' | 'club_post';
 
 export type CommunityVisibility = 'public' | 'private';
 export type CommunityRole = 'owner' | 'admin' | 'member';
+
+export interface SharedBook {
+  bookId?: string;
+  title: string;
+  author: string;
+  coverUrl?: string;
+  startDate?: number;
+  endDate?: number;
+  discussionPrompt?: string;
+}
 
 export interface Community {
   id: string;
   name: string;
   description: string;
   imageUrl?: string;
+  bannerUrl?: string;
   ownerId: string;
   visibility: CommunityVisibility;
   inviteCode: string;
   createdAt: number;
   memberCount: number;
+  sharedBook?: SharedBook;
+  pastSharedBooks?: SharedBook[];
 }
 
 export interface CommunityMember {
@@ -143,6 +220,9 @@ export interface CommunityMember {
   userPhotoURL: string;
   role: CommunityRole;
   joinedAt: number;
+  sharedBookProgress?: number;
+  sharedBookFinished?: boolean;
+  lastProgressUpdate?: number;
 }
 
 export interface CommunityFeedItem {
@@ -173,7 +253,8 @@ export interface Like {
   id: string;
   feedItemId: string;
   userId: string;
-  reactionType: string; // 'like', 'book', 'star', 'fire'
+  reactionType: string; // 'biblio', 'star', etc
+  createdAt: number;
 }
 
 export interface Challenge {
@@ -226,6 +307,30 @@ export interface UserGoal {
   updatedAt: number;
 }
 
+export interface Shelf {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string;
+  color?: string;
+  bookIds: string[];
+  createdAt: number;
+}
+
+export interface Quote {
+  id: string;
+  userId: string;
+  bookId: string;
+  bookTitle: string;
+  bookAuthor: string;
+  text: string;
+  page?: number;
+  personalNote?: string;
+  moodLabel?: string;
+  isFavorite: boolean;
+  createdAt: number;
+}
+
 export type BackupActionType = 'export_json' | 'export_pdf' | 'import_json' | 'restore_backup';
 export type BackupStatus = 'sucesso' | 'falha' | 'parcial';
 
@@ -241,4 +346,15 @@ export interface BackupHistory {
   fileName?: string;
   scope?: string;
   errorMessage?: string;
+}
+
+export interface ReminderSettings {
+  enabled: boolean;
+  frequency: 'daily' | 'weekly' | 'weekdays';
+  time: string; // HH:mm
+  types: {
+    reading: boolean;
+    logging: boolean;
+    updateProgress: boolean;
+  };
 }

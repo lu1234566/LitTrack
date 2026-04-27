@@ -9,8 +9,8 @@ const getAiInstance = () => {
 export const aiService = {
   async generateLiteraryProfile(books: Book[]): Promise<LiteraryProfile> {
     const ai = getAiInstance();
-    // Limit to 30 most recent books to avoid payload size limits
-    const recentBooks = [...books].sort((a, b) => b.dataCadastro - a.dataCadastro).slice(0, 30);
+    // Limit to 40 books for better historical context if available
+    const recentBooks = [...books].sort((a, b) => (b.finishedAt || b.dataCadastro) - (a.finishedAt || a.dataCadastro)).slice(0, 40);
     const booksData = recentBooks.map(b => ({
       titulo: b.titulo,
       autor: b.autor,
@@ -20,18 +20,26 @@ export const aiService = {
       resenha: b.resenha,
       pontosFortes: b.pontosFortes,
       pontosFracos: b.pontosFracos,
-      favorito: b.favorito
+      favorito: b.favorito,
+      paginas: b.pageCount,
+      data: b.finishedAt ? new Date(b.finishedAt).toLocaleDateString('pt-BR') : new Date(b.dataCadastro).toLocaleDateString('pt-BR')
     }));
 
-    const prompt = `Analise o histórico de leitura deste usuário e gere um perfil literário inteligente.
+    const prompt = `Analise o histórico de leitura deste usuário e gere um perfil literário profundo e inteligente, incluindo a EVOLUÇÃO do gosto ao longo do tempo.
     Dados dos livros: ${JSON.stringify(booksData)}
     
     O perfil deve ser escrito em Português (Brasil) com um tom perspicaz, elegante e literário.
-    Infira padrões de gosto, o que o usuário valoriza em uma história, o que o faz tirar pontos e qual seu estilo de leitor.
-    Crie também um ranking detalhado dos top 3 autores do usuário, considerando não apenas a frequência de leitura, mas principalmente a consistência de notas altas e o impacto emocional.`;
+    Além do básico, identifique:
+    1. Mapa de Mood: Classifique a intensidade emocional/atmosférica predominante.
+    2. Comportamento de Leitura: Identifique padrões comportamentais.
+    3. Métricas de Gênero: Para os gêneros principais, avalie intensidade e rigor.
+    4. Arquétipo do Leitor: Crie um nome de arquétipo poético.
+    5. Evolução do Gosto: Como os gêneros, as notas e a complexidade dos livros mudaram nos últimos períodos (meses ou anos).
+    6. Insights Intepretativos de Evolução: Frases elegantes sobre como o usuário mudou (ex: "Sua paleta literária expandiu-se para o realismo fantástico").
+    7. Preferência de Extensão: Livros curtos, médios, longos ou variados.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-1.5-pro",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -59,6 +67,74 @@ export const aiService = {
                 },
                 required: ["autor", "motivo"]
               }
+            },
+            moodMap: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  mood: { type: Type.STRING },
+                  intensity: { type: Type.NUMBER }
+                },
+                required: ["mood", "intensity"]
+              }
+            },
+            readingStyleBehavior: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  pattern: { type: Type.STRING },
+                  description: { type: Type.STRING }
+                },
+                required: ["pattern", "description"]
+              }
+            },
+            genreMetrics: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  genre: { type: Type.STRING },
+                  intensity: { type: Type.NUMBER },
+                  strictness: { type: Type.NUMBER },
+                  averageRating: { type: Type.NUMBER }
+                },
+                required: ["genre", "intensity", "strictness", "averageRating"]
+              }
+            },
+            evolutionData: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  period: { type: Type.STRING },
+                  topGenre: { type: Type.STRING },
+                  averageRating: { type: Type.NUMBER },
+                  booksCount: { type: Type.NUMBER },
+                  pagesRead: { type: Type.NUMBER },
+                  averageBookLength: { type: Type.NUMBER }
+                },
+                required: ["period", "topGenre", "averageRating", "booksCount", "pagesRead", "averageBookLength"]
+              }
+            },
+            evolutionInsights: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING }
+            },
+            archetype: {
+              type: Type.OBJECT,
+              properties: {
+                name: { type: Type.STRING },
+                description: { type: Type.STRING },
+                emotionalResonance: { type: Type.STRING },
+                demandingGenre: { type: Type.STRING }
+              },
+              required: ["name", "description", "emotionalResonance", "demandingGenre"]
+            },
+            preferredLength: { 
+              type: Type.STRING,
+              enum: ["short", "medium", "long", "varied"]
             }
           },
           required: [
@@ -70,7 +146,14 @@ export const aiService = {
             "estiloLeitor", 
             "insights", 
             "analiseDetalhada",
-            "rankingAutores"
+            "rankingAutores",
+            "moodMap",
+            "readingStyleBehavior",
+            "genreMetrics",
+            "evolutionData",
+            "evolutionInsights",
+            "archetype",
+            "preferredLength"
           ]
         }
       }
@@ -101,7 +184,7 @@ export const aiService = {
     Seja específico sobre o clima da leitura, o tipo de final e o impacto emocional esperado.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-1.5-pro",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -144,7 +227,42 @@ export const aiService = {
     Use um tom emocional e literário.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-1.5-pro",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: { type: Type.STRING }
+        }
+      }
+    });
+
+    return JSON.parse(response.text);
+  },
+
+  async generateYearComparisonInsights(yearAData: any, yearBData: any): Promise<string[]> {
+    const ai = getAiInstance();
+    
+    const prompt = `Analise a comparação entre dois anos literários de um leitor e gere 3 insights elegantes e profundos que descrevam a evolução do comportamento de leitura.
+    
+    Ano A (${yearAData.year}): ${JSON.stringify(yearAData.metrics)}
+    Ano B (${yearBData.year}): ${JSON.stringify(yearBData.metrics)}
+    
+    Considere mudanças em:
+    - Volume vs Qualidade (Notas)
+    - Preferências de gênero
+    - Consistência (Sessões/Dias ativos)
+    - Complexidade dos livros
+    
+    Gere 3 frases curtas e impactantes em Português (Brasil). 
+    Exemplos: 
+    - "Você leu mais, mas foi mais exigente este ano."
+    - "Seu ritmo de leitura cresceu 18% em relação ao ano anterior."
+    - "Seu gosto ficou mais focado em suspense."`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-1.5-pro",
       contents: prompt,
       config: {
         responseMimeType: "application/json",

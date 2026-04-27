@@ -4,11 +4,11 @@ import { useAuth } from '../context/AuthContext';
 import { useBooks } from '../context/BookContext';
 import { db } from '../lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { Settings as SettingsIcon, Monitor, Smartphone, MonitorSmartphone, Users, Save, Loader2, Target, BookOpen, FileText } from 'lucide-react';
+import { Settings as SettingsIcon, Monitor, Smartphone, MonitorSmartphone, Users, Save, Loader2, Target, BookOpen, FileText, Bell, Clock as ClockIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const Settings: React.FC = () => {
-  const { layoutMode, setLayoutMode } = useSettings();
+  const { layoutMode, setLayoutMode, reminderSettings, updateReminderSettings } = useSettings();
   const { user } = useAuth();
   const { userGoal, saveUserGoal } = useBooks();
   
@@ -197,6 +197,118 @@ export const Settings: React.FC = () => {
             <span className="font-medium">Mobile</span>
             <span className="text-xs text-center opacity-70">Força o layout de celular</span>
           </button>
+        </div>
+      </div>
+
+      {/* Reminders Section */}
+      <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8 shadow-xl">
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-xl font-serif font-semibold text-amber-500 flex items-center gap-2">
+            <Bell size={24} />
+            Lembretes Literários
+          </h2>
+          <label className="flex items-center gap-3 cursor-pointer group">
+            <div className="relative flex items-center">
+              <input 
+                type="checkbox" 
+                checked={reminderSettings.enabled}
+                onChange={(e) => updateReminderSettings({ enabled: e.target.checked })}
+                className="sr-only" 
+              />
+              <div className={`w-11 h-6 rounded-full transition-colors ${reminderSettings.enabled ? 'bg-amber-500' : 'bg-neutral-700'}`}></div>
+              <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${reminderSettings.enabled ? 'translate-x-5' : 'translate-x-0'}`}></div>
+            </div>
+            <span className="text-sm font-medium text-neutral-400">Ativado</span>
+          </label>
+        </div>
+
+        <div className={`space-y-8 transition-opacity ${reminderSettings.enabled ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold text-neutral-500 uppercase tracking-widest">Frequência e Horário</h3>
+              
+              <div className="flex gap-2">
+                {(['daily', 'weekdays', 'weekly'] as const).map((freq) => (
+                  <button
+                    key={freq}
+                    onClick={() => updateReminderSettings({ frequency: freq })}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+                      reminderSettings.frequency === freq
+                        ? 'bg-amber-500/10 border-amber-500 text-amber-500'
+                        : 'bg-neutral-950 border-neutral-800 text-neutral-500 hover:border-neutral-700'
+                    }`}
+                  >
+                    {freq === 'daily' ? 'Diário' : freq === 'weekdays' ? 'Dias úteis' : 'Semanal'}
+                  </button>
+                ))}
+              </div>
+
+              <div className="relative group">
+                <ClockIcon size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" />
+                <input
+                  type="time"
+                  value={reminderSettings.time}
+                  onChange={(e) => updateReminderSettings({ time: e.target.value })}
+                  className="w-full bg-neutral-950 border border-neutral-800 rounded-2xl pl-12 pr-4 py-3 text-neutral-200 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all font-mono"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold text-neutral-500 uppercase tracking-widest">Tipos de Lembrete</h3>
+              
+              <div className="space-y-3">
+                <label className="flex items-center gap-3 p-3 bg-neutral-950/50 border border-neutral-800 rounded-2xl cursor-pointer hover:bg-neutral-950 transition-colors">
+                  <input 
+                    type="checkbox" 
+                    checked={reminderSettings.types.reading}
+                    onChange={(e) => updateReminderSettings({ types: { ...reminderSettings.types, reading: e.target.checked } })}
+                    className="w-4 h-4 rounded border-neutral-800 text-amber-500 focus:ring-amber-500/50 bg-neutral-900"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-neutral-200">Hora de Ler</span>
+                    <p className="text-[10px] text-neutral-500">Um convite suave para seu próximo capítulo.</p>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-3 p-3 bg-neutral-950/50 border border-neutral-800 rounded-2xl cursor-pointer hover:bg-neutral-950 transition-colors">
+                  <input 
+                    type="checkbox" 
+                    checked={reminderSettings.types.logging}
+                    onChange={(e) => updateReminderSettings({ types: { ...reminderSettings.types, logging: e.target.checked } })}
+                    className="w-4 h-4 rounded border-neutral-800 text-amber-500 focus:ring-amber-500/50 bg-neutral-900"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-neutral-200">Registrar Sessão</span>
+                    <p className="text-[10px] text-neutral-500">Lembrete para documentar seu progresso diário.</p>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-3 p-3 bg-neutral-950/50 border border-neutral-800 rounded-2xl cursor-pointer hover:bg-neutral-950 transition-colors">
+                  <input 
+                    type="checkbox" 
+                    checked={reminderSettings.types.updateProgress}
+                    onChange={(e) => updateReminderSettings({ types: { ...reminderSettings.types, updateProgress: e.target.checked } })}
+                    className="w-4 h-4 rounded border-neutral-800 text-amber-500 focus:ring-amber-500/50 bg-neutral-900"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-neutral-200">Atualizar Status</span>
+                    <p className="text-[10px] text-neutral-500">Para livros que você não atualiza há algum tempo.</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-6 border-t border-neutral-800/50 flex justify-between items-center">
+            <p className="text-[10px] text-neutral-500 italic max-w-sm">Os lembretes do Readora são projetados para serem gentis e respeitarem seu tempo de descanso.</p>
+            <button 
+              onClick={() => alert('Readora: Seu próximo capítulo espera por você. ✨')}
+              className="text-xs font-bold text-amber-500 hover:text-amber-400 transition-colors"
+            >
+              Testar Lembrete
+            </button>
+          </div>
         </div>
       </div>
 

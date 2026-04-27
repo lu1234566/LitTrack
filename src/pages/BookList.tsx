@@ -1,13 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useBooks } from '../context/BookContext';
 import { useSettings } from '../context/SettingsContext';
 import { Link } from 'react-router-dom';
-import { Search, Filter, Star, Heart, BookOpen, Clock, CheckCircle2, X } from 'lucide-react';
+import { Search, Filter, Star, Heart, BookOpen, Clock, CheckCircle2, X, Layout, Plus, Settings2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CoverImage } from '../components/CoverImage';
+import { ShelfModal } from '../components/ShelfModal';
 
-const FiltersContent = ({ filterStatus, setFilterStatus, filterGenre, setFilterGenre, genres, sortBy, setSortBy }: any) => (
+const FiltersContent = ({ filterStatus, setFilterStatus, filterGenre, setFilterGenre, genres, sortBy, setSortBy, filterShelf, setFilterShelf, shelves }: any) => (
   <>
+    <select
+      value={filterShelf}
+      onChange={(e) => setFilterShelf(e.target.value)}
+      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500/50 appearance-none"
+    >
+      <option value="todos">Todas as Estantes</option>
+      {shelves.map((s: any) => (
+        <option key={s.id} value={s.id}>{s.name}</option>
+      ))}
+    </select>
     <select
       value={filterStatus}
       onChange={(e) => setFilterStatus(e.target.value)}
@@ -18,7 +29,6 @@ const FiltersContent = ({ filterStatus, setFilterStatus, filterGenre, setFilterG
       <option value="lendo">Lendo</option>
       <option value="quero ler">Quero Ler</option>
     </select>
-
     <select
       value={filterGenre}
       onChange={(e) => setFilterGenre(e.target.value)}
@@ -29,7 +39,6 @@ const FiltersContent = ({ filterStatus, setFilterStatus, filterGenre, setFilterG
         <option key={g} value={g}>{g}</option>
       ))}
     </select>
-
     <select
       value={sortBy}
       onChange={(e) => setSortBy(e.target.value as any)}
@@ -38,18 +47,52 @@ const FiltersContent = ({ filterStatus, setFilterStatus, filterGenre, setFilterG
       <option value="data">Mais Recentes</option>
       <option value="nota">Maior Nota</option>
       <option value="titulo">Ordem Alfabética</option>
+      <option value="prioridade">Maior Prioridade</option>
+      <option value="adicionado">Adicionado à Fila</option>
     </select>
   </>
 );
 
 export const BookList: React.FC = () => {
-  const { books, loading } = useBooks();
+  const { books, loading, shelves, createShelf, updateShelf, deleteShelf } = useBooks();
   const { isMobileLayout } = useSettings();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('todos');
   const [filterGenre, setFilterGenre] = useState<string>('todos');
-  const [sortBy, setSortBy] = useState<'data' | 'nota' | 'titulo'>('data');
+  const [filterShelf, setFilterShelf] = useState<string>('todos');
+  const [sortBy, setSortBy] = useState<'data' | 'nota' | 'titulo' | 'prioridade' | 'adicionado'>('data');
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [isShelfModalOpen, setIsShelfModalOpen] = useState(false);
+  const [selectedShelf, setSelectedShelf] = useState<any>(null);
+
+  const filteredBooks = useMemo(() => {
+    return books
+      .filter((book) => {
+        const safeTitulo = book.titulo || '';
+        const safeAutor = book.autor || '';
+        const matchesSearch = safeTitulo.toLowerCase().includes(searchTerm.toLowerCase()) || safeAutor.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesStatus = filterStatus === 'todos' || book.status === filterStatus;
+        const matchesGenre = filterGenre === 'todos' || book.genero === filterGenre;
+        const matchesShelf = filterShelf === 'todos' || (shelves.find(s => s.id === filterShelf)?.bookIds.includes(book.id));
+        return matchesSearch && matchesStatus && matchesGenre && matchesShelf;
+      })
+      .sort((a, b) => {
+        if (sortBy === 'data') return (b.dataCadastro || 0) - (a.dataCadastro || 0);
+        if (sortBy === 'adicionado') return (b.addedAt || b.dataCadastro || 0) - (a.addedAt || a.dataCadastro || 0);
+        if (sortBy === 'nota') return (b.notaGeral || 0) - (a.notaGeral || 0);
+        if (sortBy === 'titulo') return (a.titulo || '').localeCompare(b.titulo || '');
+        if (sortBy === 'prioridade') {
+          const pMap = { high: 3, medium: 2, low: 1 };
+          const pA = pMap[a.priority as 'low'|'medium'|'high'] || 0;
+          const pB = pMap[b.priority as 'low'|'medium'|'high'] || 0;
+          if (pA !== pB) return pB - pA;
+          return (a.queueOrder || 0) - (b.queueOrder || 0);
+        }
+        return 0;
+      });
+  }, [books, searchTerm, filterStatus, filterGenre, filterShelf, sortBy, shelves]);
+
+  const genres = useMemo(() => Array.from(new Set(books.map((b) => b.genero))), [books]);
 
   if (loading) {
     return (
@@ -61,24 +104,6 @@ export const BookList: React.FC = () => {
     );
   }
 
-  const filteredBooks = books
-    .filter((book) => {
-      const safeTitulo = book.titulo || '';
-      const safeAutor = book.autor || '';
-      const matchesSearch = safeTitulo.toLowerCase().includes(searchTerm.toLowerCase()) || safeAutor.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = filterStatus === 'todos' || book.status === filterStatus;
-      const matchesGenre = filterGenre === 'todos' || book.genero === filterGenre;
-      return matchesSearch && matchesStatus && matchesGenre;
-    })
-    .sort((a, b) => {
-      if (sortBy === 'data') return b.dataCadastro - a.dataCadastro;
-      if (sortBy === 'nota') return b.notaGeral - a.notaGeral;
-      if (sortBy === 'titulo') return a.titulo.localeCompare(b.titulo);
-      return 0;
-    });
-
-  const genres = Array.from(new Set(books.map((b) => b.genero)));
-
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 md:space-y-8">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4 md:mb-8">
@@ -86,11 +111,62 @@ export const BookList: React.FC = () => {
           <h1 className="text-3xl md:text-4xl font-serif font-bold text-neutral-100 tracking-tight">Meus Livros</h1>
           <p className="text-neutral-400 mt-1 md:mt-2 text-base md:text-lg">Sua biblioteca pessoal.</p>
         </div>
-        <Link to="/adicionar" className="w-full md:w-auto bg-amber-500 hover:bg-amber-600 text-neutral-950 px-6 py-3 md:py-3 rounded-xl font-medium transition-colors inline-flex items-center justify-center gap-2">
-          <BookOpen size={20} />
-          Adicionar Leitura
-        </Link>
+        <div className="flex gap-3">
+          <button 
+            onClick={() => {
+              setSelectedShelf(null);
+              setIsShelfModalOpen(true);
+            }}
+            className="w-full md:w-auto bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-amber-500 px-6 py-3 md:py-3 rounded-xl font-medium transition-colors inline-flex items-center justify-center gap-2"
+          >
+            <Layout size={20} />
+            Criar Estante
+          </button>
+          <Link to="/adicionar" className="w-full md:w-auto bg-amber-500 hover:bg-amber-600 text-neutral-950 px-6 py-3 md:py-3 rounded-xl font-medium transition-colors inline-flex items-center justify-center gap-2">
+            <BookOpen size={20} />
+            Adicionar Leitura
+          </Link>
+        </div>
       </header>
+
+      {/* Shelves Quick Filter */}
+      {shelves.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-bold text-neutral-500 uppercase tracking-[0.2em]">Minhas Estantes</h2>
+          </div>
+          <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
+            <button
+              onClick={() => setFilterShelf('todos')}
+              className={`flex-shrink-0 px-6 py-3 rounded-2xl border transition-all ${filterShelf === 'todos' ? 'bg-amber-500 text-neutral-950 border-amber-500 font-bold' : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-700'}`}
+            >
+              Todas
+            </button>
+            {shelves.map((shelf) => (
+              <div key={shelf.id} className="relative group">
+                <button
+                  onClick={() => setFilterShelf(shelf.id)}
+                  className={`flex-shrink-0 px-6 py-3 rounded-2xl border transition-all flex items-center gap-2 ${filterShelf === shelf.id ? 'bg-amber-500/10 text-amber-500 border-amber-500 font-bold' : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-700'}`}
+                >
+                  <div className={`w-2 h-2 rounded-full ${shelf.color || 'bg-amber-500'}`} />
+                  {shelf.name}
+                  <span className="text-xs opacity-60">({shelf.bookIds.length})</span>
+                </button>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedShelf(shelf);
+                    setIsShelfModalOpen(true);
+                  }}
+                  className="absolute -top-2 -right-2 p-1.5 bg-neutral-800 rounded-full text-neutral-500 opacity-0 group-hover:opacity-100 transition-all hover:text-amber-500 border border-neutral-700"
+                >
+                  <Settings2 size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center shadow-xl">
@@ -125,6 +201,9 @@ export const BookList: React.FC = () => {
               genres={genres} 
               sortBy={sortBy} 
               setSortBy={setSortBy} 
+              filterShelf={filterShelf}
+              setFilterShelf={setFilterShelf}
+              shelves={shelves}
             />
           </div>
         )}
@@ -166,6 +245,9 @@ export const BookList: React.FC = () => {
                   genres={genres} 
                   sortBy={sortBy} 
                   setSortBy={setSortBy} 
+                  filterShelf={filterShelf}
+                  setFilterShelf={setFilterShelf}
+                  shelves={shelves}
                 />
                 <button
                   onClick={() => setIsFiltersOpen(false)}
@@ -202,7 +284,18 @@ export const BookList: React.FC = () => {
                   <Heart size={12} className="text-rose-500 fill-rose-500" />
                 </div>
               )}
-              {!isMobileLayout && book.pageCount && (
+              {!isMobileLayout && book.status === 'lendo' && book.progressPercentage !== undefined && (
+                <div className="absolute bottom-2 left-2 right-2 bg-neutral-950/80 p-1 md:p-1.5 rounded-lg backdrop-blur-sm">
+                  <div className="flex justify-between items-center text-[8px] md:text-[10px] text-neutral-300 mb-1">
+                    <span>{book.progressPercentage}%</span>
+                    <span className="hidden md:inline">{book.currentPage}/{book.totalPages || book.pageCount}</span>
+                  </div>
+                  <div className="h-1 w-full bg-neutral-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${book.progressPercentage}%` }} />
+                  </div>
+                </div>
+              )}
+              {!isMobileLayout && book.status !== 'lendo' && book.pageCount && (
                 <div className="absolute bottom-2 left-2 bg-neutral-950/80 px-2 py-1 rounded-md backdrop-blur-sm text-[10px] font-medium text-neutral-300">
                   {book.pageCount} págs
                 </div>
@@ -214,9 +307,19 @@ export const BookList: React.FC = () => {
               <p className={`text-neutral-400 mb-2 line-clamp-1 w-full ${isMobileLayout ? 'text-sm text-left' : 'text-xs'}`}>{book.autor}</p>
               
               <div className={`flex items-center gap-1 text-amber-500 font-medium ${isMobileLayout ? 'text-sm' : 'text-xs justify-center'}`}>
-                <Star size={14} fill="currentColor" />
-                {book.notaGeral.toFixed(1)}
+                {book.status === 'lido' ? <Star size={14} fill="currentColor" /> : <Clock size={14} className={book.status === 'lendo' ? 'text-emerald-500' : 'text-neutral-500'} />}
+                {book.status === 'lido' ? book.notaGeral.toFixed(1) : (book.status === 'lendo' ? `${book.progressPercentage}%` : 'Quero ler')}
               </div>
+              {book.status === 'quero ler' && book.priority && (
+                <div className={`mt-1 text-[10px] font-bold uppercase tracking-widest ${book.priority === 'high' ? 'text-rose-500' : book.priority === 'medium' ? 'text-amber-500' : 'text-blue-500'}`}>
+                  Prioridade {book.priority === 'high' ? 'Alta' : book.priority === 'medium' ? 'Média' : 'Baixa'}
+                </div>
+              )}
+              {isMobileLayout && book.status === 'lendo' && (
+                <div className="w-full mt-2 h-1 bg-neutral-800 rounded-full overflow-hidden">
+                  <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${book.progressPercentage}%` }} />
+                </div>
+              )}
             </div>
           </Link>
         ))}
@@ -229,6 +332,14 @@ export const BookList: React.FC = () => {
           <p className="text-neutral-500 mt-2">Tente ajustar seus filtros ou adicione um novo livro.</p>
         </div>
       )}
+
+      <ShelfModal
+        isOpen={isShelfModalOpen}
+        onClose={() => setIsShelfModalOpen(false)}
+        onSave={selectedShelf ? (data) => updateShelf(selectedShelf.id, data) : createShelf}
+        onDelete={selectedShelf ? deleteShelf : undefined}
+        shelf={selectedShelf}
+      />
     </motion.div>
   );
 };

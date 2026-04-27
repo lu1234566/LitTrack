@@ -5,6 +5,7 @@ import { useLiteraryProfile } from '../context/LiteraryProfileContext';
 import { aiService } from '../services/aiService';
 import { BookOpen, Star, Award, Calendar, TrendingUp, Heart, ChevronRight, ChevronLeft, Share2, Download, Brain, User, Target, Bookmark, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { Logomark } from '../components/Logomark';
 import { formatPagesLong, formatPages } from '../lib/statsUtils';
 import { CoverImage } from '../components/CoverImage';
@@ -13,7 +14,7 @@ import { toPng, toBlob } from 'html-to-image';
 const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
 export const Retrospective: React.FC = () => {
-  const { books, loading } = useBooks();
+  const { books, loading, quotes } = useBooks();
   const { userGoal } = useGoals();
   const { literaryProfile } = useLiteraryProfile();
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -152,6 +153,8 @@ export const Retrospective: React.FC = () => {
 
     const top5 = [...lidos].sort((a, b) => b.notaGeral - a.notaGeral).slice(0, 5);
 
+    const bestQuote = quotes.find(q => q.isFavorite) || (quotes.length > 0 ? quotes[0] : null);
+
     return { 
       totalLidos, mediaGeral, melhorLivro, piorLivro, 
       autorMaisLido, autorLivros: autores[autorMaisLido] || 0,
@@ -160,6 +163,7 @@ export const Retrospective: React.FC = () => {
       favoritos: favoritados, 
       totalPaginas, mediaPaginas,
       melhorCitacao,
+      bestQuote,
       top5 
     };
   }, [lidos]);
@@ -454,7 +458,11 @@ export const Retrospective: React.FC = () => {
     bg: "bg-gradient-to-r from-neutral-950 via-neutral-900 to-amber-950/30"
   });
 
-  if (stats?.melhorCitacao) {
+  if (stats?.bestQuote || stats?.melhorCitacao) {
+    const quoteToDisplay = stats.bestQuote ? stats.bestQuote.text : (stats.melhorCitacao?.citacaoFavorita || '');
+    const titleToDisplay = stats.bestQuote ? stats.bestQuote.bookTitle : (stats.melhorCitacao?.titulo || '');
+    const authorToDisplay = stats.bestQuote ? stats.bestQuote.bookAuthor : (stats.melhorCitacao?.autor || '');
+
     slides.push({
       title: "Ecos da Leitura",
       layout: 'wide',
@@ -464,15 +472,15 @@ export const Retrospective: React.FC = () => {
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-lg md:text-2xl lg:text-3xl font-serif italic text-neutral-100 leading-relaxed relative flex-1 min-h-[120px] max-h-[300px] overflow-hidden flex flex-col justify-center">
             <div className="relative inline-block w-full">
               <span className="text-3xl md:text-5xl text-amber-500/20 absolute -top-4 -left-6 md:-top-6 md:-left-8 font-sans">"</span>
-              <div className="line-clamp-[8] md:line-clamp-6 text-balance break-words pb-2">
-                {stats.melhorCitacao.citacaoFavorita}
+              <div className="line-clamp-[8] md:line-clamp-6 text-balance break-words pb-2 whitespace-pre-wrap">
+                {quoteToDisplay}
               </div>
               <span className="text-3xl md:text-5xl text-amber-500/20 absolute bottom-0 -right-4 font-sans leading-none translate-y-1/2">"</span>
             </div>
           </motion.div>
           <div className="mt-6 md:mt-8 text-neutral-400 shrink-0">
-            <p className="font-bold text-amber-500 line-clamp-1">{stats.melhorCitacao.titulo}</p>
-            <p className="text-sm md:text-base line-clamp-1 truncate text-neutral-500 mt-1">{stats.melhorCitacao.autor}</p>
+            <p className="font-bold text-amber-500 line-clamp-1">{titleToDisplay}</p>
+            <p className="text-sm md:text-base line-clamp-1 truncate text-neutral-500 mt-1">{authorToDisplay}</p>
           </div>
         </div>
       ),
@@ -642,6 +650,14 @@ export const Retrospective: React.FC = () => {
             <Download size={20} className="shrink-0" />
             <span>Salvar Imagem</span>
           </button>
+          
+          <Link 
+            to="/comparativo-anual"
+            className="w-full md:w-auto min-w-[220px] flex items-center justify-center gap-2 px-6 py-4 bg-neutral-800/80 backdrop-blur border border-neutral-700 hover:bg-neutral-700 text-amber-500 font-bold rounded-2xl transition-all shadow-xl md:text-lg"
+          >
+            <History size={20} className="shrink-0" />
+            <span>Comparar Anos</span>
+          </Link>
         </div>
       </div>
     ),

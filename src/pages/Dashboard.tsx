@@ -1,18 +1,36 @@
 import React, { useMemo, useState } from 'react';
 import { useBooks } from '../context/BookContext';
-import { Book, Star, TrendingUp, Award, BookOpen, Calendar, Sparkles, X, Target, FileText, ChevronRight, History } from 'lucide-react';
+import { Book, Star, TrendingUp, Award, BookOpen, Calendar, Sparkles, X, Target, FileText, ChevronRight, History, RefreshCw, Plus, Clock, Filter, ArrowUpRight, ArrowDownRight, BookmarkPlus } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { safeParseNumber, formatPages, formatPagesShort, formatPagesPerBook, formatPagesLong } from '../lib/statsUtils';
+import { 
+  safeParseNumber, 
+  formatPages, 
+  formatPagesShort, 
+  formatPagesPerBook, 
+  formatPagesLong,
+  calculatePeriodStats,
+  getStatsRange,
+  generateComparison,
+  StatsPeriod
+} from '../lib/statsUtils';
+import { startOfMonth, subMonths, endOfMonth, subDays, startOfYear, endOfYear, addDays, isSameDay, format, differenceInDays, startOfDay } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Logomark } from '../components/Logomark';
+import { ReadingSessionModal } from '../components/ReadingSessionModal';
+import { ReadingHeatmap } from '../components/ReadingHeatmap';
+import { StreakCard } from '../components/StreakCard';
+import { ReadingCompanion } from '../components/ReadingCompanion';
 
 const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
 export const Dashboard: React.FC = () => {
-  const { books, loading, userGoal } = useBooks();
+  const { books, loading, userGoal, sessions } = useBooks();
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [chartMode, setChartMode] = useState<'livros' | 'paginas'>('livros');
+  const [showSessionModal, setShowSessionModal] = useState(false);
+  const [statsPeriod, setStatsPeriod] = useState<StatsPeriod>('this_month');
 
   const currentYear = new Date().getFullYear();
   const currentMonthName = MONTHS[new Date().getMonth()];
@@ -28,6 +46,17 @@ export const Dashboard: React.FC = () => {
 
     // Current month books
     const lidosEsteMes = lidosEsteAno.filter(b => b.mesLeitura === currentMonthName);
+
+    const lendoAgora = books.filter(b => b.status === 'lendo');
+    const maisAvancado = lendoAgora.length > 0 ? [...lendoAgora].sort((a, b) => (b.progressPercentage || 0) - (a.progressPercentage || 0))[0] : null;
+
+    // Session stats
+    const startOfWeek = new Date();
+    startOfWeek.setHours(0,0,0,0);
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+    
+    const sessionsThisWeek = sessions.filter(s => s.date >= startOfWeek.getTime());
+    const pagesThisWeek = sessionsThisWeek.reduce((acc, s) => acc + s.pagesRead, 0);
 
     const totalLidos = lidos.length;
     const mediaGeral = totalLidos > 0 ? lidos.reduce((acc, b) => acc + b.notaGeral, 0) / totalLidos : 0;
@@ -73,6 +102,17 @@ export const Dashboard: React.FC = () => {
 
     const mesMaisPaginas = [...leiturasPorMes].sort((a, b) => b.paginas - a.paginas)[0];
 
+    // Wishlist stats
+    const queroLer = books.filter(b => b.status === 'quero ler');
+    const highPriority = queroLer.filter(b => b.priority === 'high');
+    const nextRead = [...queroLer].sort((a, b) => {
+      const pMap = { high: 3, medium: 2, low: 1 };
+      const pA = pMap[a.priority as 'low'|'medium'|'high'] || 0;
+      const pB = pMap[b.priority as 'low'|'medium'|'high'] || 0;
+      if (pB !== pA) return pB - pA;
+      return (a.addedAt || a.dataCadastro || 0) - (b.addedAt || b.dataCadastro || 0);
+    })[0];
+
     // Top livros
     const topLivros = [...lidos].sort((a, b) => b.notaGeral - a.notaGeral).slice(0, 5);
 
@@ -87,14 +127,90 @@ export const Dashboard: React.FC = () => {
       totalLidosEsteAno, 
       paginasLidasEsteAno, 
       lidosEsteMes,
+      lendoAgora,
+      maisAvancado,
+      sessionsThisWeek,
+      pagesThisWeek,
       totalPaginas,
       mediaPaginas,
       maiorLivro,
       menorLivro,
       mesMaisPaginas,
+      queroLerCount: queroLer.length,
+      highPriorityCount: highPriority.length,
+      nextRead,
       hasMissingPageCounts: lidos.some(b => !b.pageCount)
     };
-  }, [books, loading, currentYear, currentMonthName]);
+  }, [books, loading, currentYear, currentMonthName, sessions]);
+
+  const periodData = useMemo(() => {
+    if (loading) return null;
+    const range = getStatsRange(statsPeriod);
+    const currentStats = calculatePeriodStats(books, sessions, range.start, range.end);
+    
+    // Previous period for comparison
+    let prevStart: Date;
+    let prevEnd: Date;
+    let unit = 'período';
+
+    if (statsPeriod === 'this_month') {
+      prevStart = startOfMonth(subMonths(range.start, 1));
+      prevEnd = endOfMonth(prevStart);
+      unit = 'mês';
+    } else if (statsPeriod === 'last_30_days') {
+      prevStart = subDays(range.start, 30);
+      prevEnd = subDays(range.end, 30);
+      unit = '30 dias';
+    } else if (statsPeriod === 'this_quarter') {
+      prevStart = subMonths(range.start, 3);
+      prevEnd = subMonths(range.end, 3);
+      unit = 'trimestre';
+    } else {
+      prevStart = startOfYear(subMonths(range.start, 12));
+      prevEnd = endOfYear(prevStart);
+      unit = 'ano';
+    }
+
+    const prevStats = calculatePeriodStats(books, sessions, prevStart, prevEnd);
+    const comparison = generateComparison(currentStats, prevStats, unit);
+
+    return { current: currentStats, comparison, range };
+  }, [books, sessions, statsPeriod, loading]);
+
+  const chartData = useMemo(() => {
+    if (!stats || !periodData) return [];
+    
+    // If period is year or quarter, show monthly evolution
+    if (statsPeriod === 'this_year' || statsPeriod === 'this_quarter') {
+      return stats.leiturasPorMes;
+    }
+    
+    // Otherwise show daily evolution for the range
+    const { start, end } = periodData.range;
+    const days = differenceInDays(end, start);
+    const data = [];
+    
+    // Safety check for too many days
+    if (days > 100) return stats.leiturasPorMes;
+
+    for (let i = 0; i <= days; i++) {
+       const date = addDays(start, i);
+       const dateAtStartOfDay = startOfDay(date);
+       if (dateAtStartOfDay > new Date()) break; // Don't show future
+       
+       const daySessions = sessions.filter(s => isSameDay(new Date(s.date), dateAtStartOfDay));
+       const dayBooks = books.filter(b => b.status === 'lido' && b.finishedAt && isSameDay(new Date(b.finishedAt), dateAtStartOfDay));
+       
+       data.push({
+         name: format(dateAtStartOfDay, 'dd/MM'),
+         fullName: format(dateAtStartOfDay, "eeee, dd 'de' MMMM", { locale: ptBR }),
+         quantidade: dayBooks.length,
+         paginas: daySessions.reduce((acc, s) => acc + safeParseNumber(s.pagesRead), 0),
+         livros: dayBooks
+       });
+    }
+    return data;
+  }, [stats, statsPeriod, periodData, sessions, books]);
 
   if (loading) {
     return (
@@ -167,22 +283,44 @@ export const Dashboard: React.FC = () => {
           <p className="text-neutral-400 mt-2 text-lg">Seu ano literário em números.</p>
         </div>
         <div className="flex flex-wrap gap-4">
+          <button 
+            onClick={() => setShowSessionModal(true)}
+            className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
+          >
+            <Clock size={20} />
+            Registrar Sessão
+          </button>
+          <Link 
+            to="/adicionar" 
+            className="bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
+          >
+            <Plus size={20} />
+            Nova Leitura
+          </Link>
+          <Link 
+            to="/comparativo-anual" 
+            className="bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-neutral-300 px-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
+          >
+            <History size={20} />
+            Comparativo
+          </Link>
           <Link 
             to="/retrospectiva" 
-            className="bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
+            className="bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-neutral-300 px-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
           >
             <Sparkles size={20} />
             Retrospectiva
           </Link>
-          <Link 
-            to="/configuracoes" 
-            className="bg-gradient-to-r from-amber-500 to-amber-600 text-neutral-950 px-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 hover:scale-105"
-          >
-            <Target size={20} />
-            Ajustar Metas
-          </Link>
         </div>
       </header>
+
+      <ReadingSessionModal isOpen={showSessionModal} onClose={() => setShowSessionModal(false)} />
+
+      <ReadingCompanion 
+        books={books} 
+        sessions={sessions} 
+        onLogAction={() => setShowSessionModal(true)} 
+      />
 
       {/* Goals Widget */}
       <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8 shadow-xl">
@@ -323,6 +461,257 @@ export const Dashboard: React.FC = () => {
         )}
       </div>
 
+      <StreakCard sessions={sessions} />
+
+      {/* Performance Section - Momento de Leitura */}
+      <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8 shadow-xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+          <div className="flex items-center gap-3">
+             <div className="p-3 bg-amber-500/10 text-amber-500 rounded-2xl">
+               <TrendingUp size={24} />
+             </div>
+             <div>
+               <h2 className="text-2xl font-serif font-semibold text-neutral-100">Desempenho no Período</h2>
+               <p className="text-xs text-neutral-500 font-medium uppercase tracking-wider">Acompanhe sua evolução</p>
+             </div>
+          </div>
+          
+          <div className="flex bg-neutral-950 p-1 rounded-xl border border-neutral-800 self-start">
+            {[
+              { id: 'this_month', label: 'Mês Atual' },
+              { id: 'last_30_days', label: '30 Dias' },
+              { id: 'this_quarter', label: 'Trimestre' },
+              { id: 'this_year', label: 'Ano' }
+            ].map((p) => (
+              <button
+                key={p.id}
+                onClick={() => setStatsPeriod(p.id as StatsPeriod)}
+                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${statsPeriod === p.id ? 'bg-amber-500 text-neutral-950' : 'text-neutral-500 hover:text-neutral-300'}`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {periodData && (
+          <div className="space-y-8">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+               <div className="p-6 bg-neutral-950/40 rounded-2xl border border-neutral-800/50 space-y-1">
+                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Livros Concluídos</p>
+                 <h4 className="text-3xl font-bold text-neutral-100">{periodData.current.booksFinished}</h4>
+               </div>
+               <div className="p-6 bg-neutral-950/40 rounded-2xl border border-neutral-800/50 space-y-1">
+                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Páginas Lidas</p>
+                 <h4 className="text-3xl font-bold text-neutral-100">{formatPagesShort(periodData.current.pagesRead)}</h4>
+               </div>
+               <div className="p-6 bg-neutral-950/40 rounded-2xl border border-neutral-800/50 space-y-1">
+                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Dias Ativos</p>
+                 <h4 className="text-3xl font-bold text-neutral-100">{periodData.current.activeReadingDays}</h4>
+               </div>
+               <div className="p-6 bg-neutral-950/40 rounded-2xl border border-neutral-800/50 space-y-1">
+                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Nota Média</p>
+                 <h4 className="text-3xl font-bold text-neutral-100">{periodData.current.averageRating.toFixed(1)}</h4>
+               </div>
+            </div>
+
+            <div className="bg-neutral-950/50 border border-neutral-800/50 rounded-2xl p-6">
+               <div className="flex items-start gap-4">
+                  <div className={`p-2.5 rounded-xl shrink-0 ${periodData.comparison.isImprovement ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
+                    {periodData.comparison.isImprovement ? <ArrowUpRight size={22} /> : <ArrowDownRight size={22} />}
+                  </div>
+                  <div>
+                    <h5 className="text-sm font-bold text-neutral-200 mb-1">Visão Comparativa</h5>
+                    <p className="text-sm text-neutral-400 leading-relaxed">
+                      {periodData.comparison.bookMsg} {periodData.comparison.pageMsg}
+                    </p>
+                  </div>
+               </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Heatmap de Leitura */}
+      <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8 shadow-xl">
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-2xl font-serif font-semibold text-neutral-100 flex items-center gap-3">
+            <Calendar className="text-emerald-500" size={28} />
+            Consistência de Leitura
+          </h2>
+          <div className="text-right">
+            <p className="text-sm text-neutral-400 font-medium">{currentYear}</p>
+          </div>
+        </div>
+        <ReadingHeatmap sessions={sessions} />
+      </div>
+
+      {/* Lendo Agora */}
+      <AnimatePresence>
+        {stats.lendoAgora.length > 0 && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8 shadow-xl"
+          >
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-2xl font-serif font-semibold text-neutral-100 flex items-center gap-3">
+                <RefreshCw className="text-emerald-500 animate-spin-slow" size={28} />
+                Lendo Agora
+              </h2>
+              <span className="text-sm text-neutral-500 font-medium bg-neutral-800 px-4 py-1.5 rounded-full">
+                {stats.lendoAgora.length} {stats.lendoAgora.length === 1 ? 'livro' : 'livros'} em progresso
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Mais Avançado / Destaque */}
+              {stats.maisAvancado && (
+                <Link 
+                  to={`/livro/${stats.maisAvancado.id}`}
+                  className="bg-neutral-950/50 border border-neutral-800/50 rounded-2xl p-6 flex gap-6 hover:border-emerald-500/50 transition-all group"
+                >
+                  <div className="w-24 h-36 rounded-xl overflow-hidden bg-neutral-800 shrink-0 shadow-lg group-hover:scale-105 transition-transform duration-500 border border-neutral-800">
+                    {stats.maisAvancado.coverUrl ? (
+                      <img src={stats.maisAvancado.coverUrl} alt={stats.maisAvancado.titulo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <BookOpen size={24} className="text-neutral-600" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 flex flex-col justify-between">
+                    <div>
+                      <span className="text-[10px] uppercase tracking-widest text-emerald-500 font-black mb-1 block">Mais Avançado</span>
+                      <h4 className="text-xl font-bold text-neutral-100 line-clamp-1 mb-1">{stats.maisAvancado.titulo}</h4>
+                      <p className="text-sm text-neutral-400">{stats.maisAvancado.autor}</p>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-end text-xs font-bold text-neutral-500">
+                        <span className="text-neutral-200">{stats.maisAvancado.progressPercentage}% concluído</span>
+                        <span>{stats.maisAvancado.currentPage} / {stats.maisAvancado.totalPages || stats.maisAvancado.pageCount}</span>
+                      </div>
+                      <div className="h-2 bg-neutral-900 rounded-full overflow-hidden">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${stats.maisAvancado.progressPercentage}%` }}
+                          className="h-full bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.3)]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              )}
+
+              {/* Lista compacta de outros livros */}
+              <div className="space-y-4">
+                {stats.lendoAgora.filter(b => b.id !== stats.maisAvancado?.id).slice(0, 3).map(book => (
+                  <Link 
+                    key={book.id} 
+                    to={`/livro/${book.id}`}
+                    className="flex items-center gap-4 p-3 rounded-2xl bg-neutral-950/20 border border-neutral-800/30 hover:bg-neutral-800/20 hover:border-emerald-500/30 transition-all group"
+                  >
+                    <div className="w-10 h-14 rounded-lg overflow-hidden bg-neutral-800 shrink-0 border border-neutral-800">
+                      {book.coverUrl ? (
+                        <img src={book.coverUrl} alt={book.titulo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <BookOpen size={12} className="text-neutral-600" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h5 className="text-sm font-bold text-neutral-200 truncate group-hover:text-emerald-500 transition-colors">{book.titulo}</h5>
+                      <div className="mt-1 flex items-center gap-2">
+                        <div className="flex-1 h-1.5 bg-neutral-900 rounded-full overflow-hidden max-w-[80px]">
+                          <div className="h-full bg-emerald-500/60 rounded-full" style={{ width: `${book.progressPercentage}%` }} />
+                        </div>
+                        <span className="text-[10px] font-bold text-neutral-500">{book.progressPercentage}%</span>
+                      </div>
+                    </div>
+                    <ChevronRight size={16} className="text-neutral-700" />
+                  </Link>
+                ))}
+                
+                {stats.lendoAgora.length > (stats.maisAvancado ? 4 : 3) && (
+                  <Link to="/livros?status=lendo" className="block text-center text-xs font-bold text-neutral-500 hover:text-emerald-500 transition-colors py-2 border border-dashed border-neutral-800 rounded-xl">
+                    Ver todos os {stats.lendoAgora.length} livros lendo
+                  </Link>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Fila de Espera / Wishlist */}
+      {stats.queroLerCount > 0 && (
+        <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8 shadow-xl">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-2xl font-serif font-semibold text-neutral-100 flex items-center gap-3">
+              <BookmarkPlus className="text-blue-500" size={28} />
+              Fila de Leitura
+            </h2>
+            <Link 
+              to="/livros?status=quero+ler" 
+              className="text-sm font-bold text-blue-500 hover:text-blue-400 transition-colors flex items-center gap-1 group"
+            >
+              Organizar fila completa
+              <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Wishlist Summary Card */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-6 bg-neutral-950/40 rounded-2xl border border-neutral-800/50 space-y-1">
+                <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest leading-tight">Livros na Fila</p>
+                <h4 className="text-3xl font-bold text-neutral-100">{stats.queroLerCount}</h4>
+              </div>
+              <div className="p-6 bg-neutral-950/40 rounded-2xl border border-neutral-800/50 space-y-1">
+                <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest leading-tight">Alta Prioridade</p>
+                <h4 className="text-3xl font-bold text-neutral-100 text-rose-500">{stats.highPriorityCount}</h4>
+              </div>
+            </div>
+
+            {/* Next Read Highlight */}
+            {stats.nextRead && (
+              <Link 
+                to={`/livro/${stats.nextRead.id}`}
+                className="bg-blue-500/5 border border-blue-500/10 rounded-2xl p-4 flex gap-4 hover:border-blue-500/40 transition-all group relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 p-2 opacity-5 pointer-events-none group-hover:opacity-10 transition-opacity">
+                  <BookmarkPlus size={64} className="text-blue-500" />
+                </div>
+                <div className="w-16 h-24 rounded-lg overflow-hidden bg-neutral-800 shrink-0 shadow-lg border border-neutral-800 group-hover:scale-105 transition-transform duration-500">
+                  {stats.nextRead.coverUrl ? (
+                    <img src={stats.nextRead.coverUrl} alt={stats.nextRead.titulo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <BookOpen size={20} className="text-neutral-700" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 flex flex-col justify-center min-w-0">
+                  <span className="text-[10px] uppercase tracking-widest text-blue-500 font-black mb-1 block">Sugestão: Próxima Leitura</span>
+                  <h4 className="text-base font-bold text-neutral-100 line-clamp-1 mb-0.5">{stats.nextRead.titulo}</h4>
+                  <p className="text-xs text-neutral-400 truncate mb-2">{stats.nextRead.autor}</p>
+                  {stats.nextRead.priority && (
+                    <div className={`text-[9px] font-black uppercase tracking-tighter inline-block px-2 py-0.5 rounded border self-start ${
+                      stats.nextRead.priority === 'high' ? 'bg-rose-500/10 border-rose-500/20 text-rose-500' :
+                      stats.nextRead.priority === 'medium' ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' :
+                      'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
+                    }`}>
+                      Prioridade {stats.nextRead.priority === 'high' ? 'Alta' : stats.nextRead.priority === 'medium' ? 'Média' : 'Baixa'}
+                    </div>
+                  )}
+                </div>
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Timeline Preview */}
       <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8 shadow-xl">
         <div className="flex items-center justify-between mb-8">
@@ -396,11 +785,12 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
         <StatCard icon={BookOpen} label="Total Lidos" value={stats.totalLidos.toString()} color="text-amber-500" bg="bg-amber-500/10" />
         <StatCard icon={FileText} label="Total de Páginas" value={formatPagesLong(stats.totalPaginas)} color="text-blue-500" bg="bg-blue-500/10" />
+        <StatCard icon={Clock} label="Esta Semana" value={`${stats.sessionsThisWeek.length} sessões`} subValue={`${formatPagesShort(stats.pagesThisWeek)} lidas`} color="text-emerald-500" bg="bg-emerald-500/10" />
         <StatCard icon={Star} label="Média Geral" value={stats.mediaGeral.toFixed(1)} color="text-rose-500" bg="bg-rose-500/10" />
-        <StatCard icon={TrendingUp} label="Autor Mais Lido" value={stats.autorMaisLido || '-'} subValue={stats.generoMaisLido ? `Gênero: ${stats.generoMaisLido}` : ''} color="text-emerald-500" bg="bg-emerald-500/10" />
+        <StatCard icon={TrendingUp} label="Autor Mais" value={stats.autorMaisLido || '-'} subValue={stats.generoMaisLido ? `Gênero: ${stats.generoMaisLido}` : ''} color="text-violet-500" bg="bg-violet-500/10" />
       </div>
 
       {/* Page Stats Grid */}
@@ -492,7 +882,7 @@ export const Dashboard: React.FC = () => {
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-xl font-serif font-semibold flex items-center gap-2">
               <Calendar className="text-amber-500" size={20} />
-              Evolução de Leituras
+              {statsPeriod === 'this_year' ? 'Evolução Anual' : statsPeriod === 'this_month' ? 'Ritmo Mensal' : 'Ritmo no Período'}
             </h2>
             <div className="flex bg-neutral-950 p-1 rounded-xl border border-neutral-800">
               <button 
@@ -509,29 +899,38 @@ export const Dashboard: React.FC = () => {
               </button>
             </div>
           </div>
-          <p className="text-sm text-neutral-400 mb-6">Clique em uma barra para ver os livros lidos no mês.</p>
+          <p className="text-sm text-neutral-400 mb-6">
+            {statsPeriod === 'this_year' || statsPeriod === 'this_quarter' 
+              ? 'Clique em uma barra para ver os livros lidos no mês.' 
+              : 'Evolução diária de páginas e livros concluídos.'}
+          </p>
           <div className="h-72 w-full" style={{ minWidth: 0, minHeight: 0 }}>
             <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-              <BarChart data={stats.leiturasPorMes}>
+              <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
                 <XAxis dataKey="name" stroke="#737373" tick={{ fill: '#737373' }} axisLine={false} tickLine={false} />
                 <YAxis stroke="#737373" tick={{ fill: '#737373' }} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip 
                   cursor={{ fill: '#262626' }} 
-                  contentStyle={{ backgroundColor: '#171717', border: '1px solid #262626', borderRadius: '12px' }}
+                  contentStyle={{ backgroundColor: '#171717', border: '1px solid #262626', borderRadius: '12px', color: '#fff' }}
+                  labelStyle={{ fontWeight: 'bold', marginBottom: '4px' }}
                   formatter={(value: any) => [value.toLocaleString(), chartMode === 'livros' ? 'Livros' : 'Páginas']}
+                  labelFormatter={(label, payload) => {
+                    if (payload && payload.length > 0) return payload[0].payload.fullName;
+                    return label;
+                  }}
                 />
                 <Bar 
                   dataKey={chartMode === 'livros' ? 'quantidade' : 'paginas'} 
                   radius={[4, 4, 0, 0]} 
                   onClick={(data) => {
-                    if (data && data.name) {
+                    if (data && data.name && (statsPeriod === 'this_year' || statsPeriod === 'this_quarter')) {
                       setSelectedMonth(selectedMonth === data.name ? null : data.name);
                     }
                   }}
                   className="cursor-pointer transition-all duration-300 hover:opacity-80"
                 >
-                  {stats.leiturasPorMes.map((entry, index) => (
+                  {chartData.map((entry, index) => (
                     <Cell 
                       key={`cell-${index}`} 
                       fill={selectedMonth === entry.name ? (chartMode === 'livros' ? '#f59e0b' : '#3b82f6') : (selectedMonth ? '#404040' : (chartMode === 'livros' ? '#f59e0b' : '#3b82f6'))} 
