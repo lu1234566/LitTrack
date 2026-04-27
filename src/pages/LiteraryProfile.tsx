@@ -6,7 +6,7 @@ import { analysisService } from '../services/analysisService';
 import { 
   UserCircle, Sparkles, Loader2, RefreshCw, BookOpen, Star, Heart, TrendingUp, 
   Brain, Award, ShieldAlert, Activity, Smile, History, Ghost, Zap, Wind, 
-  Search, Target, Flame, Share2
+  Search, Target, Flame, Share2, Clock, Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -182,6 +182,90 @@ export const LiteraryProfile: React.FC = () => {
             </div>
           </div>
 
+          {/* Reading Pace and Length Analytics */}
+          {currentProfile.readingPace && (
+            <div className="bg-neutral-900/50 border border-neutral-800 rounded-[2.5rem] p-8 md:p-10 shadow-2xl relative overflow-hidden">
+              <div className="flex items-center gap-4 mb-10">
+                <div className="p-3 bg-purple-500/10 rounded-2xl text-purple-500">
+                  <Wind size={28} />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-serif font-bold text-neutral-100">Análise de Ritmo e Extensão</h2>
+                  <p className="text-neutral-500 text-sm">Comportamento de fôlego e velocidade de conclusão.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                <PaceStatCard 
+                  label="Duração Média" 
+                  value={`${currentProfile.readingPace.avgDaysToFinish} dias`} 
+                  sub="para concluir uma obra"
+                  icon={Clock}
+                />
+                <PaceStatCard 
+                  label="Intensidade Mensal" 
+                  value={`${currentProfile.readingPace.avgPagesPerMonth} págs`} 
+                  sub="em média por mês ativo"
+                  icon={Zap}
+                />
+                <PaceStatCard 
+                  label="Extensão Média" 
+                  value={`${currentProfile.readingPace.avgPagesPerBook} págs`} 
+                  sub="por livro concluído"
+                  icon={BookOpen}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="space-y-4">
+                  <h3 className="text-sm font-black text-neutral-500 uppercase tracking-widest pl-2">Livros Significativos</h3>
+                  <div className="bg-neutral-950/40 border border-neutral-800 rounded-3xl p-6 flex flex-col gap-6">
+                    {currentProfile.readingPace.longestBook && (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-500">
+                            <Plus size={20} />
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-neutral-200">{currentProfile.readingPace.longestBook.title}</p>
+                            <p className="text-[10px] text-neutral-500 uppercase font-black">Sua leitura mais longa</p>
+                          </div>
+                        </div>
+                        <span className="text-sm font-mono text-amber-500">{currentProfile.readingPace.longestBook.pages} págs</span>
+                      </div>
+                    )}
+                    {currentProfile.readingPace.shortestBook && (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-500">
+                            <Wind size={20} />
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-neutral-200">{currentProfile.readingPace.shortestBook.title}</p>
+                            <p className="text-[10px] text-neutral-500 uppercase font-black">Sua leitura mais curta</p>
+                          </div>
+                        </div>
+                        <span className="text-sm font-mono text-blue-500">{currentProfile.readingPace.shortestBook.pages} págs</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-neutral-900/30 border border-neutral-800 p-8 rounded-[2rem] flex flex-col items-center justify-center text-center relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="p-4 bg-amber-500/10 rounded-full text-amber-500 mb-4 z-10">
+                    <Target size={32} />
+                  </div>
+                  <h4 className="text-lg font-serif font-bold text-neutral-200 mb-2 z-10">Banda de Extensão Preferida</h4>
+                  <p className="text-3xl font-black text-neutral-100 mb-2 tracking-tight z-10">{currentProfile.readingPace.preferredRange}</p>
+                  <p className="text-sm text-neutral-500 italic max-w-xs z-10">
+                    Suas leituras mais satisfatórias costumam ficar dentro desta faixa de volume.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Taste Evolution Section */}
           {currentProfile.evolutionData && currentProfile.evolutionData.length > 0 && (
             <div className="bg-neutral-900/50 border border-neutral-800 rounded-[2.5rem] p-8 md:p-10 shadow-2xl relative overflow-hidden">
@@ -271,7 +355,7 @@ export const LiteraryProfile: React.FC = () => {
                     <RadarChart cx="50%" cy="50%" outerRadius="80%" data={currentProfile.moodMap}>
                       <PolarGrid stroke="#333" />
                       <PolarAngleAxis dataKey="mood" tick={{ fill: '#737373', fontSize: 10, fontWeight: 700 }} />
-                      <PolarRadiusAxis angle={30} domain={[0, 10]} axisLine={false} tick={false} />
+                      <PolarRadiusAxis angle={30} domain={[0, 100]} axisLine={false} tick={false} />
                       <Radar
                         name="Intensidade"
                         dataKey="intensity"
@@ -521,4 +605,17 @@ const ProfileCard = ({ label, value, icon: Icon, color, bg }: any) => (
       </div>
     </div>
   </motion.div>
+);
+
+const PaceStatCard = ({ label, value, sub, icon: Icon }: any) => (
+  <div className="bg-neutral-950/40 border border-neutral-800 p-6 rounded-3xl group hover:border-purple-500/50 transition-colors shadow-lg">
+    <div className="flex items-center gap-4 mb-3">
+      <div className="p-3 bg-neutral-900 rounded-xl text-neutral-500 group-hover:text-purple-500 transition-colors">
+        <Icon size={20} />
+      </div>
+      <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">{label}</p>
+    </div>
+    <p className="text-3xl font-black text-neutral-100 mb-1">{value}</p>
+    <p className="text-xs text-neutral-600 font-medium">{sub}</p>
+  </div>
 );

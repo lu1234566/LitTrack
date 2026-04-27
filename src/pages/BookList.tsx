@@ -7,7 +7,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CoverImage } from '../components/CoverImage';
 import { ShelfModal } from '../components/ShelfModal';
 
-const FiltersContent = ({ filterStatus, setFilterStatus, filterGenre, setFilterGenre, genres, sortBy, setSortBy, filterShelf, setFilterShelf, shelves }: any) => (
+const MOODS = ['Sombrio', 'Tenso', 'Reflexivo', 'Aconchegante', 'Emocional', 'Misterioso', 'Caótico', 'Inspirador', 'Cerebral', 'Mágico'];
+
+const FiltersContent = ({ filterStatus, setFilterStatus, filterGenre, setFilterGenre, genres, sortBy, setSortBy, filterShelf, setFilterShelf, shelves, filterMood, setFilterMood }: any) => (
   <>
     <select
       value={filterShelf}
@@ -17,6 +19,16 @@ const FiltersContent = ({ filterStatus, setFilterStatus, filterGenre, setFilterG
       <option value="todos">Todas as Estantes</option>
       {shelves.map((s: any) => (
         <option key={s.id} value={s.id}>{s.name}</option>
+      ))}
+    </select>
+    <select
+      value={filterMood}
+      onChange={(e) => setFilterMood(e.target.value)}
+      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500/50 appearance-none"
+    >
+      <option value="todos">Todos os Humores</option>
+      {MOODS.map((m: string) => (
+        <option key={m} value={m}>{m}</option>
       ))}
     </select>
     <select
@@ -59,6 +71,7 @@ export const BookList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('todos');
   const [filterGenre, setFilterGenre] = useState<string>('todos');
+  const [filterMood, setFilterMood] = useState<string>('todos');
   const [filterShelf, setFilterShelf] = useState<string>('todos');
   const [sortBy, setSortBy] = useState<'data' | 'nota' | 'titulo' | 'prioridade' | 'adicionado'>('data');
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
@@ -73,8 +86,9 @@ export const BookList: React.FC = () => {
         const matchesSearch = safeTitulo.toLowerCase().includes(searchTerm.toLowerCase()) || safeAutor.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = filterStatus === 'todos' || book.status === filterStatus;
         const matchesGenre = filterGenre === 'todos' || book.genero === filterGenre;
+        const matchesMood = filterMood === 'todos' || (book.moods?.includes(filterMood));
         const matchesShelf = filterShelf === 'todos' || (shelves.find(s => s.id === filterShelf)?.bookIds.includes(book.id));
-        return matchesSearch && matchesStatus && matchesGenre && matchesShelf;
+        return matchesSearch && matchesStatus && matchesGenre && matchesMood && matchesShelf;
       })
       .sort((a, b) => {
         if (sortBy === 'data') return (b.dataCadastro || 0) - (a.dataCadastro || 0);
@@ -90,7 +104,7 @@ export const BookList: React.FC = () => {
         }
         return 0;
       });
-  }, [books, searchTerm, filterStatus, filterGenre, filterShelf, sortBy, shelves]);
+  }, [books, searchTerm, filterStatus, filterGenre, filterMood, filterShelf, sortBy, shelves]);
 
   const genres = useMemo(() => Array.from(new Set(books.map((b) => b.genero))), [books]);
 
@@ -204,6 +218,8 @@ export const BookList: React.FC = () => {
               filterShelf={filterShelf}
               setFilterShelf={setFilterShelf}
               shelves={shelves}
+              filterMood={filterMood}
+              setFilterMood={setFilterMood}
             />
           </div>
         )}
@@ -248,6 +264,8 @@ export const BookList: React.FC = () => {
                   filterShelf={filterShelf}
                   setFilterShelf={setFilterShelf}
                   shelves={shelves}
+                  filterMood={filterMood}
+                  setFilterMood={setFilterMood}
                 />
                 <button
                   onClick={() => setIsFiltersOpen(false)}

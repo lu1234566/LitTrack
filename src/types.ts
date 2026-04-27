@@ -78,6 +78,14 @@ export interface LiteraryProfile {
     demandingGenre: string;
   };
   preferredLength: 'short' | 'medium' | 'long' | 'varied';
+  readingPace?: {
+    avgPagesPerBook: number;
+    avgDaysToFinish: number;
+    shortestBook?: { title: string; pages: number };
+    longestBook?: { title: string; pages: number };
+    preferredRange: string;
+    avgPagesPerMonth: number;
+  };
 }
 
 export interface Recommendation {
@@ -139,6 +147,7 @@ export interface Book {
   isbn?: string;
   publisher?: string;
   publishedDate?: string;
+  moods?: string[];
   dataCadastro: number;
   createdAt?: any;
 }

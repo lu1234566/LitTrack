@@ -1,6 +1,65 @@
-import { Book, LiteraryProfile, Recommendation, Quote } from "../types";
+import { Book, LiteraryProfile, Recommendation, Quote, BookGenre } from "../types";
+
+const MOODS = [
+  "Sombrio", "Tenso", "Reflexivo", "Aconchegante", "Emocional", "Misterioso", "Caótico", "Inspirador", "Cerebral", "Mágico"
+];
 
 export const analysisService = {
+  inferMoods(book: Book): string[] {
+    const moods = new Set<string>();
+    
+    // Genre mapping
+    const genreMoodMap: Record<string, string[]> = {
+      "Mistério": ["Misterioso", "Tenso"],
+      "Suspense": ["Tenso", "Sombrio"],
+      "Terror": ["Sombrio", "Tenso", "Caótico"],
+      "Romance": ["Emocional", "Aconchegante"],
+      "Fantasia": ["Mágico", "Inspirador"],
+      "Ficção Científica": ["Cerebral", "Reflexivo"],
+      "Biografia": ["Inspirador"],
+      "História": ["Reflexivo"],
+      "Autoajuda": ["Inspirador", "Aconchegante"],
+      "Não Ficção": ["Cerebral", "Reflexivo"],
+      "Ficção": ["Reflexivo"]
+    };
+
+    if (genreMoodMap[book.genero]) {
+      genreMoodMap[book.genero].forEach(m => moods.add(m));
+    }
+
+    // Keyword inference from notes/review
+    const text = (book.resenha + " " + book.pontosFortes + " " + book.pontosFracos).toLowerCase();
+    
+    const keywordMap: Record<string, string[]> = {
+      "sombrio": ["Sombrio"],
+      "escuro": ["Sombrio"],
+      "tenso": ["Tenso"],
+      "ansiedade": ["Tenso"],
+      "angústia": ["Tenso", "Emocional"],
+      "triste": ["Emocional"],
+      "emocionante": ["Emocional"],
+      "conforto": ["Aconchegante"],
+      "doce": ["Aconchegante"],
+      "pensa": ["Reflexivo"],
+      "filosófico": ["Reflexivo"],
+      "mistério": ["Misterioso"],
+      "enigma": ["Misterioso"],
+      "caos": ["Caótico"],
+      "bagunça": ["Caótico"],
+      "mágico": ["Mágico"],
+      "encantamento": ["Mágico"],
+      "intenso": ["Tenso", "Emocional"]
+    };
+
+    Object.entries(keywordMap).forEach(([keyword, mds]) => {
+      if (text.includes(keyword)) {
+        mds.forEach(m => moods.add(m));
+      }
+    });
+
+    return Array.from(moods);
+  },
+
   analyzeLiteraryProfile(books: Book[]): LiteraryProfile {
     const finishedBooks = books.filter(b => b.status === "lido");
     
@@ -38,6 +97,56 @@ export const analysisService = {
     const avgRating = finishedBooks.reduce((acc, b) => acc + b.notaGeral, 0) / (finishedBooks.length || 1);
     const avgPages = finishedBooks.reduce((acc, b) => acc + (b.pageCount || 0), 0) / (finishedBooks.length || 1);
     
+    // 5. Pace & Length Metrics
+    const shortestBookInfo = finishedBooks.filter(b => (b.pageCount || 0) > 0).sort((a, b) => (a.pageCount || 0) - (b.pageCount || 0))[0];
+    const longestBookInfo = finishedBooks.filter(b => (b.pageCount || 0) > 0).sort((a, b) => (b.pageCount || 0) - (a.pageCount || 0))[0];
+
+    // Calculate avg days to finish
+    let totalDays = 0;
+    let booksWithDates = 0;
+    finishedBooks.forEach(b => {
+      if (b.startedAt && b.finishedAt) {
+        const diff = (b.finishedAt - b.startedAt) / (1000 * 60 * 60 * 24);
+        if (diff > 0) {
+          totalDays += diff;
+          booksWithDates++;
+        }
+      }
+    });
+    const avgDaysToFinish = booksWithDates > 0 ? Math.round(totalDays / booksWithDates) : 0;
+
+    // Calculate pages per month (for active months)
+    const monthPages: Record<string, number> = {};
+    finishedBooks.forEach(b => {
+      const key = `${b.mesLeitura}-${b.anoLeitura}`;
+      monthPages[key] = (monthPages[key] || 0) + (b.pageCount || 0);
+    });
+    const monthsActive = Object.keys(monthPages).length;
+    const avgPagesPerMonth = monthsActive > 0 ? Math.round(Object.values(monthPages).reduce((a, b) => a + b, 0) / monthsActive) : 0;
+
+    const lengthInsights: string[] = [];
+    if (avgPages < 250) lengthInsights.push("Sua preferência recai sobre leituras curtas e dinâmicas.");
+    else if (avgPages > 500) lengthInsights.push("Você não teme a densidade e prefere habitar universos vastos.");
+    else lengthInsights.push("Você tende a preferir livros de tamanho médio, entre 250 e 400 páginas.");
+
+    if (avgDaysToFinish > 0 && avgDaysToFinish < 7) lengthInsights.push("Seu ritmo de leitura é voraz, concluindo obras em menos de uma semana.");
+    else if (avgDaysToFinish > 21) lengthInsights.push("Você saboreia suas leituras por longos períodos, mergulhando fundo na atmosfera.");
+
+    // 4. Mood Analysis
+    const moodCounts: Record<string, number> = {};
+    finishedBooks.forEach(b => {
+      const bookMoods = b.moods && b.moods.length > 0 ? b.moods : this.inferMoods(b);
+      bookMoods.forEach(mood => {
+        moodCounts[mood] = (moodCounts[mood] || 0) + 1;
+      });
+    });
+
+    const moodMap = Object.entries(moodCounts)
+      .map(([mood, count]) => ({ mood, intensity: (count / finishedBooks.length) * 100 }))
+      .sort((a, b) => b.intensity - a.intensity);
+
+    const dominantMood = moodMap[0]?.mood || "Neutro";
+
     let archetype = {
       name: "O Explorador Silencioso",
       description: "Você lê com curiosidade, buscando novos mundos sem preconceitos de gênero.",
@@ -45,53 +154,62 @@ export const analysisService = {
       demandingGenre: "Ficção"
     };
 
-    if (avgRating > 4.5) {
+    if (dominantMood === "Sombrio" || dominantMood === "Tenso") {
+      archetype = {
+        name: "O Estrategista Sombrio",
+        description: "Você é atraído pelas sombras e pela tensão, buscando entender os labirintos da mente humana.",
+        emotionalResonance: dominantMood,
+        demandingGenre: "Suspense / Noir"
+      };
+    } else if (dominantMood === "Aconchegante") {
+      archetype = {
+        name: "O Leitor de Atmosferas",
+        description: "Sua leitura é um refúgio. Você busca histórias que abraçam e trazem conforto.",
+        emotionalResonance: "Calma",
+        demandingGenre: "Romance / Slice of Life"
+      };
+    } else if (dominantMood === "Reflexivo" || dominantMood === "Cerebral") {
+      archetype = {
+        name: "O Analista Metafísico",
+        description: "Ler para você é pensar. Você busca obras que desafiam sua percepção e expandem seu intelecto.",
+        emotionalResonance: "Intelecto",
+        demandingGenre: "Filosofia / Hard Sci-Fi"
+      };
+    } else if (avgRating > 4.5) {
       archetype = {
         name: "O Entusiasta Devoto",
         description: "Você encontra beleza e significado em quase tudo o que lê, mergulhando profundamente em cada história.",
         emotionalResonance: "Empatia",
         demandingGenre: favoriteGenre
       };
-    } else if (avgRating < 3.5) {
-      archetype = {
-        name: "O Crítico Austero",
-        description: "Seu padrão de qualidade é altíssimo. Poucas obras conseguem transpor suas defesas literárias.",
-        emotionalResonance: "Rigor",
-        demandingGenre: "Crítica"
-      };
-    } else if (avgPages > 500) {
-      archetype = {
-        name: "O Maratonista de Épicos",
-        description: "Você não teme a densidade. Prefere habitar universos vastos e complexos por longos períodos.",
-        emotionalResonance: "Resiliência",
-        demandingGenre: "Alta Fantasia / Histórico"
-      };
     }
-
-    // 4. Mood Map (Simulated based on genres)
-    const moodMap = Object.entries(genreCounts).map(([genre, count]) => {
-      const mood = this.mapGenreToMood(genre);
-      return { mood, intensity: (count / finishedBooks.length) * 100 };
-    });
 
     return {
       generoFavorito: favoriteGenre,
       tipoNarrativaFavorita: this.inferNarrativeType(favoriteGenre),
-      elementoMaisValorizado: avgRating > 4 ? "Profundidade Emocional" : "Estrutura Narrativa",
+      elementoMaisValorizado: dominantMood === "Emocional" ? "Conexão Humana" : (avgRating > 4 ? "Profundidade Emocional" : "Estrutura Narrativa"),
       pontoMaisCritico: avgRating < 3 ? "Originalidade" : "Ritmo",
       autorMaisCompativel: authorMaisCompativel,
       estiloLeitor: avgPages > 400 ? "Leitor de Fôlego" : "Leitor Dinâmico",
+      readingPace: {
+        avgPagesPerBook: Math.round(avgPages),
+        avgDaysToFinish,
+        shortestBook: shortestBookInfo ? { title: shortestBookInfo.titulo, pages: shortestBookInfo.pageCount || 0 } : undefined,
+        longestBook: longestBookInfo ? { title: longestBookInfo.titulo, pages: longestBookInfo.pageCount || 0 } : undefined,
+        preferredRange: avgPages > 500 ? "+500 págs" : avgPages > 250 ? "250-500 págs" : "Até 250 págs",
+        avgPagesPerMonth
+      },
       insights: [
+        `Seu clima literário predominante é ${dominantMood}.`,
         `Você demonstra uma preferência clara por obras de ${favoriteGenre}.`,
-        avgRating > 4.2 ? "Seu critério de seleção é excelente, resultando em altas avaliações." : "Você é um leitor experimental, disposto a dar chances a obras diversas.",
-        `Sua média de páginas (${Math.round(avgPages)}) sugere que você prefere livros de tamanho ${avgPages > 400 ? 'longo' : 'médio'}.`
+        ...lengthInsights,
       ],
-      analiseDetalhada: `Sua jornada literária é marcada por uma busca constante por ${favoriteGenre}. Com uma média de ${avgRating.toFixed(1)} estrelas, você se consolida como um leitor ${avgRating > 4 ? 'apaixonado' : 'analítico'}.`,
+      analiseDetalhada: `Sua jornada literária é marcada por uma busca constante por atmosferas ${dominantMood.toLowerCase()}s. Com uma média de ${avgRating.toFixed(1)} estrelas em livros de aproximadamente ${Math.round(avgPages)} páginas, você se consolida como um leitor ${avgRating > 4 ? 'apaixonado' : 'analítico'}.`,
       rankingAutores,
       moodMap,
       readingStyleBehavior: [
-        { pattern: "Frequência", description: finishedBooks.length > 10 ? "Leitor assíduo com ritmo constante." : "Leitor seletivo que saboreia cada obra." },
-        { pattern: "Preferência de Tamanho", description: `Foco em livros de aproximadamente ${Math.round(avgPages)} páginas.` }
+        { pattern: "Atmosfera Principal", description: `Foco em leituras de tom ${dominantMood.toLowerCase()}.` },
+        { pattern: "Frequência", description: finishedBooks.length > 10 ? "Leitor assíduo com ritmo constante." : "Leitor seletivo que saboreia cada obra." }
       ],
       genreMetrics: Object.entries(genreCounts).map(([genre, count]) => ({
         genre,
@@ -99,9 +217,9 @@ export const analysisService = {
         strictness: 70, // Base value
         averageRating: authorStats[genre]?.avgRating || 0
       })),
-      evolutionData: [], // Would require historical grouping logic
+      evolutionData: [], 
       evolutionInsights: [
-        "Sua paleta literária tem se mantido fiel aos seus temas fundamentais.",
+        `Suas leituras recentes inclinam-se para o ${dominantMood}.`,
         "Há uma consistência notável em suas escolhas de autores nos últimos meses."
       ],
       archetype,
@@ -156,6 +274,51 @@ export const analysisService = {
     return narratives;
   },
 
+  getMonthlyMood(books: Book[]): string {
+    if (books.length === 0) return "Equilibrado";
+    const moodCounts: Record<string, number> = {};
+    books.forEach(b => {
+      const bookMoods = b.moods && b.moods.length > 0 ? b.moods : this.inferMoods(b);
+      bookMoods.forEach(mood => {
+        moodCounts[mood] = (moodCounts[mood] || 0) + 1;
+      });
+    });
+    return Object.entries(moodCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "Reflexivo";
+  },
+
+  generateMonthlySummary(month: string, books: Book[]): string {
+    if (books.length === 0) return "";
+    
+    const avgRating = books.reduce((acc, b) => acc + b.notaGeral, 0) / books.length;
+    const totalPages = books.reduce((acc, b) => acc + (b.pageCount || 0), 0);
+    
+    const dominantMood = this.getMonthlyMood(books);
+
+    const summaries: string[] = [];
+    
+    if (dominantMood === "Sombrio" || dominantMood === "Tenso") {
+      summaries.push(`${month} foi um mês de imersão em atmosferas densas e intrigantes.`);
+    } else if (dominantMood === "Aconchegante") {
+      summaries.push(`${month} revelou-se um refúgio acolhedor com leituras reconfortantes.`);
+    } else if (dominantMood === "Reflexivo" || dominantMood === "Cerebral") {
+      summaries.push(`${month} foi marcado por reflexões profundas e desafios intelectuais.`);
+    } else if (dominantMood === "Emocional") {
+      summaries.push(`${month} foi um período de grande conexão emocional com as histórias.`);
+    } else {
+      summaries.push(`${month} trouxe uma diversidade equilibrada de ritmos e tons.`);
+    }
+
+    if (avgRating >= 4.5) {
+      summaries.push("Um período de excelência literária com obras que superaram expectativas.");
+    } else if (books.length >= 4) {
+      summaries.push("Um mês de ritmo voraz e muitas descobertas concluídas.");
+    } else if (totalPages > 1500) {
+      summaries.push("O foco esteve em obras de grande fôlego e profundidade.");
+    }
+
+    return summaries.join(" ");
+  },
+
   generateYearComparisonInsights(yearAData: any, yearBData: any): string[] {
     const insights: string[] = [];
     
@@ -181,8 +344,18 @@ export const analysisService = {
     if (finished.length === 0) return [];
 
     const genreCounts: Record<string, number> = {};
-    finished.forEach(b => genreCounts[b.genero] = (genreCounts[b.genero] || 0) + 1);
+    const moodCounts: Record<string, number> = {};
+    
+    finished.forEach(b => {
+      genreCounts[b.genero] = (genreCounts[b.genero] || 0) + 1;
+      const bookMoods = b.moods && b.moods.length > 0 ? b.moods : this.inferMoods(b);
+      bookMoods.forEach(mood => {
+        moodCounts[mood] = (moodCounts[mood] || 0) + 1;
+      });
+    });
+
     const topGenre = Object.entries(genreCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+    const topMood = Object.entries(moodCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "Reflexivo";
 
     // Local "recommendations" are actually just tips based on current data
     return [
@@ -190,19 +363,29 @@ export const analysisService = {
         titulo: `Explorar mais de ${topGenre}`,
         autor: "Sugestão Readora",
         genero: topGenre || "Vários",
-        motivo: "Você tem demonstrado grande afinidade com este gênero recentemente.",
+        motivo: `Com base nas suas leituras de ${topGenre}, sugerimos buscar obras que mantenham este padrão de qualidade.`,
         compatibilidade: 95,
-        clima: "Váriado",
+        clima: topMood,
         tipoFinal: "Consistente",
         impactoEmocional: "Estabilidade"
+      },
+      {
+        titulo: `Busca por Atmosfera ${topMood}`,
+        autor: "Personalidade Literária",
+        genero: "Vários",
+        motivo: `Você tem demonstrado grande afinidade com o clima ${topMood.toLowerCase()} recentemente. Busque novos títulos nesta vibe.`,
+        compatibilidade: 88,
+        clima: topMood,
+        tipoFinal: "Envolvente",
+        impactoEmocional: "Ressonância"
       },
       {
         titulo: "Desafiar seu Arquétipo",
         autor: "Diversidade Literária",
         genero: "Novo Gênero",
-        motivo: "Sair da zona de conforto de vez em quando expande seus horizontes.",
+        motivo: "Sair da zona de conforto de vez em quando expande seus horizontes. Tente um clima diferente do habitual.",
         compatibilidade: 70,
-        clima: "Experimental",
+        clima: topMood === "Sombrio" ? "Aconchegante" : "Caótico",
         tipoFinal: "Surpreendente",
         impactoEmocional: "Descoberta"
       }

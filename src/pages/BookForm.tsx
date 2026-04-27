@@ -14,6 +14,7 @@ import { CoverImage } from '../components/CoverImage';
 import { safeParseNumber } from '../lib/statsUtils';
 
 const GENRES: BookGenre[] = ['Ficção', 'Não Ficção', 'Fantasia', 'Ficção Científica', 'Romance', 'Suspense', 'Terror', 'Biografia', 'História', 'Autoajuda', 'Outro'];
+const MOODS = ['Sombrio', 'Tenso', 'Reflexivo', 'Aconchegante', 'Emocional', 'Misterioso', 'Caótico', 'Inspirador', 'Cerebral', 'Mágico'];
 const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
 const initialRatings: BookRatings = { historia: 0, personagens: 0, ritmo: 0, originalidade: 0, impactoEmocional: 0, final: 0 };
@@ -177,6 +178,7 @@ export const BookForm: React.FC = () => {
     discoveredFrom: '',
     queueOrder: 0,
     addedAt: Date.now(),
+    moods: [],
   });
 
   useEffect(() => {
@@ -920,6 +922,38 @@ export const BookForm: React.FC = () => {
                 />
               </div>
             ))}
+          </div>
+        </SectionWrapper>
+
+        {/* Humor e Atmosfera */}
+        <SectionWrapper id="mood" title="Humor e Atmosfera" icon={RefreshCw} isMobileLayout={isMobileLayout} openSection={openSection} toggleSection={toggleSection} colorClass="text-purple-500">
+          <div className="space-y-4">
+            <p className="text-sm text-neutral-400">Selecione as atmosferas que melhor descrevem esta leitura:</p>
+            <div className="flex flex-wrap gap-2">
+              {MOODS.map((mood) => {
+                const isSelected = formData.moods?.includes(mood);
+                return (
+                  <button
+                    key={mood}
+                    type="button"
+                    onClick={() => {
+                      const currentMoods = formData.moods || [];
+                      const newMoods = isSelected
+                        ? currentMoods.filter(m => m !== mood)
+                        : [...currentMoods, mood];
+                      setFormData(prev => ({ ...prev, moods: newMoods }));
+                    }}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${
+                      isSelected 
+                        ? 'bg-purple-500 border-purple-500 text-white shadow-lg shadow-purple-500/20' 
+                        : 'bg-neutral-950 border-neutral-800 text-neutral-400 hover:border-neutral-600'
+                    }`}
+                  >
+                    {mood}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </SectionWrapper>
 

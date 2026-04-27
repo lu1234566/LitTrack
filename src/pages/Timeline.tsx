@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { useBooks } from '../context/BookContext';
-import { Book as BookIcon, Star, Calendar, ChevronRight, ChevronDown, Award, FileText, TrendingUp, PlusCircle, Filter } from 'lucide-react';
+import { useQuotes } from '../context/QuotesContext';
+import { analysisService } from '../services/analysisService';
+import { Book as BookIcon, Star, Calendar, ChevronRight, ChevronDown, Award, FileText, TrendingUp, PlusCircle, Filter, Quote as QuoteIcon, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Book } from '../types';
@@ -13,6 +15,7 @@ const MONTHS = [
 
 export const Timeline: React.FC = () => {
   const { books, loading } = useBooks();
+  const { quotes } = useQuotes();
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({});
 
@@ -44,6 +47,14 @@ export const Timeline: React.FC = () => {
       }, {} as Record<string, number>);
       const topGenre = Object.keys(genres).reduce((a, b) => genres[a] > genres[b] ? a : b);
 
+      // Mood & Summary
+      const dominantMood = analysisService.getMonthlyMood(monthBooks);
+      const summary = analysisService.generateMonthlySummary(month, monthBooks);
+
+      // Quote for the month
+      const monthBookIds = monthBooks.map(b => b.id);
+      const monthQuote = quotes.find(q => monthBookIds.includes(q.bookId));
+
       return {
         month,
         books: monthBooks,
@@ -55,13 +66,16 @@ export const Timeline: React.FC = () => {
         highlights: {
           bestBook,
           longestBook,
-          topGenre
+          topGenre,
+          dominantMood,
+          summary,
+          quote: monthQuote
         }
       };
     }).filter(Boolean);
 
     return data.reverse(); // Show most recent months first
-  }, [lidos, selectedYear]);
+  }, [lidos, selectedYear, quotes]);
 
   const toggleMonth = (month: string) => {
     setExpandedMonths(prev => ({
@@ -139,54 +153,79 @@ export const Timeline: React.FC = () => {
               </div>
 
               {/* Content */}
-              <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] ml-16 md:ml-0 bg-neutral-900/50 border border-neutral-800 rounded-3xl p-6 shadow-xl hover:border-neutral-700 transition-all">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 className="text-2xl font-serif font-bold text-neutral-100">{data!.month}</h2>
-                    <div className="flex items-center gap-4 mt-1">
-                      <span className="text-xs font-medium text-neutral-500 uppercase tracking-wider flex items-center gap-1">
-                        <BookIcon size={12} className="text-amber-500" />
-                        {data!.stats.count} {data!.stats.count === 1 ? 'livro' : 'livros'}
-                      </span>
-                      <span className="text-xs font-medium text-neutral-500 uppercase tracking-wider flex items-center gap-1">
-                        <FileText size={12} className="text-blue-500" />
-                        {formatPages(data!.stats.pages)} páginas
-                      </span>
-                      <span className="text-xs font-medium text-neutral-500 uppercase tracking-wider flex items-center gap-1">
-                        <Star size={12} className="text-rose-500" />
-                        {data!.stats.avgRating} média
-                      </span>
-                    </div>
-                  </div>
-                  <button 
-                    onClick={() => toggleMonth(data!.month)}
-                    className="p-2 rounded-full hover:bg-neutral-800 text-neutral-400 transition-colors"
-                  >
-                    {expandedMonths[data!.month] ? <ChevronDown size={24} /> : <ChevronRight size={24} />}
-                  </button>
+              <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] ml-16 md:ml-0 bg-neutral-900/40 border border-neutral-800/60 rounded-[2.5rem] p-8 shadow-2xl hover:border-neutral-700/50 transition-all relative overflow-hidden group/card">
+                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover/card:opacity-10 transition-opacity">
+                   <Sparkles size={120} className="text-neutral-100" />
                 </div>
 
-                {/* Highlights */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-                  <div className="bg-neutral-950/50 border border-neutral-800/50 rounded-2xl p-3 flex items-center gap-3">
-                    <div className="p-2 bg-amber-500/10 text-amber-500 rounded-lg">
-                      <Award size={16} />
+                <div className="flex flex-col mb-8 relative z-10">
+                   <div className="flex items-center justify-between">
+                     <h2 className="text-4xl font-serif font-black text-neutral-100 tracking-tighter">{data!.month}</h2>
+                     <button 
+                        onClick={() => toggleMonth(data!.month)}
+                        className="p-3 rounded-2xl bg-neutral-950/50 hover:bg-neutral-800 text-neutral-400 transition-colors border border-neutral-800"
+                      >
+                        {expandedMonths[data!.month] ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+                      </button>
+                   </div>
+                   
+                   <p className="text-sm text-neutral-400 font-serif italic mt-3 leading-relaxed max-w-[90%]">
+                     "{data!.highlights.summary}"
+                   </p>
+
+                   <div className="flex flex-wrap items-center gap-3 mt-6">
+                      <span className="px-3 py-1 bg-amber-500/10 text-amber-500 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 border border-amber-500/20">
+                        {data!.highlights.dominantMood}
+                      </span>
+                      <span className="text-[10px] font-black text-neutral-500 uppercase tracking-widest flex items-center gap-1.5">
+                        <BookIcon size={12} className="text-neutral-600" />
+                        {data!.stats.count} {data!.stats.count === 1 ? 'LIVRO' : 'LIVROS'}
+                      </span>
+                      <span className="text-[10px] font-black text-neutral-500 uppercase tracking-widest flex items-center gap-1.5">
+                        <FileText size={12} className="text-neutral-600" />
+                        {formatPagesShort(data!.stats.pages)} PÁGS
+                      </span>
+                   </div>
+                </div>
+
+                {/* Highlights Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8 relative z-10">
+                  <div className="bg-neutral-950/40 border border-neutral-800/40 rounded-2xl p-4 flex items-center gap-4 group/item hover:bg-neutral-950/60 transition-colors">
+                    <div className="w-12 h-16 rounded-lg overflow-hidden bg-neutral-800 shrink-0 shadow-lg border border-neutral-700/50">
+                       {data!.highlights.bestBook.coverUrl ? (
+                         <img src={data!.highlights.bestBook.coverUrl} alt="Best" className="w-full h-full object-cover" />
+                       ) : (
+                         <div className="w-full h-full flex items-center justify-center text-neutral-700"><BookIcon size={20} /></div>
+                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold">Destaque</p>
-                      <p className="text-xs font-medium text-neutral-200 truncate">{data!.highlights.bestBook.titulo}</p>
+                      <p className="text-[10px] uppercase font-black text-amber-500/80 tracking-widest mb-1">Membro de Honra</p>
+                      <p className="text-xs font-bold text-neutral-200 truncate">{data!.highlights.bestBook.titulo}</p>
+                      <p className="text-[10px] text-neutral-500 truncate">{data!.highlights.bestBook.autor}</p>
                     </div>
                   </div>
-                  <div className="bg-neutral-950/50 border border-neutral-800/50 rounded-2xl p-3 flex items-center gap-3">
-                    <div className="p-2 bg-blue-500/10 text-blue-500 rounded-lg">
-                      <TrendingUp size={16} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold">Gênero Top</p>
-                      <p className="text-xs font-medium text-neutral-200 truncate">{data!.highlights.topGenre}</p>
-                    </div>
+
+                  <div className="bg-neutral-950/40 border border-neutral-800/40 rounded-2xl p-4 flex flex-col justify-center gap-1 group/item hover:bg-neutral-950/60 transition-colors">
+                     <p className="text-[10px] uppercase font-black text-neutral-500 tracking-widest">Tom Predominante</p>
+                     <div className="flex items-center gap-2">
+                       <TrendingUp size={14} className="text-blue-500" />
+                       <p className="text-sm font-bold text-neutral-200">{data!.highlights.topGenre}</p>
+                     </div>
                   </div>
                 </div>
+
+                {/* Standing Quote */}
+                {data!.highlights.quote && (
+                  <div className="mb-8 p-5 bg-neutral-950/60 border-l-2 border-amber-500/50 rounded-r-2xl relative group/quote">
+                    <QuoteIcon size={16} className="text-amber-500/30 absolute top-3 right-3" />
+                    <p className="text-xs text-neutral-300 font-serif italic line-clamp-3 leading-relaxed">
+                      "{data!.highlights.quote.text}"
+                    </p>
+                    <p className="text-[10px] text-neutral-500 mt-2 font-black uppercase tracking-tighter">
+                      — {data!.highlights.quote.author}
+                    </p>
+                  </div>
+                )}
 
                 {/* Books List */}
                 <AnimatePresence>

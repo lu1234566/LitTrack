@@ -3,7 +3,7 @@ import { useBooks } from '../context/BookContext';
 import { useGoals } from '../context/GoalsContext';
 import { useLiteraryProfile } from '../context/LiteraryProfileContext';
 import { analysisService } from '../services/analysisService';
-import { BookOpen, Star, Award, Calendar, TrendingUp, Heart, ChevronRight, ChevronLeft, Share2, Download, Brain, User, Target, Bookmark, FileText, RefreshCw } from 'lucide-react';
+import { BookOpen, Star, Award, Calendar, TrendingUp, Heart, ChevronRight, ChevronLeft, Share2, Download, Brain, User, Target, Bookmark, FileText, RefreshCw, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Logomark } from '../components/Logomark';
@@ -158,6 +158,23 @@ export const Retrospective: React.FC = () => {
 
     const favoritados = lidos.filter(b => b.favorito).length;
     
+    // Pacing metrics
+    let totalDaysToFinish = 0;
+    let finishDateCount = 0;
+    lidos.forEach(b => {
+      if (b.startedAt && b.finishedAt) {
+        const diff = (b.finishedAt - b.startedAt) / (1000 * 60 * 60 * 24);
+        if (diff > 0) {
+          totalDaysToFinish += diff;
+          finishDateCount++;
+        }
+      }
+    });
+    const mediaDiasParaConcluir = finishDateCount > 0 ? Math.round(totalDaysToFinish / finishDateCount) : 0;
+
+    const maiorLivro = lidos.filter(b => (b.pageCount || 0) > 0).sort((a, b) => (b.pageCount || 0) - (a.pageCount || 0))[0];
+    const menorLivro = lidos.filter(b => (b.pageCount || 0) > 0).sort((a, b) => (a.pageCount || 0) - (b.pageCount || 0))[0];
+
     // Total pages in retrospective
     const totalPaginas = lidos.reduce((acc, b) => acc + (Number(b.pageCount) || 0), 0);
     const mediaPaginas = totalLidos > 0 ? Math.round(totalPaginas / totalLidos) : 0;
@@ -177,6 +194,8 @@ export const Retrospective: React.FC = () => {
       mesMaisAtivo, mesLivros: meses[mesMaisAtivo] || 0,
       favoritos: favoritados, 
       totalPaginas, mediaPaginas,
+      mediaDiasParaConcluir,
+      maiorLivro, menorLivro,
       melhorCitacao,
       bestQuote,
       top5 
@@ -255,6 +274,39 @@ export const Retrospective: React.FC = () => {
         </div>
       ),
       bg: "bg-gradient-to-br from-indigo-900/40 via-neutral-900 to-neutral-950"
+    });
+  }
+
+  if (stats?.mediaDiasParaConcluir && stats.mediaDiasParaConcluir > 0) {
+    slides.push({
+      title: "Ritmo de Fôlego",
+      content: (
+        <div className="text-center space-y-8 w-full h-full flex flex-col items-center justify-center px-4">
+          <Zap size={64} className="text-purple-500 mb-2 drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]" strokeWidth={1.5} />
+          <div className="space-y-1">
+            <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ delay: 0.2, type: "spring" }} className="text-7xl md:text-8xl font-black text-neutral-100 tracking-tighter">
+              {stats.mediaDiasParaConcluir}
+            </motion.div>
+            <div className="text-xl md:text-2xl font-serif font-bold text-neutral-100 uppercase tracking-widest">
+              Dias por Livro
+            </div>
+          </div>
+          <div className="bg-neutral-800/40 border border-neutral-700/50 p-6 rounded-[2rem] backdrop-blur w-full max-w-[280px]">
+            <p className="text-neutral-400 text-sm font-serif italic mb-2">Seus extremos de fôlego:</p>
+            <div className="flex flex-col gap-3">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-neutral-500 font-bold uppercase tracking-tighter">Mais Largo</span>
+                <span className="text-amber-500 font-bold">{stats.maiorLivro?.pageCount} págs</span>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-neutral-500 font-bold uppercase tracking-tighter">Mais Curto</span>
+                <span className="text-blue-500 font-bold">{stats.menorLivro?.pageCount} págs</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+      bg: "bg-gradient-to-br from-purple-900/40 via-neutral-900 to-neutral-950"
     });
   }
 

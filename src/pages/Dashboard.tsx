@@ -22,8 +22,10 @@ import { ReadingSessionModal } from '../components/ReadingSessionModal';
 import { ReadingHeatmap } from '../components/ReadingHeatmap';
 import { StreakCard } from '../components/StreakCard';
 import { ReadingCompanion } from '../components/ReadingCompanion';
+import { analysisService } from '../services/analysisService';
 
 const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+const MOODS = ['Sombrio', 'Tenso', 'Reflexivo', 'Aconchegante', 'Emocional', 'Misterioso', 'Caótico', 'Inspirador', 'Cerebral', 'Mágico'];
 
 export const Dashboard: React.FC = () => {
   const { books, loading, userGoal, sessions } = useBooks();
@@ -71,6 +73,20 @@ export const Dashboard: React.FC = () => {
     const maiorLivro = lidosComPaginas.length > 0 ? lidosComPaginas.reduce((prev, curr) => (safeParseNumber(prev.pageCount) > safeParseNumber(curr.pageCount) ? prev : curr), lidosComPaginas[0]) : null;
     const menorLivro = lidosComPaginas.length > 0 ? lidosComPaginas.reduce((prev, curr) => (safeParseNumber(prev.pageCount) < safeParseNumber(curr.pageCount) ? prev : curr), lidosComPaginas[0]) : null;
 
+    // Pacing metrics
+    let totalDaysToFinish = 0;
+    let finishDateCount = 0;
+    lidos.forEach(b => {
+      if (b.startedAt && b.finishedAt) {
+        const diff = (b.finishedAt - b.startedAt) / (1000 * 60 * 60 * 24);
+        if (diff > 0) {
+          totalDaysToFinish += diff;
+          finishDateCount++;
+        }
+      }
+    });
+    const mediaDiasParaConcluir = finishDateCount > 0 ? Math.round(totalDaysToFinish / finishDateCount) : 0;
+
     // Livro com maior nota
     const melhorLivro = lidos.length > 0 ? lidos.reduce((prev, current) => (prev.notaGeral > current.notaGeral ? prev : current), lidos[0]) : null;
 
@@ -116,6 +132,15 @@ export const Dashboard: React.FC = () => {
     // Top livros
     const topLivros = [...lidos].sort((a, b) => b.notaGeral - a.notaGeral).slice(0, 5);
 
+    // Mood Shelves
+    const moodShelves = MOODS.map(mood => {
+      const moodBooks = books.filter(b => {
+        const bookMoods = b.moods && b.moods.length > 0 ? b.moods : analysisService.inferMoods(b);
+        return bookMoods.includes(mood);
+      });
+      return { mood, books: moodBooks.slice(0, 6) };
+    }).filter(shelf => shelf.books.length > 0);
+
     return { 
       totalLidos, 
       mediaGeral, 
@@ -124,6 +149,7 @@ export const Dashboard: React.FC = () => {
       generoMaisLido, 
       leiturasPorMes, 
       topLivros, 
+      moodShelves,
       totalLidosEsteAno, 
       paginasLidasEsteAno, 
       lidosEsteMes,
@@ -135,6 +161,7 @@ export const Dashboard: React.FC = () => {
       mediaPaginas,
       maiorLivro,
       menorLivro,
+      mediaDiasParaConcluir,
       mesMaisPaginas,
       queroLerCount: queroLer.length,
       highPriorityCount: highPriority.length,
@@ -463,6 +490,65 @@ export const Dashboard: React.FC = () => {
 
       <StreakCard sessions={sessions} />
 
+      {/* Atmosferas Literárias */}
+      {stats.moodShelves.length > 0 && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between px-2">
+            <div>
+              <h2 className="text-2xl font-serif font-semibold text-neutral-100 flex items-center gap-3">
+                <Sparkles className="text-purple-500" size={28} />
+                Atmosferas Literárias
+              </h2>
+              <p className="text-sm text-neutral-500 mt-1">Sua biblioteca organizada pelo que você sente.</p>
+            </div>
+            <Link to="/livros" className="text-sm font-bold text-amber-500 hover:underline flex items-center gap-1 group">
+              Explorar biblioteca
+              <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
+
+          <div className="flex gap-6 overflow-x-auto pb-6 pt-2 custom-scrollbar -mx-4 px-4">
+            {stats.moodShelves.map((shelf) => (
+              <div 
+                key={shelf.mood} 
+                className="flex-shrink-0 w-80 bg-neutral-900/40 border border-neutral-800/80 rounded-3xl p-6 hover:border-neutral-700 transition-all flex flex-col gap-4 shadow-xl"
+              >
+                <div className="flex items-center justify-between">
+                   <h3 className="text-lg font-serif font-bold text-neutral-200 capitalize">{shelf.mood}</h3>
+                   <span className="text-[10px] bg-neutral-800 text-neutral-500 font-black uppercase tracking-widest px-2 py-0.5 rounded-full">
+                     {shelf.books.length} títulos
+                   </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  {shelf.books.map((book) => (
+                    <Link 
+                      key={book.id} 
+                      to={`/livro/${book.id}`}
+                      className="aspect-[2/3] rounded-lg overflow-hidden border border-neutral-800 group relative transition-transform hover:scale-105"
+                    >
+                      {book.coverUrl ? (
+                         <img src={book.coverUrl} alt={book.titulo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      ) : (
+                        <div className="w-full h-full bg-neutral-800 flex items-center justify-center">
+                           <BookOpen size={16} className="text-neutral-700" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-neutral-950/20 opacity-40 group-hover:opacity-0 transition-opacity" />
+                    </Link>
+                  ))}
+                  {shelf.books.length < 3 && (
+                    <div className="aspect-[2/3] rounded-lg border border-dashed border-neutral-800 flex items-center justify-center">
+                       <Plus size={16} className="text-neutral-800" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Performance Section - Momento de Leitura */}
       <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8 shadow-xl">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
@@ -496,22 +582,30 @@ export const Dashboard: React.FC = () => {
 
         {periodData && (
           <div className="space-y-8">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
                <div className="p-6 bg-neutral-950/40 rounded-2xl border border-neutral-800/50 space-y-1">
-                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Livros Concluídos</p>
+                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest leading-tight">Livros Concluídos</p>
                  <h4 className="text-3xl font-bold text-neutral-100">{periodData.current.booksFinished}</h4>
                </div>
                <div className="p-6 bg-neutral-950/40 rounded-2xl border border-neutral-800/50 space-y-1">
-                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Páginas Lidas</p>
+                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest leading-tight">Páginas Lidas</p>
                  <h4 className="text-3xl font-bold text-neutral-100">{formatPagesShort(periodData.current.pagesRead)}</h4>
                </div>
                <div className="p-6 bg-neutral-950/40 rounded-2xl border border-neutral-800/50 space-y-1">
-                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Dias Ativos</p>
+                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest leading-tight">Dias Ativos</p>
                  <h4 className="text-3xl font-bold text-neutral-100">{periodData.current.activeReadingDays}</h4>
                </div>
                <div className="p-6 bg-neutral-950/40 rounded-2xl border border-neutral-800/50 space-y-1">
-                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Nota Média</p>
+                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest leading-tight">Nota Média</p>
                  <h4 className="text-3xl font-bold text-neutral-100">{periodData.current.averageRating.toFixed(1)}</h4>
+               </div>
+               <div className="p-6 bg-neutral-950/40 rounded-2xl border border-neutral-800/50 space-y-1">
+                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest leading-tight">Ritmo Médio</p>
+                 <h4 className="text-3xl font-bold text-neutral-100">{stats.mediaDiasParaConcluir > 0 ? `${stats.mediaDiasParaConcluir}d` : '--'}</h4>
+               </div>
+               <div className="p-6 bg-neutral-950/40 rounded-2xl border border-neutral-800/50 space-y-1">
+                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest leading-tight">Extensão Média</p>
+                 <h4 className="text-3xl font-bold text-neutral-100">{Math.round(stats.mediaPaginas)}</h4>
                </div>
             </div>
 
