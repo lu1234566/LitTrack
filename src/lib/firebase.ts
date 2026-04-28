@@ -1,94 +1,83 @@
-import { initializeApp, type FirebaseOptions } from 'firebase/app';
+import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-type ExtendedFirebaseOptions = FirebaseOptions & {
-  firestoreDatabaseId?: string;
+// Try to get config from environment variables as a fallback
+const envConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-const env = (import.meta as any)?.env ?? {};
-
-function readString(value: unknown): string {
-  return typeof value === 'string' ? value.trim() : '';
-}
-
-function buildEnvConfig(): ExtendedFirebaseOptions | null {
-  const config: ExtendedFirebaseOptions = {
-    apiKey: readString(env.VITE_FIREBASE_API_KEY),
-    authDomain: readString(env.VITE_FIREBASE_AUTH_DOMAIN),
-    projectId: readString(env.VITE_FIREBASE_PROJECT_ID),
-    storageBucket: readString(env.VITE_FIREBASE_STORAGE_BUCKET),
-    messagingSenderId: readString(env.VITE_FIREBASE_MESSAGING_SENDER_ID),
-    appId: readString(env.VITE_FIREBASE_APP_ID),
-    measurementId: readString(env.VITE_FIREBASE_MEASUREMENT_ID),
-    firestoreDatabaseId: readString(env.VITE_FIRESTORE_DATABASE_ID),
-  };
-
-  const hasRequiredFields = Boolean(
-    config.apiKey && config.authDomain && config.projectId && config.appId
-  );
-
-  return hasRequiredFields ? config : null;
-}
-
-function buildGlobalConfig(): ExtendedFirebaseOptions | null {
-  const globalConfig = (globalThis as any).__FIREBASE_CONFIG__ || (globalThis as any).firebaseConfig;
-
-  if (!globalConfig || typeof globalConfig !== 'object') {
-    return null;
+// Attempt to load the applet config using a pattern that won't break if missing
+// We use import.meta.glob which is a Vite feature to safely check for file existence
+let appletConfig: any = {};
+try {
+  const configs = import.meta.glob('../../firebase-applet-config.json', { eager: true });
+  const configPath = '../../firebase-applet-config.json';
+  if (configs[configPath]) {
+    appletConfig = (configs[configPath] as any).default || configs[configPath];
   }
-
-  const config: ExtendedFirebaseOptions = {
-    apiKey: readString(globalConfig.apiKey),
-    authDomain: readString(globalConfig.authDomain),
-    projectId: readString(globalConfig.projectId),
-    storageBucket: readString(globalConfig.storageBucket),
-    messagingSenderId: readString(globalConfig.messagingSenderId),
-    appId: readString(globalConfig.appId),
-    measurementId: readString(globalConfig.measurementId),
-    firestoreDatabaseId: readString(globalConfig.firestoreDatabaseId),
-  };
-
-  const hasRequiredFields = Boolean(
-    config.apiKey && config.authDomain && config.projectId && config.appId
-  );
-
-  return hasRequiredFields ? config : null;
+} catch (e) {
+  console.warn("Firebase applet config could not be loaded statically:", e);
 }
 
-function resolveFirebaseConfig(): ExtendedFirebaseOptions | null {
-  return buildEnvConfig() || buildGlobalConfig();
-}
+// Merge configurations: envConfig takes precedence over appletConfig as requested
+const firebaseConfig = {
+  apiKey: envConfig.apiKey || appletConfig.apiKey,
+  authDomain: envConfig.authDomain || appletConfig.authDomain,
+  projectId: envConfig.projectId || appletConfig.projectId,
+  storageBucket: envConfig.storageBucket || appletConfig.storageBucket,
+  messagingSenderId: envConfig.messagingSenderId || appletConfig.messagingSenderId,
+  appId: envConfig.appId || appletConfig.appId,
+};
 
-const firebaseConfig = resolveFirebaseConfig();
+// Validate if we have enough to initialize
+export const isConfigValid = !!(
+  firebaseConfig.apiKey && 
+  firebaseConfig.projectId && 
+  firebaseConfig.appId
+);
 
-let app: ReturnType<typeof initializeApp> | null = null;
-let auth: ReturnType<typeof getAuth> | null = null;
-let db: ReturnType<typeof getFirestore> | null = null;
-let googleProvider: GoogleAuthProvider | null = null;
-let isFirebaseConfigured = false;
+let app: any = null;
+let auth: any = null;
+let db: any = null;
+let googleProvider: any = null;
+let initialized = false;
 
-if (firebaseConfig) {
+if (isConfigValid) {
+  // Debug log (redacted)
+  if (import.meta.env.DEV) {
+    console.log("Initializing Firebase with:", {
+      projectId: firebaseConfig.projectId,
+      hasApiKey: !!firebaseConfig.apiKey,
+      apiKeyPrefix: firebaseConfig.apiKey?.substring(0, 6) + "...",
+      authDomain: firebaseConfig.authDomain
+    });
+  }
   try {
-    app = initializeApp(firebaseConfig);
+    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
-
-    if (firebaseConfig.firestoreDatabaseId) {
-      db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+    
+    // Safety: Custom database ID might be in appletConfig or env
+    const firestoreDatabaseId = appletConfig.firestoreDatabaseId || import.meta.env.VITE_FIREBASE_DATABASE_ID;
+    
+    if (firestoreDatabaseId) {
+      db = getFirestore(app, firestoreDatabaseId);
     } else {
       db = getFirestore(app);
     }
-
+    
     googleProvider = new GoogleAuthProvider();
     googleProvider.setCustomParameters({ prompt: 'select_account' });
-    isFirebaseConfigured = true;
+    initialized = true;
   } catch (error) {
-    console.error('Firebase initialization failed:', error);
+    console.error("Firebase initialization failed:", error);
   }
-} else {
-  console.warn(
-    'Firebase configuration is unavailable. Readora is running in safe mode without Firebase.'
-  );
 }
 
-export { auth, db, googleProvider, isFirebaseConfigured };
+export const isFirebaseConfigured = initialized;
+export { auth, db, googleProvider };

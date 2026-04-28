@@ -74,15 +74,19 @@ export const Login: React.FC = () => {
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-6 text-left space-y-4">
             <div className="flex items-center gap-3 text-amber-500">
               <AlertCircle size={24} />
-              <h3 className="font-bold">Configuração Necessária</h3>
+              <h3 className="font-bold">Modo de Segurança</h3>
             </div>
             <p className="text-sm text-neutral-300 leading-relaxed">
-              O Firebase ainda não foi configurado. Para habilitar o login e a sincronização na nuvem, você precisa adicionar as chaves do Firebase nas configurações do projeto.
+              Não foi possível carregar a configuração do Firebase neste ambiente. O app entrou em modo seguro.
             </p>
-            <div className="text-xs text-neutral-500 space-y-1">
-              <p>1. Vá em <strong>Configurações</strong> (ícone de engrenagem)</p>
-              <p>2. Adicione as variáveis <code>VITE_FIREBASE_*</code></p>
-              <p>3. Reinicie o servidor</p>
+            <div className="text-xs text-neutral-500 space-y-2">
+              <p>Isso geralmente acontece se o projeto do Firebase não foi provisionado ou se as credenciais estão incompletas.</p>
+              <p>Para resolver:</p>
+              <ul className="list-disc list-inside space-y-1 ml-1">
+                <li>Verifique se o arquivo <code>firebase-applet-config.json</code> existe.</li>
+                <li>Confirme se as variáveis de ambiente <code>VITE_FIREBASE_*</code> estão definidas.</li>
+                <li>Tente recarregar a visualização após configurar o Firebase.</li>
+              </ul>
             </div>
           </div>
         ) : (
