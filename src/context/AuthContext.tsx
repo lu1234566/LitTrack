@@ -48,8 +48,10 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     operationType,
     path
   };
-  console.error('Firestore Error: ', JSON.stringify(errInfo, null, 2));
-  throw new Error(JSON.stringify(errInfo));
+  
+  // LOG the error but DO NOT THROW. 
+  // This prevents Firestore permission/connection issues from crashing the app boot.
+  console.error('Firestore Error (Non-fatal): ', JSON.stringify(errInfo, null, 2));
 }
 
 interface UserData {
@@ -79,7 +81,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    testConnection().catch(console.error);
+    // Connection test is purely diagnostic and non-fatal
+    testConnection().catch(() => {});
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
@@ -90,25 +93,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           profilePhoto: firebaseUser.photoURL || '',
         };
         
-        try {
-          if (!db) {
-            console.warn("Firestore is not available. User profile will not be synced.");
-            setUser(userData);
-            setLoading(false);
-            return;
-          }
+        // Non-blocking sync with Firestore
+        const syncUser = async () => {
+          if (!db) return;
 
-          // Test connection and permissions
-          const userRef = doc(db, 'users', firebaseUser.uid);
-          let userSnap;
           try {
-            userSnap = await getDoc(userRef);
-          } catch (e) {
-            handleFirestoreError(e, OperationType.GET, `users/${firebaseUser.uid}`);
-          }
-          
-          if (!userSnap?.exists()) {
-            try {
+            const userRef = doc(db, 'users', firebaseUser.uid);
+            const userSnap = await getDoc(userRef).catch(e => {
+              handleFirestoreError(e, OperationType.GET, `users/${firebaseUser.uid}`);
+              return null;
+            });
+            
+            if (userSnap && !userSnap.exists()) {
               await setDoc(userRef, {
                 id: firebaseUser.uid,
                 displayName: firebaseUser.displayName || 'Usuário',
@@ -122,15 +118,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 readingStreak: 0,
                 createdAt: Date.now(),
                 updatedAt: Date.now()
+              }).catch(e => {
+                handleFirestoreError(e, OperationType.WRITE, `users/${firebaseUser.uid}`);
               });
-            } catch (e) {
-              handleFirestoreError(e, OperationType.WRITE, `users/${firebaseUser.uid}`);
             }
+          } catch (e) {
+            console.error("Silent error during user sync:", e);
           }
-        } catch (e) {
-          console.error("Error syncing user to Firestore:", e);
-        }
-        
+        };
+
+        // Trigger sync but don't await it to block USer state
+        syncUser();
         setUser(userData);
       } else {
         setUser(null);

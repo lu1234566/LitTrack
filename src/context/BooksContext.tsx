@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { db } from '../lib/firebase';
-import { collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDocs, setDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDocs, setDoc, limit } from 'firebase/firestore';
 import { useAuth, handleFirestoreError, OperationType } from './AuthContext';
 import { Book } from '../types';
 import { safeParseNumber } from '../lib/statsUtils';
@@ -31,6 +31,23 @@ export const BooksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     const q = query(collection(db, 'books'), where('userId', '==', user.userId));
+    
+    if (import.meta.env.DEV) {
+      console.log(`[Diagnostic] Loading books for user UID: ${user.userId}`);
+      
+      // Temporary check to see if there are any documents at all in the collection
+      // This helps diagnose if the userId filter is the culprit
+      getDocs(query(collection(db, 'books'), limit(5))).then(snap => {
+        console.log(`[Diagnostic] Total books (unfiltered/limited): ${snap.size}`);
+        snap.forEach(doc => {
+          const data = doc.data();
+          console.log(`[Diagnostic] Book ID: ${doc.id}, Owner UID: ${data.userId}, Match: ${data.userId === user.userId}`);
+        });
+      }).catch(e => {
+        console.warn("[Diagnostic] Could not perform unfiltered check (likely permission rules):", e.message);
+      });
+    }
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const booksData: Book[] = [];
       snapshot.forEach((doc) => {
@@ -42,6 +59,11 @@ export const BooksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           dataCadastro: data.createdAt?.toMillis() || Date.now(),
         } as Book);
       });
+
+      if (import.meta.env.DEV) {
+        console.log(`[Diagnostic] Books loaded for ${user.userId}: ${booksData.length}`);
+      }
+
       booksData.sort((a, b) => b.dataCadastro - a.dataCadastro);
       setBooks(booksData);
       setLoading(false);
