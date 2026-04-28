@@ -1,4 +1,4 @@
-import { Book, LiteraryProfile, Recommendation, Quote, BookGenre } from "../types";
+import { Book, LiteraryProfile, Recommendation, Quote, BookGenre, ReadingSession } from "../types";
 
 const MOODS = [
   "Sombrio", "Tenso", "Reflexivo", "Aconchegante", "Emocional", "Misterioso", "Caótico", "Inspirador", "Cerebral", "Mágico"
@@ -337,6 +337,48 @@ export const analysisService = {
     insights.push("Sua jornada revela um amadurecimento constante nas suas escolhas literárias.");
     
     return insights;
+  },
+
+  calculateStreak(sessions: ReadingSession[]): number {
+    if (sessions.length === 0) return 0;
+    
+    const dates = new Set(
+      sessions.map(s => {
+        const d = new Date(s.date);
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+      })
+    );
+    
+    const sortedDates = Array.from(dates).sort((a, b) => b - a);
+    const today = new Date();
+    const todayAtStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+    
+    let currentStreak = 0;
+    let expectedDate = todayAtStart;
+    
+    // Check if the most recent session was today or yesterday
+    const mostRecent = sortedDates[0];
+    const oneDay = 1000 * 60 * 60 * 24;
+    
+    if (mostRecent < todayAtStart - oneDay) {
+      return 0; // Streak broken
+    }
+    
+    // If most recent was yesterday, start counting from yesterday
+    if (mostRecent === todayAtStart - oneDay) {
+      expectedDate = todayAtStart - oneDay;
+    }
+
+    for (const date of sortedDates) {
+      if (date === expectedDate) {
+        currentStreak++;
+        expectedDate -= oneDay;
+      } else if (date < expectedDate) {
+        break;
+      }
+    }
+    
+    return currentStreak;
   },
 
   generateRecommendations(books: Book[]): Recommendation[] {

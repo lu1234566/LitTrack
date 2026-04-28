@@ -304,766 +304,664 @@ export const Dashboard: React.FC = () => {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
-        <div>
-          <h1 className="text-4xl font-serif font-bold text-neutral-100 tracking-tight">Dashboard {currentYear}</h1>
-          <p className="text-neutral-400 mt-2 text-lg">Seu ano literário em números.</p>
+      <header className="relative py-12 px-8 rounded-[3.5rem] bg-gradient-to-br from-neutral-900 via-neutral-900/60 to-transparent border border-neutral-800 overflow-hidden mb-12">
+        <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
+          <BookOpen size={220} className="text-neutral-100" />
         </div>
-        <div className="flex flex-wrap gap-4">
-          <button 
-            onClick={() => setShowSessionModal(true)}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
-          >
-            <Clock size={20} />
-            Registrar Sessão
-          </button>
-          <Link 
-            to="/adicionar" 
-            className="bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
-          >
-            <Plus size={20} />
-            Nova Leitura
-          </Link>
-          <Link 
-            to="/comparativo-anual" 
-            className="bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-neutral-300 px-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
-          >
-            <History size={20} />
-            Comparativo
-          </Link>
-          <Link 
-            to="/retrospectiva" 
-            className="bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-neutral-300 px-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
-          >
-            <History size={20} />
-            Retrospectiva
-          </Link>
+        
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+          <div className="space-y-3">
+             <h1 className="text-6xl font-serif font-black text-neutral-100 tracking-tighter">Readora <span className="text-amber-500">{currentYear}</span></h1>
+             <p className="text-neutral-400 text-xl font-serif italic max-w-xl leading-relaxed">
+               Sua curadoria literária pessoal. Transformando cada página em um rastro de sabedoria.
+             </p>
+             
+             <div className="flex flex-wrap gap-3 pt-4">
+                <button 
+                  onClick={() => setShowSessionModal(true)}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-3.5 rounded-2xl font-black uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/20 active:scale-95"
+                >
+                  <Clock size={18} />
+                  Registrar Sessão
+                </button>
+                <Link 
+                  to="/adicionar" 
+                  className="bg-amber-500 hover:bg-amber-400 text-neutral-950 px-8 py-3.5 rounded-2xl font-black uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-2 shadow-xl shadow-amber-500/20 active:scale-95"
+                >
+                  <Plus size={18} />
+                  Nova Leitura
+                </Link>
+                <div className="flex bg-neutral-950/40 p-1 rounded-2xl border border-neutral-800/50 backdrop-blur-sm">
+                   <Link to="/comparativo-anual" className="p-3 text-neutral-500 hover:text-amber-500 transition-colors" title="Comparativo">
+                     <History size={20} />
+                   </Link>
+                   <Link to="/retrospectiva" className="p-3 text-neutral-500 hover:text-amber-500 transition-colors" title="Retrospectiva">
+                     <History size={20} />
+                   </Link>
+                </div>
+             </div>
+          </div>
+
+          {/* Compact Overview Row */}
+          <div className="grid grid-cols-2 lg:grid-cols-1 gap-4 lg:w-72">
+             <div className="bg-neutral-950/60 backdrop-blur-md border border-neutral-800/50 rounded-3xl p-6 flex flex-col justify-center">
+                <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-1">Livros Lidos</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-black text-neutral-100 tracking-tighter">{stats.totalLidosEsteAno}</span>
+                  <span className="text-xs text-neutral-500 font-bold italic">este ano</span>
+                </div>
+             </div>
+             <div className="bg-neutral-950/60 backdrop-blur-md border border-neutral-800/50 rounded-3xl p-6 flex flex-col justify-center">
+                <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-1">Sequência Atual</p>
+                <div className="flex items-baseline gap-2">
+                   <span className="text-4xl font-black text-amber-500 tracking-tighter">
+                     {sessions.length > 0 ? analysisService.calculateStreak(sessions) : 0}
+                   </span>
+                   <span className="text-xs text-neutral-500 font-bold italic">dias seguidos</span>
+                </div>
+             </div>
+          </div>
         </div>
       </header>
 
-      <ReadingSessionModal isOpen={showSessionModal} onClose={() => setShowSessionModal(false)} />
-
-      <ReadingCompanion 
-        books={books} 
-        sessions={sessions} 
-        onLogAction={() => setShowSessionModal(true)} 
-      />
-
-      {/* Goals Widget */}
-      <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8 shadow-xl">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-serif font-semibold text-neutral-100 flex items-center gap-3">
-            <Target className="text-amber-500" size={28} />
-            Meta Anual {currentYear}
-          </h2>
-          {insights && (
-            <span className="text-sm text-neutral-500 font-medium bg-neutral-800 px-4 py-1.5 rounded-full">
-              Faltam {insights.diffDays} dias para o fim do ano
-            </span>
-          )}
+      <section className="space-y-12">
+        <div className="flex items-center gap-3 px-2">
+           <div className="w-1.5 h-8 bg-amber-500 rounded-full" />
+           <h2 className="text-3xl font-serif font-black text-neutral-100 tracking-tight italic">Momento de Leitura</h2>
         </div>
 
-        {!userGoal ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center space-y-6">
-            <div className="w-20 h-20 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-600">
-              <Target size={40} />
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+            <div className="xl:col-span-8 space-y-8">
+               {/* Lendo Agora */}
+               {stats.lendoAgora.length > 0 ? (
+                  <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden group/readnow">
+                    <div className="absolute top-0 right-0 p-8 opacity-5 group-hover/readnow:opacity-10 transition-opacity">
+                       <RefreshCw size={120} className="text-neutral-100 animate-spin-slow" />
+                    </div>
+                    
+                    <div className="flex items-center justify-between mb-8 relative z-10">
+                      <div>
+                        <h3 className="text-2xl font-serif font-bold text-neutral-100 italic">Lendo Agora</h3>
+                        <p className="text-xs text-neutral-500 font-black uppercase tracking-widest mt-1">Sua imersão atual</p>
+                      </div>
+                      <Link to="/livros?status=lendo" className="text-xs font-black text-neutral-600 hover:text-amber-500 transition-colors uppercase tracking-widest">
+                        Gerenciar todos ({stats.lendoAgora.length})
+                      </Link>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+                      {stats.maisAvancado && (
+                        <Link 
+                          to={`/livro/${stats.maisAvancado.id}`}
+                          className="flex gap-6 group/maincard"
+                        >
+                          <div className="w-28 h-40 rounded-xl overflow-hidden bg-neutral-950 shrink-0 shadow-[0_20px_50px_rgba(0,0,0,0.5)] group-hover/maincard:scale-105 transition-transform duration-500 border border-neutral-800">
+                            {stats.maisAvancado.coverUrl ? (
+                              <img src={stats.maisAvancado.coverUrl} alt={stats.maisAvancado.titulo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <BookOpen size={24} className="text-neutral-800" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 flex flex-col justify-center py-2">
+                            <h4 className="text-xl font-bold text-neutral-100 line-clamp-2 leading-tight mb-2 group-hover/maincard:text-amber-500 transition-colors">
+                              {stats.maisAvancado.titulo}
+                            </h4>
+                            <p className="text-sm text-neutral-500 font-serif italic mb-6">{stats.maisAvancado.autor}</p>
+                            
+                            <div className="space-y-3">
+                              <div className="flex justify-between items-end text-[10px] font-black uppercase tracking-widest text-neutral-500">
+                                <span className="text-emerald-500">{stats.maisAvancado.progressPercentage || 0}% CONCLUÍDO</span>
+                                <span>
+                                  {stats.maisAvancado.currentPage || 0} / {(stats.maisAvancado.totalPages || stats.maisAvancado.pageCount) || '—'}
+                                </span>
+                              </div>
+                              <div className="h-1.5 bg-neutral-950 rounded-full overflow-hidden border border-neutral-800/50">
+                                <motion.div 
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${stats.maisAvancado.progressPercentage || 0}%` }}
+                                  className="h-full bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.3)]"
+                                />
+                              </div>
+                              {!(stats.maisAvancado.totalPages || stats.maisAvancado.pageCount) && (
+                                <p className="text-[9px] text-neutral-700 font-bold italic">Defina o total de páginas para ver o progresso real</p>
+                              )}
+                            </div>
+                          </div>
+                        </Link>
+                      )}
+
+                      <div className="space-y-4">
+                        {stats.lendoAgora.filter(b => b.id !== stats.maisAvancado?.id).slice(0, 2).map(book => (
+                          <Link 
+                            key={book.id} 
+                            to={`/livro/${book.id}`}
+                            className="flex items-center gap-4 p-4 rounded-[1.5rem] bg-neutral-950/20 border border-neutral-800/30 hover:bg-neutral-950/40 hover:border-emerald-500/30 transition-all group/subcard"
+                          >
+                            <div className="w-12 h-16 rounded-lg overflow-hidden bg-neutral-950 shrink-0 border border-neutral-800">
+                              {book.coverUrl ? (
+                                <img src={book.coverUrl} alt={book.titulo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <BookOpen size={12} className="text-neutral-800" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h5 className="text-sm font-bold text-neutral-300 truncate group-hover/subcard:text-emerald-500 transition-colors leading-tight">{book.titulo}</h5>
+                              <div className="mt-2 flex items-center gap-3">
+                                <div className="flex-1 h-1 bg-neutral-950 rounded-full overflow-hidden">
+                                  <div className="h-full bg-emerald-500/60 rounded-full" style={{ width: `${book.progressPercentage || 0}%` }} />
+                                </div>
+                                <span className="text-[10px] font-black text-neutral-600">{book.progressPercentage || 0}%</span>
+                              </div>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+               ) : (
+                  <div className="bg-neutral-900/40 border border-dashed border-neutral-800 rounded-[2.5rem] p-12 text-center">
+                     <BookOpen size={40} className="mx-auto text-neutral-800 mb-4" />
+                     <h3 className="text-xl font-serif font-bold text-neutral-400">Nenhum mergulho ativo</h3>
+                     <p className="text-sm text-neutral-600 mt-2">Que tal começar uma nova história hoje?</p>
+                     <Link to="/adicionar" className="inline-block mt-6 px-6 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-400 text-xs font-black uppercase tracking-widest rounded-xl transition-colors">Iniciar Leitura</Link>
+                  </div>
+               )}
+
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <ReadingCompanion 
+                    books={books} 
+                    sessions={sessions} 
+                    onLogAction={() => setShowSessionModal(true)} 
+                  />
+                  <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-[2.5rem] p-8 shadow-xl flex flex-col justify-center gap-6">
+                    <div className="flex items-center gap-4">
+                       <div className="p-4 bg-amber-500/10 text-amber-500 rounded-2xl shadow-inner">
+                         <TrendingUp size={28} />
+                       </div>
+                       <div>
+                         <p className="text-xs font-black text-neutral-500 uppercase tracking-widest">Ritmo Semanal</p>
+                         <h4 className="text-3xl font-black text-neutral-100 tracking-tighter">{formatPagesShort(stats.pagesThisWeek)}</h4>
+                         <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-tighter">{stats.sessionsThisWeek.length} sessões registradas</p>
+                       </div>
+                    </div>
+                    <StreakCard sessions={sessions} />
+                  </div>
+               </div>
             </div>
-            <div>
-              <h3 className="text-xl font-medium text-neutral-200">Você ainda não definiu sua meta anual.</h3>
-              <p className="text-neutral-500 mt-2">Defina metas de livros e páginas para acompanhar seu progresso.</p>
+
+            <div className="xl:col-span-4 space-y-8">
+               {/* Goals Widget Compact */}
+               <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-[2.5rem] p-8 shadow-xl h-full flex flex-col">
+                  <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-xl font-serif font-bold text-neutral-100 italic">Meta de {currentYear}</h3>
+                    <Target className="text-amber-500/30" size={24} />
+                  </div>
+
+                  {!userGoal ? (
+                    <div className="flex flex-col items-center justify-center flex-1 py-4 text-center space-y-6">
+                      <p className="text-sm text-neutral-600 font-serif italic">Seu horizonte ainda não foi definido.</p>
+                      <Link to="/configuracoes" className="text-[10px] font-black text-amber-500 uppercase tracking-widest hover:underline">Configurar Agora</Link>
+                    </div>
+                  ) : (
+                    <div className="space-y-10 flex-1 flex flex-col justify-center">
+                       {safeParseNumber(userGoal.booksGoal) > 0 && (
+                          <div className="space-y-4">
+                             <div className="flex justify-between items-baseline">
+                                <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Progresso de Livros</p>
+                                <span className="text-xl font-black text-neutral-100">{stats.totalLidosEsteAno} / {userGoal.booksGoal}</span>
+                             </div>
+                             <div className="h-2 bg-neutral-950 rounded-full overflow-hidden border border-neutral-800/50">
+                                <motion.div 
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${Math.min(100, (stats.totalLidosEsteAno / safeParseNumber(userGoal.booksGoal)) * 100)}%` }}
+                                  className="h-full bg-amber-500 rounded-full"
+                                />
+                             </div>
+                          </div>
+                       )}
+
+                       {safeParseNumber(userGoal.pagesGoal) > 0 && (
+                          <div className="space-y-4">
+                             <div className="flex justify-between items-baseline">
+                                <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Progresso de Páginas</p>
+                                <span className="text-xl font-black text-neutral-100">{formatPagesShort(stats.paginasLidasEsteAno)} / {formatPagesShort(safeParseNumber(userGoal.pagesGoal))}</span>
+                             </div>
+                             <div className="h-2 bg-neutral-950 rounded-full overflow-hidden border border-neutral-800/50">
+                                <motion.div 
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${Math.min(100, (stats.paginasLidasEsteAno / safeParseNumber(userGoal.pagesGoal)) * 100)}%` }}
+                                  className="h-full bg-blue-500 rounded-full"
+                                />
+                             </div>
+                          </div>
+                       )}
+
+                       {insights && (
+                          <div className="mt-4 pt-6 border-t border-neutral-800/50">
+                             <p className="text-xs text-neutral-500 font-serif italic leading-relaxed text-center">
+                               {insights.message}
+                             </p>
+                          </div>
+                       )}
+                    </div>
+                  )}
+               </div>
             </div>
-            <Link 
-              to="/configuracoes" 
-              className="bg-amber-500 hover:bg-amber-600 text-neutral-950 px-8 py-3 rounded-xl font-bold transition-all shadow-lg shadow-amber-500/20"
-            >
-              Definir meta agora
-            </Link>
+        </div>
+
+        {/* Heatmap Compact */}
+        <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-[2.5rem] p-10 shadow-xl overflow-hidden relative group/heatmap">
+          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover/heatmap:opacity-10 transition-opacity">
+             <Calendar size={120} className="text-neutral-100" />
           </div>
-        ) : (
-          <div className="space-y-10">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-              {/* Books Progress */}
-              <div className="space-y-4">
-                {safeParseNumber(userGoal.booksGoal) > 0 ? (
-                  <>
-                    <div className="flex justify-between items-end">
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium text-neutral-400 uppercase tracking-wider flex items-center gap-2">
-                          <BookOpen size={16} className="text-amber-500" />
-                          Livros Lidos
-                        </p>
-                        <h4 className="text-3xl font-bold text-neutral-100">
-                          {stats.totalLidosEsteAno} <span className="text-neutral-600 text-xl font-medium">/ {userGoal.booksGoal}</span>
-                        </h4>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-amber-500">
-                          {userGoal.booksGoal > 0 ? Math.min(100, Math.round((stats.totalLidosEsteAno / userGoal.booksGoal) * 100)) : 0}%
-                        </p>
-                        <p className="text-xs text-neutral-500">concluído</p>
-                      </div>
-                    </div>
-                    <div className="relative h-4 bg-neutral-800 rounded-full overflow-hidden">
-                      <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: `${userGoal.booksGoal > 0 ? Math.min(100, (stats.totalLidosEsteAno / userGoal.booksGoal) * 100) : 0}%` }}
-                        transition={{ duration: 1, ease: "easeOut" }}
-                        className={`absolute h-full rounded-full ${stats.totalLidosEsteAno >= (userGoal.booksGoal || 0) && (userGoal.booksGoal || 0) > 0 ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.4)]'}`}
-                      />
-                    </div>
-                    <div className="flex justify-between text-xs font-medium">
-                      <span className="text-neutral-500">
-                        {stats.totalLidosEsteAno >= (userGoal.booksGoal || 0) && (userGoal.booksGoal || 0) > 0 ? 'Meta alcançada!' : `Faltam ${Math.max(0, (userGoal.booksGoal || 0) - stats.totalLidosEsteAno)} livros`}
-                      </span>
-                      <span className="text-neutral-400">Objetivo: {userGoal.booksGoal}</span>
-                    </div>
-                  </>
-                ) : (
-                  <div className="bg-neutral-950/20 border border-dashed border-neutral-800 rounded-2xl p-6 h-full flex flex-col items-center justify-center text-center">
-                    <p className="text-sm text-neutral-500 mb-2">Meta de livros não definida.</p>
-                    <Link to="/configuracoes" className="text-xs font-bold text-amber-500 hover:underline">Configurar Meta</Link>
-                  </div>
-                )}
-              </div>
+          <div className="flex items-center gap-3 mb-6 relative z-10">
+             <Calendar className="text-emerald-500" size={24} />
+             <h3 className="text-xl font-serif font-bold text-neutral-100 italic">Consistência de Leitura</h3>
+          </div>
+          <div className="relative z-10 overflow-x-auto custom-scrollbar-hide -mx-2">
+            <div className="min-w-max scale-[0.95] origin-left">
+              <ReadingHeatmap sessions={sessions} />
+            </div>
+          </div>
+        </div>
+      </section>
 
-              {/* Pages Progress */}
-              <div className="space-y-4">
-                {safeParseNumber(userGoal.pagesGoal) > 0 ? (
-                  <>
-                    <div className="flex justify-between items-end">
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium text-neutral-400 uppercase tracking-wider flex items-center gap-2">
-                          <FileText size={16} className="text-blue-500" />
-                          Páginas Lidas
-                        </p>
-                        <h4 className="text-3xl font-bold text-neutral-100">
-                          {formatPages(stats.paginasLidasEsteAno)} <span className="text-neutral-600 text-xl font-medium">/ {formatPages(userGoal.pagesGoal)}</span>
-                        </h4>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-blue-500">
-                          {userGoal.pagesGoal > 0 ? Math.min(100, Math.round((stats.paginasLidasEsteAno / userGoal.pagesGoal) * 100)) : 0}%
-                        </p>
-                        <p className="text-xs text-neutral-500">concluído</p>
-                      </div>
-                    </div>
-                    <div className="relative h-4 bg-neutral-800 rounded-full overflow-hidden">
-                      <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: `${userGoal.pagesGoal > 0 ? Math.min(100, (stats.paginasLidasEsteAno / userGoal.pagesGoal) * 100) : 0}%` }}
-                        transition={{ duration: 1, ease: "easeOut" }}
-                        className={`absolute h-full rounded-full ${stats.paginasLidasEsteAno >= (userGoal.pagesGoal || 0) && (userGoal.pagesGoal || 0) > 0 ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.4)]'}`}
-                      />
-                    </div>
-                    <div className="flex justify-between text-xs font-medium">
-                      <span className="text-neutral-500">
-                        {stats.paginasLidasEsteAno >= (userGoal.pagesGoal || 0) && (userGoal.pagesGoal || 0) > 0 ? 'Meta alcançada!' : `Faltam ${formatPagesLong(Math.max(0, (userGoal.pagesGoal || 0) - stats.paginasLidasEsteAno))}`}
-                      </span>
-                      <span className="text-neutral-400">Objetivo: {formatPages(userGoal.pagesGoal)}</span>
-                    </div>
-                  </>
-                ) : (
-                  <div className="bg-neutral-950/20 border border-dashed border-neutral-800 rounded-2xl p-6 h-full flex flex-col items-center justify-center text-center">
-                    <p className="text-sm text-neutral-500 mb-2">Meta de páginas não definida.</p>
-                    <Link to="/configuracoes" className="text-xs font-bold text-amber-500 hover:underline">Configurar Meta</Link>
-                  </div>
-                )}
+      <section className="space-y-12 pt-12">
+        <div className="flex items-center gap-3 px-2">
+           <div className="w-1.5 h-8 bg-purple-500 rounded-full" />
+           <h2 className="text-3xl font-serif font-black text-neutral-100 tracking-tight italic">Descoberta & Curadoria</h2>
+        </div>
+
+        {/* Atmosferas Literárias */}
+        {stats.moodShelves.length > 0 && (
+          <div className="space-y-8">
+            <div className="flex items-center justify-between px-2">
+              <div className="flex items-center gap-3">
+                <Sparkles className="text-purple-500" size={24} />
+                <h3 className="text-xl font-serif font-bold text-neutral-100 italic">Atmosferas Literárias</h3>
               </div>
+              <Link to="/livros" className="text-xs font-black text-neutral-600 hover:text-purple-500 transition-colors uppercase tracking-widest flex items-center gap-1 group">
+                Explorar mais
+                <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+              </Link>
             </div>
 
-            {insights && (
-              <div className="bg-neutral-950/50 border border-neutral-800/50 rounded-2xl p-6 flex items-start gap-4">
-                <div className="p-3 bg-amber-500/10 text-amber-500 rounded-xl">
-                  <TrendingUp size={24} />
+            <div className="flex gap-8 overflow-x-auto pb-8 pt-2 custom-scrollbar-hide -mx-4 px-4 scroll-smooth">
+              {stats.moodShelves.slice(0, 4).map((shelf) => (
+                <div 
+                  key={shelf.mood} 
+                  className="flex-shrink-0 w-72 bg-neutral-900/40 border border-neutral-800/60 rounded-[2rem] p-6 hover:border-purple-500/30 transition-all flex flex-col gap-6 shadow-xl group/shelf"
+                >
+                  <div className="flex items-center justify-between">
+                     <h4 className="text-lg font-serif font-bold text-neutral-200 capitalize italic group-hover/shelf:text-purple-500 transition-colors">{shelf.mood}</h4>
+                     <span className="text-[9px] bg-neutral-950 text-neutral-500 font-black uppercase tracking-widest px-3 py-1 rounded-full border border-neutral-800/50">
+                       {shelf.books.length}
+                     </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    {shelf.books.slice(0, 3).map((book) => (
+                      <Link 
+                        key={book.id} 
+                        to={`/livro/${book.id}`}
+                        className="aspect-[2/3] rounded-xl overflow-hidden border border-neutral-800 group/book relative transition-all hover:scale-110 hover:z-10 shadow-lg"
+                        title={book.titulo}
+                      >
+                        {book.coverUrl ? (
+                           <img src={book.coverUrl} alt={book.titulo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        ) : (
+                          <div className="w-full h-full bg-neutral-950 flex items-center justify-center">
+                             <BookOpen size={16} className="text-neutral-800" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-neutral-950/20 opacity-40 group-hover/book:opacity-0 transition-opacity" />
+                      </Link>
+                    ))}
+                    {shelf.books.length < 3 && (
+                      <div className="aspect-[2/3] rounded-xl border border-dashed border-neutral-800 flex items-center justify-center">
+                         <Plus size={16} className="text-neutral-900" />
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <h5 className="text-neutral-200 font-bold mb-1">Insights de Ritmo</h5>
-                  <p className="text-neutral-400 text-sm leading-relaxed">
-                    {insights.message}
-                  </p>
-                </div>
-              </div>
-            )}
+              ))}
+            </div>
           </div>
         )}
-      </div>
 
-      <StreakCard sessions={sessions} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+           {/* Fila de Leitura */}
+           {stats.queroLerCount > 0 && (
+             <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden group/queue">
+               <div className="absolute top-0 right-0 p-8 opacity-5 group-hover/queue:opacity-10 transition-opacity">
+                 <BookmarkPlus size={120} className="text-neutral-100" />
+               </div>
+               
+               <div className="flex items-center justify-between mb-8 relative z-10">
+                 <div className="flex items-center gap-3">
+                   <BookmarkPlus className="text-blue-500" size={24} />
+                   <h3 className="text-xl font-serif font-bold text-neutral-100 italic">Fila de Leitura</h3>
+                 </div>
+                 <Link to="/livros?status=quero+ler" className="text-xs font-black text-neutral-600 hover:text-blue-500 transition-colors uppercase tracking-widest">
+                    Ver tudo ({stats.queroLerCount})
+                 </Link>
+               </div>
 
-      {/* Atmosferas Literárias */}
-      {stats.moodShelves.length > 0 && (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between px-2">
-            <div>
-              <h2 className="text-2xl font-serif font-semibold text-neutral-100 flex items-center gap-3">
-                <Sparkles className="text-purple-500" size={28} />
-                Atmosferas Literárias
-              </h2>
-              <p className="text-sm text-neutral-500 mt-1">Sua biblioteca organizada pelo que você sente.</p>
-            </div>
-            <Link to="/livros" className="text-sm font-bold text-amber-500 hover:underline flex items-center gap-1 group">
-              Explorar biblioteca
-              <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </div>
+               <div className="space-y-4 relative z-10">
+                 {stats.nextRead && (
+                   <Link 
+                     to={`/livro/${stats.nextRead.id}`}
+                     className="bg-neutral-950/40 border border-neutral-800/50 rounded-2xl p-4 flex gap-6 hover:border-blue-500/30 transition-all group/next"
+                   >
+                     <div className="w-16 h-24 rounded-xl overflow-hidden bg-neutral-950 shrink-0 shadow-xl border border-neutral-800 group-hover/next:scale-105 transition-transform duration-500">
+                       {stats.nextRead.coverUrl ? (
+                         <img src={stats.nextRead.coverUrl} alt={stats.nextRead.titulo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                       ) : (
+                         <div className="w-full h-full flex items-center justify-center">
+                           <BookOpen size={20} className="text-neutral-800" />
+                         </div>
+                       )}
+                     </div>
+                     <div className="flex-1 flex flex-col justify-center min-w-0">
+                       <span className="text-[9px] uppercase tracking-widest text-blue-500 font-black mb-1 block">Sugestão de Próxima Leitura</span>
+                       <h4 className="text-base font-bold text-neutral-100 line-clamp-1 mb-0.5 group-hover/next:text-blue-500 transition-colors tracking-tight">{stats.nextRead.titulo}</h4>
+                       <p className="text-xs text-neutral-500 font-serif italic mb-3">{stats.nextRead.autor}</p>
+                       <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest inline-flex self-start ${
+                          stats.nextRead.priority === 'high' ? 'bg-rose-500/10 text-rose-500' :
+                          stats.nextRead.priority === 'medium' ? 'bg-amber-500/10 text-amber-500' :
+                          'bg-emerald-500/10 text-emerald-500'
+                        }`}>
+                          {stats.nextRead.priority === 'high' ? 'Prioritário' : 'Normal'}
+                       </div>
+                     </div>
+                   </Link>
+                 )}
+               </div>
+             </div>
+           )}
 
-          <div className="flex gap-6 overflow-x-auto pb-6 pt-2 custom-scrollbar -mx-4 px-4">
-            {stats.moodShelves.map((shelf) => (
-              <div 
-                key={shelf.mood} 
-                className="flex-shrink-0 w-80 bg-neutral-900/40 border border-neutral-800/80 rounded-3xl p-6 hover:border-neutral-700 transition-all flex flex-col gap-4 shadow-xl"
-              >
-                <div className="flex items-center justify-between">
-                   <h3 className="text-lg font-serif font-bold text-neutral-200 capitalize">{shelf.mood}</h3>
-                   <span className="text-[10px] bg-neutral-800 text-neutral-500 font-black uppercase tracking-widest px-2 py-0.5 rounded-full">
-                     {shelf.books.length} títulos
-                   </span>
-                </div>
+           {/* Timeline Monthly Preview */}
+           <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden group/timeline">
+             <div className="absolute top-0 right-0 p-8 opacity-5 group-hover/timeline:opacity-10 transition-opacity">
+               <History size={120} className="text-neutral-100" />
+             </div>
 
-                <div className="grid grid-cols-3 gap-2">
-                  {shelf.books.map((book) => (
+             <div className="flex items-center justify-between mb-8 relative z-10">
+               <div className="flex items-center gap-3">
+                 <History className="text-amber-500" size={24} />
+                 <h3 className="text-xl font-serif font-bold text-neutral-100 italic">Destaques: {currentMonthName}</h3>
+               </div>
+               <Link to="/linha-do-tempo" className="text-xs font-black text-neutral-600 hover:text-amber-500 transition-colors uppercase tracking-widest">
+                  Ver linha completa
+               </Link>
+             </div>
+
+             <div className="flex flex-wrap gap-4 relative z-10">
+                {stats.lidosEsteMes.length > 0 ? (
+                  stats.lidosEsteMes.slice(0, 3).map(book => (
                     <Link 
                       key={book.id} 
                       to={`/livro/${book.id}`}
-                      className="aspect-[2/3] rounded-lg overflow-hidden border border-neutral-800 group relative transition-transform hover:scale-105"
+                      className="group/titem relative"
                     >
-                      {book.coverUrl ? (
-                         <img src={book.coverUrl} alt={book.titulo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                      ) : (
-                        <div className="w-full h-full bg-neutral-800 flex items-center justify-center">
-                           <BookOpen size={16} className="text-neutral-700" />
+                      <div className="w-20 h-28 rounded-xl overflow-hidden bg-neutral-950 border border-neutral-800 shadow-xl transition-all group-hover/titem:-translate-y-2 group-hover/titem:border-amber-500/50">
+                        {book.coverUrl ? (
+                          <img src={book.coverUrl} alt={book.titulo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <BookOpen size={20} className="text-neutral-800" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover/titem:opacity-100 transition-opacity flex items-end p-2">
+                           <div className="flex items-center gap-1 text-amber-500">
+                             <Star size={10} fill="currentColor" />
+                             <span className="text-[10px] font-black">{book.notaGeral.toFixed(1)}</span>
+                           </div>
                         </div>
-                      )}
-                      <div className="absolute inset-0 bg-neutral-950/20 opacity-40 group-hover:opacity-0 transition-opacity" />
+                      </div>
+                      <p className="mt-2 text-[10px] font-bold text-neutral-500 truncate max-w-[80px] group-hover/titem:text-neutral-300 transition-colors">{book.titulo}</p>
                     </Link>
-                  ))}
-                  {shelf.books.length < 3 && (
-                    <div className="aspect-[2/3] rounded-lg border border-dashed border-neutral-800 flex items-center justify-center">
-                       <Plus size={16} className="text-neutral-800" />
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+                  ))
+                ) : (
+                  <div className="flex-1 flex flex-col items-center justify-center py-6 border border-dashed border-neutral-800 rounded-2xl">
+                     <p className="text-xs text-neutral-600 font-serif italic">Ainda não há conquistas este mês.</p>
+                  </div>
+                )}
+                {stats.lidosEsteMes.length > 3 && (
+                  <Link to="/linha-do-tempo" className="w-20 h-28 rounded-xl border border-dashed border-neutral-800 flex flex-col items-center justify-center gap-1 hover:border-amber-500/50 transition-colors group/morebox">
+                     <span className="text-lg font-black text-neutral-500 group-hover/morebox:text-amber-500 transition-colors">+{stats.lidosEsteMes.length - 3}</span>
+                     <span className="text-[8px] font-black uppercase text-neutral-700">Explorar</span>
+                  </Link>
+                )}
+             </div>
+           </div>
         </div>
-      )}
+      </section>
 
-      {/* Performance Section - Momento de Leitura */}
-      <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8 shadow-xl">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
-          <div className="flex items-center gap-3">
-             <div className="p-3 bg-amber-500/10 text-amber-500 rounded-2xl">
-               <TrendingUp size={24} />
-             </div>
-             <div>
-               <h2 className="text-2xl font-serif font-semibold text-neutral-100">Desempenho no Período</h2>
-               <p className="text-xs text-neutral-500 font-medium uppercase tracking-wider">Acompanhe sua evolução</p>
-             </div>
-          </div>
-          
-          <div className="flex bg-neutral-950 p-1 rounded-xl border border-neutral-800 self-start">
-            {[
-              { id: 'this_month', label: 'Mês Atual' },
-              { id: 'last_30_days', label: '30 Dias' },
-              { id: 'this_quarter', label: 'Trimestre' },
-              { id: 'this_year', label: 'Ano' }
-            ].map((p) => (
-              <button
-                key={p.id}
-                onClick={() => setStatsPeriod(p.id as StatsPeriod)}
-                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${statsPeriod === p.id ? 'bg-amber-500 text-neutral-950' : 'text-neutral-500 hover:text-neutral-300'}`}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
+      <section className="space-y-12 pt-12">
+        <div className="flex items-center gap-3 px-2">
+           <div className="w-1.5 h-8 bg-neutral-700 rounded-full" />
+           <h2 className="text-3xl font-serif font-black text-neutral-100 tracking-tight italic">Profundidade Analítica</h2>
         </div>
 
-        {periodData && (
-          <div className="space-y-8">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-               <div className="p-6 bg-neutral-950/40 rounded-2xl border border-neutral-800/50 space-y-1">
-                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest leading-tight">Livros Concluídos</p>
-                 <h4 className="text-3xl font-bold text-neutral-100">{periodData.current.booksFinished}</h4>
-               </div>
-               <div className="p-6 bg-neutral-950/40 rounded-2xl border border-neutral-800/50 space-y-1">
-                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest leading-tight">Páginas Lidas</p>
-                 <h4 className="text-3xl font-bold text-neutral-100">{formatPagesShort(periodData.current.pagesRead)}</h4>
-               </div>
-               <div className="p-6 bg-neutral-950/40 rounded-2xl border border-neutral-800/50 space-y-1">
-                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest leading-tight">Dias Ativos</p>
-                 <h4 className="text-3xl font-bold text-neutral-100">{periodData.current.activeReadingDays}</h4>
-               </div>
-               <div className="p-6 bg-neutral-950/40 rounded-2xl border border-neutral-800/50 space-y-1">
-                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest leading-tight">Nota Média</p>
-                 <h4 className="text-3xl font-bold text-neutral-100">{periodData.current.averageRating.toFixed(1)}</h4>
-               </div>
-               <div className="p-6 bg-neutral-950/40 rounded-2xl border border-neutral-800/50 space-y-1">
-                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest leading-tight">Ritmo Médio</p>
-                 <h4 className="text-3xl font-bold text-neutral-100">{stats.mediaDiasParaConcluir > 0 ? `${stats.mediaDiasParaConcluir}d` : '--'}</h4>
-               </div>
-               <div className="p-6 bg-neutral-950/40 rounded-2xl border border-neutral-800/50 space-y-1">
-                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest leading-tight">Extensão Média</p>
-                 <h4 className="text-3xl font-bold text-neutral-100">{Math.round(stats.mediaPaginas)}</h4>
-               </div>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard icon={Star} label="Média de Notas" value={stats.mediaGeral.toFixed(1)} color="text-rose-500" bg="bg-rose-500/10" />
+          <StatCard icon={TrendingUp} label="Autor Preferido" value={stats.autorMaisLido || '-'} color="text-violet-500" bg="bg-violet-500/10" />
+          <StatCard icon={Clock} label="Ritmo Médio" value={stats.mediaDiasParaConcluir > 0 ? `${stats.mediaDiasParaConcluir}d` : '--'} subValue="por livro" color="text-amber-500" bg="bg-amber-500/10" />
+          <StatCard icon={Award} label="Maior Obra" value={formatPagesShort(safeParseNumber(stats.maiorLivro?.pageCount))} subValue={stats.maiorLivro?.titulo} color="text-blue-500" bg="bg-blue-500/10" />
+        </div>
 
-            <div className="bg-neutral-950/50 border border-neutral-800/50 rounded-2xl p-6">
-               <div className="flex items-start gap-4">
-                  <div className={`p-2.5 rounded-xl shrink-0 ${periodData.comparison.isImprovement ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
-                    {periodData.comparison.isImprovement ? <ArrowUpRight size={22} /> : <ArrowDownRight size={22} />}
+        <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-[2.5rem] p-10 shadow-xl relative overflow-hidden group/performance">
+           <div className="absolute top-0 right-0 p-8 opacity-5 group-hover/performance:opacity-10 transition-opacity">
+             <TrendingUp size={120} className="text-neutral-100" />
+           </div>
+           
+           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12 relative z-10">
+             <div className="space-y-1">
+               <h3 className="text-2xl font-serif font-bold text-neutral-100 italic">Desempenho no Período</h3>
+               <p className="text-[10px] text-neutral-500 font-black uppercase tracking-widest">Estatísticas detalhadas</p>
+             </div>
+             
+             <div className="flex bg-neutral-950/60 backdrop-blur-md p-1.5 rounded-2xl border border-neutral-800/50 self-start">
+               {[
+                 { id: 'this_month', label: 'Mês' },
+                 { id: 'last_30_days', label: '30 Dias' },
+                 { id: 'this_quarter', label: 'Trimestre' },
+                 { id: 'this_year', label: 'Ano' }
+               ].map((p) => (
+                 <button
+                   key={p.id}
+                   onClick={() => setStatsPeriod(p.id as StatsPeriod)}
+                   className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${statsPeriod === p.id ? 'bg-amber-500 text-neutral-950' : 'text-neutral-500 hover:text-neutral-300'}`}
+                 >
+                   {p.label}
+                 </button>
+               ))}
+             </div>
+           </div>
+
+           {periodData && (
+             <div className="space-y-10 relative z-10">
+               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8">
+                  <div className="space-y-2">
+                    <p className="text-[9px] font-black text-neutral-600 uppercase tracking-widest">Livros</p>
+                    <h4 className="text-4xl font-black text-neutral-100 italic tracking-tighter">{periodData.current.booksFinished}</h4>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-[9px] font-black text-neutral-600 uppercase tracking-widest">Páginas</p>
+                    <h4 className="text-4xl font-black text-neutral-100 italic tracking-tighter">{formatPagesShort(periodData.current.pagesRead)}</h4>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-[9px] font-black text-neutral-600 uppercase tracking-widest">Dias Ativos</p>
+                    <h4 className="text-4xl font-black text-neutral-100 italic tracking-tighter">{periodData.current.activeReadingDays}</h4>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-[9px] font-black text-neutral-600 uppercase tracking-widest">Leitura Focada</p>
+                    <h4 className="text-4xl font-black text-neutral-100 italic tracking-tighter">{(periodData.current.pagesRead / (periodData.current.sessionsCount || 1)).toFixed(0)}</h4>
+                    <p className="text-[8px] text-neutral-700 uppercase font-black tracking-widest">Pág/Sessão</p>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-[9px] font-black text-neutral-600 uppercase tracking-widest">Pág/Livro</p>
+                    <h4 className="text-4xl font-black text-neutral-100 italic tracking-tighter">{Math.round(stats.mediaPaginas)}</h4>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-[9px] font-black text-neutral-600 uppercase tracking-widest">Sessões</p>
+                    <h4 className="text-4xl font-black text-neutral-100 italic tracking-tighter">{periodData.current.sessionsCount}</h4>
+                  </div>
+               </div>
+
+               <div className="bg-neutral-950/40 border border-neutral-800/50 rounded-3xl p-6 flex flex-col md:flex-row md:items-center gap-6">
+                  <div className={`p-4 rounded-2xl shrink-0 ${periodData.comparison.isImprovement ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500 shadow-inner'}`}>
+                    {periodData.comparison.isImprovement ? <ArrowUpRight size={28} /> : <ArrowDownRight size={28} />}
                   </div>
                   <div>
-                    <h5 className="text-sm font-bold text-neutral-200 mb-1">Visão Comparativa</h5>
-                    <p className="text-sm text-neutral-400 leading-relaxed">
+                    <h5 className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-1">Tendência de Leitura</h5>
+                    <p className="text-lg text-neutral-200 font-serif italic leading-relaxed">
                       {periodData.comparison.bookMsg} {periodData.comparison.pageMsg}
                     </p>
                   </div>
                </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Heatmap de Leitura */}
-      <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8 shadow-xl">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-serif font-semibold text-neutral-100 flex items-center gap-3">
-            <Calendar className="text-emerald-500" size={28} />
-            Consistência de Leitura
-          </h2>
-          <div className="text-right">
-            <p className="text-sm text-neutral-400 font-medium">{currentYear}</p>
-          </div>
+             </div>
+           )}
         </div>
-        <ReadingHeatmap sessions={sessions} />
-      </div>
 
-      {/* Lendo Agora */}
-      <AnimatePresence>
-        {stats.lendoAgora.length > 0 && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8 shadow-xl"
-          >
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-2xl font-serif font-semibold text-neutral-100 flex items-center gap-3">
-                <RefreshCw className="text-emerald-500 animate-spin-slow" size={28} />
-                Lendo Agora
-              </h2>
-              <span className="text-sm text-neutral-500 font-medium bg-neutral-800 px-4 py-1.5 rounded-full">
-                {stats.lendoAgora.length} {stats.lendoAgora.length === 1 ? 'livro' : 'livros'} em progresso
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Mais Avançado / Destaque */}
-              {stats.maisAvancado && (
-                <Link 
-                  to={`/livro/${stats.maisAvancado.id}`}
-                  className="bg-neutral-950/50 border border-neutral-800/50 rounded-2xl p-6 flex gap-6 hover:border-emerald-500/50 transition-all group"
-                >
-                  <div className="w-24 h-36 rounded-xl overflow-hidden bg-neutral-800 shrink-0 shadow-lg group-hover:scale-105 transition-transform duration-500 border border-neutral-800">
-                    {stats.maisAvancado.coverUrl ? (
-                      <img src={stats.maisAvancado.coverUrl} alt={stats.maisAvancado.titulo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <BookOpen size={24} className="text-neutral-600" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 flex flex-col justify-between">
-                    <div>
-                      <span className="text-[10px] uppercase tracking-widest text-emerald-500 font-black mb-1 block">Mais Avançado</span>
-                      <h4 className="text-xl font-bold text-neutral-100 line-clamp-1 mb-1">{stats.maisAvancado.titulo}</h4>
-                      <p className="text-sm text-neutral-400">{stats.maisAvancado.autor}</p>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-end text-xs font-bold text-neutral-500">
-                        <span className="text-neutral-200">{stats.maisAvancado.progressPercentage}% concluído</span>
-                        <span>{stats.maisAvancado.currentPage} / {stats.maisAvancado.totalPages || stats.maisAvancado.pageCount}</span>
-                      </div>
-                      <div className="h-2 bg-neutral-900 rounded-full overflow-hidden">
-                        <motion.div 
-                          initial={{ width: 0 }}
-                          animate={{ width: `${stats.maisAvancado.progressPercentage}%` }}
-                          className="h-full bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.3)]"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              )}
-
-              {/* Lista compacta de outros livros */}
-              <div className="space-y-4">
-                {stats.lendoAgora.filter(b => b.id !== stats.maisAvancado?.id).slice(0, 3).map(book => (
-                  <Link 
-                    key={book.id} 
-                    to={`/livro/${book.id}`}
-                    className="flex items-center gap-4 p-3 rounded-2xl bg-neutral-950/20 border border-neutral-800/30 hover:bg-neutral-800/20 hover:border-emerald-500/30 transition-all group"
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+           {/* Chart Evolution */}
+           <div className="xl:col-span-2 bg-neutral-900/40 border border-neutral-800/60 rounded-[2.5rem] p-8 shadow-xl flex flex-col relative overflow-hidden group/chart">
+              <div className="flex items-center justify-between mb-8 relative z-10">
+                <div className="flex items-center gap-3">
+                  <Calendar className="text-amber-500" size={24} />
+                  <h3 className="text-xl font-serif font-bold text-neutral-100 italic">
+                    {statsPeriod === 'this_year' ? 'Evolução Anual' : statsPeriod === 'this_month' ? 'Ritmo Mensal' : 'Ritmo no Período'}
+                  </h3>
+                </div>
+                <div className="flex bg-neutral-950/60 p-1 rounded-xl border border-neutral-800/50 backdrop-blur-sm">
+                  <button 
+                    onClick={() => setChartMode('livros')}
+                    className={`px-4 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all ${chartMode === 'livros' ? 'bg-amber-500 text-neutral-950' : 'text-neutral-500 hover:text-neutral-300'}`}
                   >
-                    <div className="w-10 h-14 rounded-lg overflow-hidden bg-neutral-800 shrink-0 border border-neutral-800">
-                      {book.coverUrl ? (
-                        <img src={book.coverUrl} alt={book.titulo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <BookOpen size={12} className="text-neutral-600" />
-                        </div>
-                      )}
+                    Livros
+                  </button>
+                  <button 
+                    onClick={() => setChartMode('paginas')}
+                    className={`px-4 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all ${chartMode === 'paginas' ? 'bg-blue-500 text-neutral-950' : 'text-neutral-500 hover:text-neutral-300'}`}
+                  >
+                    Páginas
+                  </button>
+                </div>
+              </div>
+              
+              <div className="h-72 w-full mb-4 relative z-10" style={{ minWidth: 0, minHeight: 0 }}>
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
+                    <XAxis dataKey="name" stroke="#404040" tick={{ fill: '#404040', fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
+                    <YAxis stroke="#404040" tick={{ fill: '#404040', fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                    <Tooltip 
+                      cursor={{ fill: '#171717', opacity: 0.4 }} 
+                      contentStyle={{ backgroundColor: '#0a0a0a', border: '1px solid #262626', borderRadius: '16px', boxShadow: '0 20px 40px rgba(0,0,0,0.5)' }}
+                      itemStyle={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}
+                      labelStyle={{ fontFamily: 'serif', fontStyle: 'italic', fontSize: '14px', color: '#f59e0b', marginBottom: '8px' }}
+                      formatter={(value: any) => [value.toLocaleString(), chartMode === 'livros' ? 'Livros' : 'Páginas']}
+                      labelFormatter={(label, payload) => {
+                        if (payload && payload.length > 0) return payload[0].payload.fullName;
+                        return label;
+                      }}
+                    />
+                    <Bar 
+                      dataKey={chartMode === 'livros' ? 'quantidade' : 'paginas'} 
+                      radius={[6, 6, 0, 0]} 
+                      onClick={(data) => {
+                        if (data && data.name && (statsPeriod === 'this_year' || statsPeriod === 'this_quarter')) {
+                          setSelectedMonth(selectedMonth === data.name ? null : data.name);
+                        }
+                      }}
+                      className="cursor-pointer transition-all duration-300 hover:opacity-80"
+                    >
+                      {chartData.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={selectedMonth === entry.name ? (chartMode === 'livros' ? '#f59e0b' : '#3b82f6') : (selectedMonth ? '#171717' : (chartMode === 'livros' ? '#f59e0b' : '#3b82f6'))} 
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+           </div>
+
+           {/* Top Books List */}
+           <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden group/toplist">
+              <div className="absolute top-0 right-0 p-8 opacity-5 group-hover/toplist:opacity-10 transition-opacity">
+                <Award size={120} className="text-neutral-100" />
+              </div>
+
+              <div className="flex items-center justify-between mb-8 relative z-10">
+                 <div className="flex items-center gap-3">
+                   <Award className="text-rose-500" size={24} />
+                   <h3 className="text-xl font-serif font-bold text-neutral-100 italic">Top Livros</h3>
+                 </div>
+                 <Link to="/livros?sort=nota" className="text-xs font-black text-neutral-600 hover:text-rose-500 transition-colors uppercase tracking-widest">
+                    Ver ranking
+                 </Link>
+              </div>
+
+              <div className="space-y-4 relative z-10">
+                {stats.topLivros.map((livro, index) => (
+                  <div key={livro.id} className="flex items-center gap-4 p-4 rounded-2xl bg-neutral-950/20 border border-neutral-800/30 hover:border-neutral-700 transition-all group/topitem">
+                    <div className="w-8 h-8 rounded-full bg-neutral-950 border border-neutral-800 flex items-center justify-center font-black text-rose-500 text-xs shadow-inner">
+                      {index + 1}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h5 className="text-sm font-bold text-neutral-200 truncate group-hover:text-emerald-500 transition-colors">{book.titulo}</h5>
-                      <div className="mt-1 flex items-center gap-2">
-                        <div className="flex-1 h-1.5 bg-neutral-900 rounded-full overflow-hidden max-w-[80px]">
-                          <div className="h-full bg-emerald-500/60 rounded-full" style={{ width: `${book.progressPercentage}%` }} />
-                        </div>
-                        <span className="text-[10px] font-bold text-neutral-500">{book.progressPercentage}%</span>
-                      </div>
+                      <p className="text-sm font-bold text-neutral-200 truncate group-hover/topitem:text-rose-500 transition-colors tracking-tight">{livro.titulo}</p>
+                      <p className="text-[10px] text-neutral-500 truncate font-serif italic">{livro.autor}</p>
                     </div>
-                    <ChevronRight size={16} className="text-neutral-700" />
-                  </Link>
-                ))}
-                
-                {stats.lendoAgora.length > (stats.maisAvancado ? 4 : 3) && (
-                  <Link to="/livros?status=lendo" className="block text-center text-xs font-bold text-neutral-500 hover:text-emerald-500 transition-colors py-2 border border-dashed border-neutral-800 rounded-xl">
-                    Ver todos os {stats.lendoAgora.length} livros lendo
-                  </Link>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Fila de Espera / Wishlist */}
-      {stats.queroLerCount > 0 && (
-        <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8 shadow-xl">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-serif font-semibold text-neutral-100 flex items-center gap-3">
-              <BookmarkPlus className="text-blue-500" size={28} />
-              Fila de Leitura
-            </h2>
-            <Link 
-              to="/livros?status=quero+ler" 
-              className="text-sm font-bold text-blue-500 hover:text-blue-400 transition-colors flex items-center gap-1 group"
-            >
-              Organizar fila completa
-              <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Wishlist Summary Card */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-6 bg-neutral-950/40 rounded-2xl border border-neutral-800/50 space-y-1">
-                <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest leading-tight">Livros na Fila</p>
-                <h4 className="text-3xl font-bold text-neutral-100">{stats.queroLerCount}</h4>
-              </div>
-              <div className="p-6 bg-neutral-950/40 rounded-2xl border border-neutral-800/50 space-y-1">
-                <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest leading-tight">Alta Prioridade</p>
-                <h4 className="text-3xl font-bold text-neutral-100 text-rose-500">{stats.highPriorityCount}</h4>
-              </div>
-            </div>
-
-            {/* Next Read Highlight */}
-            {stats.nextRead && (
-              <Link 
-                to={`/livro/${stats.nextRead.id}`}
-                className="bg-blue-500/5 border border-blue-500/10 rounded-2xl p-4 flex gap-4 hover:border-blue-500/40 transition-all group relative overflow-hidden"
-              >
-                <div className="absolute top-0 right-0 p-2 opacity-5 pointer-events-none group-hover:opacity-10 transition-opacity">
-                  <BookmarkPlus size={64} className="text-blue-500" />
-                </div>
-                <div className="w-16 h-24 rounded-lg overflow-hidden bg-neutral-800 shrink-0 shadow-lg border border-neutral-800 group-hover:scale-105 transition-transform duration-500">
-                  {stats.nextRead.coverUrl ? (
-                    <img src={stats.nextRead.coverUrl} alt={stats.nextRead.titulo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <BookOpen size={20} className="text-neutral-700" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 flex flex-col justify-center min-w-0">
-                  <span className="text-[10px] uppercase tracking-widest text-blue-500 font-black mb-1 block">Sugestão: Próxima Leitura</span>
-                  <h4 className="text-base font-bold text-neutral-100 line-clamp-1 mb-0.5">{stats.nextRead.titulo}</h4>
-                  <p className="text-xs text-neutral-400 truncate mb-2">{stats.nextRead.autor}</p>
-                  {stats.nextRead.priority && (
-                    <div className={`text-[9px] font-black uppercase tracking-tighter inline-block px-2 py-0.5 rounded border self-start ${
-                      stats.nextRead.priority === 'high' ? 'bg-rose-500/10 border-rose-500/20 text-rose-500' :
-                      stats.nextRead.priority === 'medium' ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' :
-                      'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
-                    }`}>
-                      Prioridade {stats.nextRead.priority === 'high' ? 'Alta' : stats.nextRead.priority === 'medium' ? 'Média' : 'Baixa'}
-                    </div>
-                  )}
-                </div>
-              </Link>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Timeline Preview */}
-      <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8 shadow-xl">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-serif font-semibold text-neutral-100 flex items-center gap-3">
-            <History className="text-amber-500" size={28} />
-            Linha do Tempo: {currentMonthName}
-          </h2>
-          <Link 
-            to="/linha-do-tempo" 
-            className="text-sm font-bold text-amber-500 hover:text-amber-400 transition-colors flex items-center gap-1 group"
-          >
-            Ver linha do tempo completa
-            <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
-          </Link>
-        </div>
-
-        {stats.lidosEsteMes.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {stats.lidosEsteMes.slice(0, 3).map(book => (
-              <Link 
-                key={book.id} 
-                to={`/livro/${book.id}`}
-                className="flex items-center gap-4 p-4 rounded-2xl bg-neutral-950/30 border border-neutral-800/50 hover:border-amber-500/50 hover:bg-neutral-800/30 transition-all group"
-              >
-                <div className="w-16 h-24 rounded-xl overflow-hidden bg-neutral-800 shrink-0 shadow-lg">
-                  {book.coverUrl ? (
-                    <img 
-                      src={book.coverUrl} 
-                      alt={book.titulo} 
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      referrerPolicy="no-referrer"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <BookOpen size={24} className="text-neutral-600" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-base font-bold text-neutral-100 truncate">{book.titulo}</h4>
-                  <p className="text-sm text-neutral-400 truncate">{book.autor}</p>
-                  <div className="flex items-center gap-3 mt-2">
-                    <div className="flex items-center gap-1 text-amber-500">
-                      <Star size={14} fill="currentColor" />
-                      <span className="text-sm font-bold">{book.notaGeral.toFixed(1)}</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-neutral-500">
-                      <FileText size={14} />
-                      <span className="text-xs">{formatPagesShort(safeParseNumber(book.pageCount))}</span>
+                    <div className="flex items-center gap-1.5 text-amber-500 font-black text-xs bg-neutral-950/60 px-3 py-1.5 rounded-full border border-neutral-800/50">
+                      <Star size={12} fill="currentColor" />
+                      {livro.notaGeral.toFixed(1)}
                     </div>
                   </div>
-                </div>
-              </Link>
-            ))}
-            {stats.lidosEsteMes.length > 3 && (
-              <Link 
-                to="/linha-do-tempo"
-                className="flex flex-col items-center justify-center p-4 rounded-2xl bg-neutral-950/30 border border-dashed border-neutral-800 hover:border-amber-500/50 hover:bg-neutral-800/30 transition-all group"
-              >
-                <span className="text-2xl font-bold text-amber-500">+{stats.lidosEsteMes.length - 3}</span>
-                <span className="text-xs text-neutral-500 font-medium uppercase tracking-wider">mais este mês</span>
-              </Link>
-            )}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-8 text-center bg-neutral-950/30 rounded-2xl border border-dashed border-neutral-800">
-            <p className="text-neutral-500 text-sm">Nenhuma leitura concluída em {currentMonthName} ainda.</p>
-            <Link to="/adicionar" className="text-amber-500 text-sm font-bold mt-2 hover:underline">Adicionar livro</Link>
-          </div>
-        )}
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
-        <StatCard icon={BookOpen} label="Total Lidos" value={stats.totalLidos.toString()} color="text-amber-500" bg="bg-amber-500/10" />
-        <StatCard icon={FileText} label="Total de Páginas" value={formatPagesLong(stats.totalPaginas)} color="text-blue-500" bg="bg-blue-500/10" />
-        <StatCard icon={Clock} label="Esta Semana" value={`${stats.sessionsThisWeek.length} sessões`} subValue={`${formatPagesShort(stats.pagesThisWeek)} lidas`} color="text-emerald-500" bg="bg-emerald-500/10" />
-        <StatCard icon={Star} label="Média Geral" value={stats.mediaGeral.toFixed(1)} color="text-rose-500" bg="bg-rose-500/10" />
-        <StatCard icon={TrendingUp} label="Autor Mais" value={stats.autorMaisLido || '-'} subValue={stats.generoMaisLido ? `Gênero: ${stats.generoMaisLido}` : ''} color="text-violet-500" bg="bg-violet-500/10" />
-      </div>
-
-      {/* Page Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-6 shadow-xl flex items-center gap-4">
-          <div className="p-3 bg-blue-500/10 text-blue-500 rounded-2xl">
-            <TrendingUp size={24} />
-          </div>
-          <div>
-            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Média / Livro</p>
-            <h3 className="text-xl font-bold text-neutral-100">{formatPagesPerBook(Math.round(stats.mediaPaginas))}</h3>
-          </div>
-        </div>
-        <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-6 shadow-xl flex items-center gap-4">
-          <div className="p-3 bg-amber-500/10 text-amber-500 rounded-2xl">
-            <Award size={24} />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Maior Livro</p>
-            <h3 className="text-xl font-bold text-neutral-100 truncate">{formatPagesShort(safeParseNumber(stats.maiorLivro?.pageCount))}</h3>
-            <p className="text-[10px] text-neutral-500 truncate">{stats.maiorLivro?.titulo}</p>
-          </div>
-        </div>
-        <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-6 shadow-xl flex items-center gap-4">
-          <div className="p-3 bg-rose-500/10 text-rose-500 rounded-2xl">
-            <Calendar size={24} />
-          </div>
-          <div>
-            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Mês Intenso</p>
-            <h3 className="text-xl font-bold text-neutral-100">{stats.mesMaisPaginas?.fullName || '-'}</h3>
-            <p className="text-[10px] text-neutral-500">{formatPagesShort(stats.mesMaisPaginas?.paginas || 0)}</p>
-          </div>
-        </div>
-        <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-6 shadow-xl flex items-center gap-4">
-          <div className="p-3 bg-emerald-500/10 text-emerald-500 rounded-2xl">
-            <BookOpen size={24} />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Menor Livro</p>
-            <h3 className="text-xl font-bold text-neutral-100 truncate">{formatPagesShort(safeParseNumber(stats.menorLivro?.pageCount))}</h3>
-            <p className="text-[10px] text-neutral-500 truncate">{stats.menorLivro?.titulo}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Volume Insights */}
-      <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8 shadow-xl">
-        <h2 className="text-2xl font-serif font-semibold text-neutral-100 flex items-center gap-3 mb-6">
-          <Sparkles className="text-amber-500" size={28} />
-          Volume de Leitura
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 shrink-0" />
-              <p className="text-neutral-300">Você já leu um total de <span className="text-amber-500 font-bold">{formatPages(stats.totalPaginas)}</span> páginas em sua jornada.</p>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 shrink-0" />
-              <p className="text-neutral-300">Seu ritmo médio é de <span className="text-amber-500 font-bold">{formatPagesPerBook(Math.round(stats.mediaPaginas))}</span>.</p>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 shrink-0" />
-              <p className="text-neutral-300">Seu maior desafio foi <span className="text-amber-500 font-bold">"{stats.maiorLivro?.titulo}"</span> com {formatPagesLong(safeParseNumber(stats.maiorLivro?.pageCount))}.</p>
-            </div>
-          </div>
-          <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 shrink-0" />
-              <p className="text-neutral-300">O mês de <span className="text-amber-500 font-bold">{stats.mesMaisPaginas?.fullName}</span> foi o seu mais produtivo em volume de páginas.</p>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 shrink-0" />
-              <p className="text-neutral-300">A leitura mais rápida foi <span className="text-amber-500 font-bold">"{stats.menorLivro?.titulo}"</span> com apenas {formatPagesLong(safeParseNumber(stats.menorLivro?.pageCount))}.</p>
-            </div>
-            {stats.hasMissingPageCounts && (
-              <div className="flex items-start gap-3 p-3 bg-amber-500/5 border border-amber-500/10 rounded-xl">
-                <Sparkles size={16} className="text-amber-500 shrink-0 mt-0.5" />
-                <p className="text-xs text-neutral-500">Alguns livros ainda não possuem número de páginas, o que pode afetar as estatísticas de volume.</p>
+                ))}
+                {stats.topLivros.length === 0 && (
+                   <div className="py-12 flex flex-col items-center justify-center border border-dashed border-neutral-800 rounded-[2rem]">
+                      <Star size={32} className="text-neutral-900 mb-2" />
+                      <p className="text-xs text-neutral-700 font-serif italic">Nenhuma leitura avaliada ainda.</p>
+                   </div>
+                )}
               </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Chart */}
-        <div className="lg:col-span-2 bg-neutral-900/50 border border-neutral-800 rounded-3xl p-6 shadow-xl flex flex-col">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xl font-serif font-semibold flex items-center gap-2">
-              <Calendar className="text-amber-500" size={20} />
-              {statsPeriod === 'this_year' ? 'Evolução Anual' : statsPeriod === 'this_month' ? 'Ritmo Mensal' : 'Ritmo no Período'}
-            </h2>
-            <div className="flex bg-neutral-950 p-1 rounded-xl border border-neutral-800">
-              <button 
-                onClick={() => setChartMode('livros')}
-                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${chartMode === 'livros' ? 'bg-amber-500 text-neutral-950' : 'text-neutral-500 hover:text-neutral-300'}`}
-              >
-                Livros
-              </button>
-              <button 
-                onClick={() => setChartMode('paginas')}
-                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${chartMode === 'paginas' ? 'bg-blue-500 text-neutral-950' : 'text-neutral-500 hover:text-neutral-300'}`}
-              >
-                Páginas
-              </button>
-            </div>
-          </div>
-          <p className="text-sm text-neutral-400 mb-6">
-            {statsPeriod === 'this_year' || statsPeriod === 'this_quarter' 
-              ? 'Clique em uma barra para ver os livros lidos no mês.' 
-              : 'Evolução diária de páginas e livros concluídos.'}
-          </p>
-          <div className="h-72 w-full" style={{ minWidth: 0, minHeight: 0 }}>
-            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
-                <XAxis dataKey="name" stroke="#737373" tick={{ fill: '#737373' }} axisLine={false} tickLine={false} />
-                <YAxis stroke="#737373" tick={{ fill: '#737373' }} axisLine={false} tickLine={false} allowDecimals={false} />
-                <Tooltip 
-                  cursor={{ fill: '#262626' }} 
-                  contentStyle={{ backgroundColor: '#171717', border: '1px solid #262626', borderRadius: '12px', color: '#fff' }}
-                  labelStyle={{ fontWeight: 'bold', marginBottom: '4px' }}
-                  formatter={(value: any) => [value.toLocaleString(), chartMode === 'livros' ? 'Livros' : 'Páginas']}
-                  labelFormatter={(label, payload) => {
-                    if (payload && payload.length > 0) return payload[0].payload.fullName;
-                    return label;
-                  }}
-                />
-                <Bar 
-                  dataKey={chartMode === 'livros' ? 'quantidade' : 'paginas'} 
-                  radius={[4, 4, 0, 0]} 
-                  onClick={(data) => {
-                    if (data && data.name && (statsPeriod === 'this_year' || statsPeriod === 'this_quarter')) {
-                      setSelectedMonth(selectedMonth === data.name ? null : data.name);
-                    }
-                  }}
-                  className="cursor-pointer transition-all duration-300 hover:opacity-80"
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={selectedMonth === entry.name ? (chartMode === 'livros' ? '#f59e0b' : '#3b82f6') : (selectedMonth ? '#404040' : (chartMode === 'livros' ? '#f59e0b' : '#3b82f6'))} 
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+           </div>
         </div>
 
-        {/* Top Books */}
-        <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-6 shadow-xl">
-          <h2 className="text-xl font-serif font-semibold mb-6 flex items-center gap-2">
-            <Award className="text-amber-500" size={20} />
-            Top Livros
-          </h2>
-          <div className="space-y-4">
-            {stats.topLivros.map((livro, index) => (
-              <div key={livro.id} className="flex items-center gap-4 p-3 rounded-2xl hover:bg-neutral-800/50 transition-colors">
-                <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center font-bold text-amber-500 text-sm">
-                  {index + 1}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-neutral-200 truncate">{livro.titulo}</p>
-                  <p className="text-xs text-neutral-500 truncate">{livro.autor}</p>
-                </div>
-                <div className="flex items-center gap-1 text-amber-500 font-medium text-sm">
-                  <Star size={14} fill="currentColor" />
-                  {livro.notaGeral.toFixed(1)}
-                </div>
-              </div>
-            ))}
-            {stats.topLivros.length === 0 && (
-              <p className="text-neutral-500 text-sm text-center py-4">Nenhum livro lido ainda.</p>
-            )}
+        {/* Volume Insights - Redesigned to be more compact */}
+        <div className="bg-neutral-950/40 border border-neutral-800/50 rounded-[2.5rem] p-10 shadow-inner">
+          <div className="flex items-center gap-3 mb-8">
+             <Sparkles className="text-amber-500/50" size={24} />
+             <h3 className="text-xl font-serif font-bold text-neutral-400 italic">Volume & Curiosidade</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+             <div className="space-y-1">
+                <p className="text-[9px] font-black text-neutral-600 uppercase tracking-widest">Jornada Total</p>
+                <p className="text-base text-neutral-300 font-serif italic leading-snug"><span className="text-amber-500 font-black not-italic">{formatPages(stats.totalPaginas)}</span> páginas percorridas em sua vida literária.</p>
+             </div>
+             <div className="space-y-1">
+                <p className="text-[9px] font-black text-neutral-600 uppercase tracking-widest">Mês de Ouro</p>
+                <p className="text-base text-neutral-300 font-serif italic leading-snug"><span className="text-amber-500 font-black not-italic">{stats.mesMaisPaginas?.fullName}</span> foi seu pico histórico de produtividade.</p>
+             </div>
+             <div className="space-y-1">
+                <p className="text-[9px] font-black text-neutral-600 uppercase tracking-widest">Destaque de Extensão</p>
+                <p className="text-base text-neutral-300 font-serif italic leading-snug">"{stats.maiorLivro?.titulo.slice(0, 20)}..." foi seu <span className="text-amber-500 font-black not-italic">maior desafio</span> físico.</p>
+             </div>
+             <div className="space-y-1">
+                <p className="text-[9px] font-black text-neutral-600 uppercase tracking-widest">Frequência</p>
+                <p className="text-base text-neutral-300 font-serif italic leading-snug">Você manteve <span className="text-amber-500 font-black not-italic">{stats.sessionsThisWeek.length}</span> sessões de foco nos últimos 7 dias.</p>
+             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Selected Month Books */}
       <AnimatePresence>
