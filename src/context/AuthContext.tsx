@@ -4,14 +4,13 @@ import { onAuthStateChanged, signInWithPopup, signOut, browserPopupRedirectResol
 import { doc, setDoc, getDoc, getDocFromServer } from 'firebase/firestore';
 
 async function testConnection() {
+  if (!db) return;
   try {
-    // Attempt to fetch a non-existent doc from server to test connection
     await getDocFromServer(doc(db, 'test', 'connection'));
   } catch (error) {
-    if(error instanceof Error && error.message.includes('the client is offline')) {
-      console.error("Please check your Firebase configuration. The Firestore client is offline.");
+    if (error instanceof Error && error.message.includes('the client is offline')) {
+      console.error('Please check your Firebase configuration. The Firestore client is offline.');
     }
-    // Skip logging for other errors (like permission denied), as this is simply a connection test.
   }
 }
 
@@ -33,7 +32,7 @@ export interface FirestoreErrorInfo {
     email: string | null | undefined;
     emailVerified: boolean | undefined;
     isAnonymous: boolean | undefined;
-  }
+  };
 }
 
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
@@ -46,10 +45,10 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
       isAnonymous: auth?.currentUser?.isAnonymous,
     },
     operationType,
-    path
+    path,
   };
   console.error('Firestore Error: ', JSON.stringify(errInfo, null, 2));
-  throw new Error(JSON.stringify(errInfo));
+  return errInfo;
 }
 
 interface UserData {
@@ -89,42 +88,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: firebaseUser.email || '',
           profilePhoto: firebaseUser.photoURL || '',
         };
-        
+
+        setUser(userData);
+
+        if (!db) {
+          setLoading(false);
+          return;
+        }
+
         try {
-          // Test connection and permissions
           const userRef = doc(db, 'users', firebaseUser.uid);
-          let userSnap;
-          try {
-            userSnap = await getDoc(userRef);
-          } catch (e) {
+          const userSnap = await getDoc(userRef).catch((e) => {
             handleFirestoreError(e, OperationType.GET, `users/${firebaseUser.uid}`);
-          }
-          
-          if (!userSnap?.exists()) {
-            try {
-              await setDoc(userRef, {
-                id: firebaseUser.uid,
-                displayName: firebaseUser.displayName || 'Usuário',
-                email: firebaseUser.email || '',
-                photoURL: firebaseUser.photoURL || '',
-                bio: '',
-                booksRead: 0,
-                pagesRead: 0,
-                averageRating: 0,
-                favoriteGenre: '',
-                readingStreak: 0,
-                createdAt: Date.now(),
-                updatedAt: Date.now()
-              });
-            } catch (e) {
+            return null;
+          });
+
+          if (userSnap && !userSnap.exists()) {
+            await setDoc(userRef, {
+              id: firebaseUser.uid,
+              displayName: firebaseUser.displayName || 'Usuário',
+              email: firebaseUser.email || '',
+              photoURL: firebaseUser.photoURL || '',
+              bio: '',
+              booksRead: 0,
+              pagesRead: 0,
+              averageRating: 0,
+              favoriteGenre: '',
+              readingStreak: 0,
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+            }).catch((e) => {
               handleFirestoreError(e, OperationType.WRITE, `users/${firebaseUser.uid}`);
-            }
+            });
           }
         } catch (e) {
-          console.error("Error syncing user to Firestore:", e);
+          console.error('Error syncing user to Firestore:', e);
         }
-        
-        setUser(userData);
       } else {
         setUser(null);
       }
@@ -135,8 +134,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const loginWithGoogle = React.useCallback(async () => {
-    if (!isFirebaseConfigured || !auth) {
-      alert("Firebase não está configurado. Verifique as variáveis de ambiente.");
+    if (!isFirebaseConfigured || !auth || !googleProvider) {
+      alert('Firebase não está configurado. Verifique as variáveis de ambiente.');
       return;
     }
     try {
@@ -144,9 +143,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       if (error.code === 'auth/network-request-failed') {
         console.error('Network error during sign-in. This often happens if the Firebase Auth Domain is not correctly configured or allowlisted.');
-        alert("Erro de rede ao fazer login. Verifique se o domínio do app está autorizado no console do Firebase.");
+        alert('Erro de rede ao fazer login. Verifique se o domínio do app está autorizado no console do Firebase.');
       } else if (error.code === 'auth/popup-blocked') {
-        alert("O popup de login foi bloqueado pelo navegador. Por favor, permita popups para este site.");
+        alert('O popup de login foi bloqueado pelo navegador. Por favor, permita popups para este site.');
       } else {
         console.error('Error signing in with Google:', error);
         alert(`Erro ao entrar com Google: ${error.message}`);
@@ -164,19 +163,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const value = React.useMemo(() => ({ 
-    user, 
-    loading, 
-    isConfigured: isFirebaseConfigured, 
-    loginWithGoogle, 
-    logout 
-  }), [user, loading, loginWithGoogle, logout]);
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
+  const value = React.useMemo(
+    () => ({
+      user,
+      loading,
+      isConfigured: isFirebaseConfigured,
+      loginWithGoogle,
+      logout,
+    }),
+    [user, loading, loginWithGoogle, logout]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {
