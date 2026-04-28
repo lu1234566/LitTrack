@@ -304,136 +304,125 @@ export const Dashboard: React.FC = () => {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
-      <header className="relative py-12 px-8 rounded-[3.5rem] bg-gradient-to-br from-neutral-900 via-neutral-900/60 to-transparent border border-neutral-800 overflow-hidden mb-12">
-        <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
-          <BookOpen size={220} className="text-neutral-100" />
+      <header className="relative py-20 px-10 rounded-[4rem] bg-gradient-to-br from-neutral-900 via-neutral-900/60 to-transparent border border-neutral-800/40 overflow-hidden mb-16">
+        <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none">
+          <BookOpen size={280} className="text-neutral-100" />
         </div>
         
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-          <div className="space-y-4">
-             <h1 className="text-6xl font-serif font-black text-neutral-100 tracking-tighter">Readora</h1>
-             <p className="text-neutral-400 text-lg font-serif italic max-w-xl leading-relaxed">
-               Sua curadoria literária pessoal. Transformando cada página em um rastro de sabedoria.
-             </p>
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-end justify-between gap-12">
+          <div className="space-y-6">
+             <div className="space-y-2">
+               <h1 className="text-7xl font-serif font-black text-neutral-100 tracking-tighter leading-none">Readora</h1>
+               <p className="text-neutral-500 text-xl font-serif italic max-w-lg leading-relaxed">
+                 Sua curadoria literária pessoal. Transformando cada página em um rastro de sabedoria.
+               </p>
+             </div>
              
-             <div className="flex flex-wrap gap-3 pt-6">
+             <div className="flex flex-wrap gap-4 pt-4">
                 <button 
                   onClick={() => setShowSessionModal(true)}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-3.5 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/20 active:scale-95"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] transition-all flex items-center justify-center gap-2 shadow-2xl shadow-emerald-500/20 active:scale-95"
                 >
                   <Clock size={16} />
                   Registrar Sessão
                 </button>
                 <Link 
                   to="/adicionar" 
-                  className="bg-amber-500 hover:bg-amber-400 text-neutral-950 px-8 py-3.5 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all flex items-center justify-center gap-2 shadow-xl shadow-amber-500/20 active:scale-95"
+                  className="bg-amber-500 hover:bg-amber-400 text-neutral-950 px-10 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] transition-all flex items-center justify-center gap-2 shadow-2xl shadow-amber-500/20 active:scale-95"
                 >
                   <Plus size={16} />
                   Nova Leitura
                 </Link>
-                <div className="flex bg-neutral-950/40 p-1 rounded-2xl border border-neutral-800/50 backdrop-blur-sm">
-                   <Link to="/comparativo-anual" className="p-3 text-neutral-500 hover:text-amber-500 transition-colors" title="Comparativo">
-                     <History size={18} />
-                   </Link>
-                   <Link to="/retrospectiva" className="p-3 text-neutral-500 hover:text-amber-500 transition-colors" title="Retrospectiva">
-                     <History size={18} />
-                   </Link>
-                </div>
              </div>
           </div>
 
-          {/* Compact Overview Row - Balanced */}
-          <div className="grid grid-cols-2 gap-3 lg:w-[400px]">
-             <div className="bg-neutral-950/60 backdrop-blur-md border border-neutral-800/50 rounded-2xl p-4 flex flex-col justify-center">
-                <p className="text-[9px] font-black text-neutral-500 uppercase tracking-widest mb-1">Livros</p>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-neutral-100 tracking-tighter">{stats.totalLidosEsteAno}</span>
-                  <span className="text-[10px] text-neutral-600 font-bold italic">ano</span>
-                </div>
-             </div>
-             <div className="bg-neutral-950/60 backdrop-blur-md border border-neutral-800/50 rounded-2xl p-4 flex flex-col justify-center">
-                <p className="text-[9px] font-black text-neutral-500 uppercase tracking-widest mb-1">Páginas</p>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-neutral-100 tracking-tighter">{formatPagesShort(stats.paginasLidasEsteAno)}</span>
-                </div>
-             </div>
-             <div className="bg-neutral-950/60 backdrop-blur-md border border-neutral-800/50 rounded-2xl p-4 flex flex-col justify-center">
-                <p className="text-[9px] font-black text-neutral-500 uppercase tracking-widest mb-1">Média</p>
-                <div className="flex items-baseline gap-2">
-                   <span className="text-2xl font-black text-rose-500 tracking-tighter">{stats.mediaGeral.toFixed(1)}</span>
-                </div>
-             </div>
-             <div className="bg-neutral-950/60 backdrop-blur-md border border-neutral-800/50 rounded-2xl p-4 flex flex-col justify-center">
-                <p className="text-[9px] font-black text-neutral-500 uppercase tracking-widest mb-1">Streak</p>
-                <div className="flex items-baseline gap-2">
-                   <span className="text-2xl font-black text-amber-500 tracking-tighter">
-                     {sessions.length > 0 ? analysisService.calculateStreak(sessions) : 0}
-                   </span>
-                   <span className="text-[10px] text-neutral-600 font-bold italic">dias</span>
-                </div>
-             </div>
+          <div className="grid grid-cols-2 gap-4 lg:w-[480px]">
+             {[
+               { label: 'Livros Ano', value: stats.totalLidosEsteAno, color: 'text-neutral-100' },
+               { label: 'Páginas', value: formatPagesShort(stats.paginasLidasEsteAno), color: 'text-neutral-100' },
+               { label: 'Média Global', value: stats.mediaGeral.toFixed(1), color: 'text-rose-500' },
+               { label: 'Streak Atual', value: sessions.length > 0 ? analysisService.calculateStreak(sessions) : 0, color: 'text-amber-500', unit: 'dias' }
+             ].map((item, i) => (
+               <div key={i} className="bg-neutral-950/40 backdrop-blur-xl border border-neutral-800/30 rounded-3xl p-6 transition-colors hover:border-neutral-700/50">
+                  <p className="text-[9px] font-black text-neutral-600 uppercase tracking-[0.2em] mb-2">{item.label}</p>
+                  <div className="flex items-baseline gap-2">
+                    <span className={`text-3xl font-black tracking-tighter ${item.color}`}>{item.value}</span>
+                    {item.unit && <span className="text-[10px] text-neutral-700 font-bold italic">{item.unit}</span>}
+                  </div>
+               </div>
+             ))}
           </div>
         </div>
       </header>
 
-      <section className="space-y-12">
-        <div className="flex items-center gap-3 px-2">
-           <div className="w-1.5 h-8 bg-amber-500 rounded-full" />
-           <h2 className="text-3xl font-serif font-black text-neutral-100 tracking-tight italic">Momento de Leitura</h2>
+      <section className="space-y-16">
+        <div className="flex items-center justify-between px-4">
+           <div className="flex items-center gap-4">
+             <div className="w-2 h-10 bg-amber-500 rounded-full" />
+             <h2 className="text-4xl font-serif font-black text-neutral-100 tracking-tight italic leading-none">Momento de Leitura</h2>
+           </div>
+           <div className="flex bg-neutral-900/50 p-1 rounded-2xl border border-neutral-800/50">
+             <Link to="/comparativo-anual" className="p-3 text-neutral-500 hover:text-amber-500 transition-colors" title="Comparativo">
+               <TrendingUp size={20} />
+             </Link>
+             <Link to="/retrospectiva" className="p-3 text-neutral-500 hover:text-amber-500 transition-colors" title="Retrospectiva">
+               <History size={20} />
+             </Link>
+           </div>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-            {/* Row 1: Lendo Agora + Meta */}
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
+            {/* Main Current Reading Focus */}
             <div className="xl:col-span-8">
                {stats.lendoAgora.length > 0 ? (
-                  <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden group/readnow h-full">
-                    <div className="absolute top-0 right-0 p-8 opacity-5 group-hover/readnow:opacity-10 transition-opacity">
-                       <RefreshCw size={120} className="text-neutral-100 animate-spin-slow" />
+                  <div className="bg-neutral-900/30 border border-neutral-800/40 rounded-[3rem] p-10 shadow-2xl relative overflow-hidden group/readnow h-full">
+                    <div className="absolute top-0 right-0 p-10 opacity-[0.02] group-hover/readnow:opacity-[0.05] transition-opacity">
+                       <RefreshCw size={140} className="text-neutral-100 animate-spin-slow" />
                     </div>
                     
-                    <div className="flex items-center justify-between mb-8 relative z-10">
+                    <div className="flex items-center justify-between mb-12 relative z-10">
                       <div>
-                        <h3 className="text-2xl font-serif font-bold text-neutral-100 italic">Lendo Agora</h3>
-                        <p className="text-[10px] text-neutral-500 font-black uppercase tracking-widest mt-1">Sua imersão atual</p>
+                        <h3 className="text-3xl font-serif font-bold text-neutral-100 italic">Lendo Agora</h3>
+                        <p className="text-[11px] text-neutral-500 font-black uppercase tracking-[0.2em] mt-2">Sua imersão atual</p>
                       </div>
-                      <Link to="/livros?status=lendo" className="text-[10px] font-black text-neutral-600 hover:text-amber-500 transition-colors uppercase tracking-widest">
+                      <Link to="/livros?status=lendo" className="text-[10px] font-black text-neutral-500 hover:text-amber-500 transition-colors uppercase tracking-[0.15em]">
                         Gerenciar todos ({stats.lendoAgora.length})
                       </Link>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10 relative z-10">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 relative z-10">
                       {stats.maisAvancado && (
                         <Link 
                           to={`/livro/${stats.maisAvancado.id}`}
-                          className="flex gap-6 group/maincard"
+                          className="flex gap-8 group/maincard"
                         >
-                          <div className="w-28 h-40 rounded-xl overflow-hidden bg-neutral-950 shrink-0 shadow-[0_20px_50px_rgba(0,0,0,0.5)] group-hover/maincard:scale-105 transition-transform duration-500 border border-neutral-800">
+                          <div className="w-36 h-52 rounded-2xl overflow-hidden bg-neutral-950 shrink-0 shadow-[0_30px_60px_rgba(0,0,0,0.6)] group-hover/maincard:scale-105 transition-transform duration-700 border border-neutral-800/50">
                             {stats.maisAvancado.coverUrl ? (
                               <img src={stats.maisAvancado.coverUrl} alt={stats.maisAvancado.titulo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
-                                <BookOpen size={24} className="text-neutral-800" />
+                                <BookOpen size={32} className="text-neutral-800" />
                               </div>
                             )}
                           </div>
-                          <div className="flex-1 flex flex-col justify-center py-2 min-w-0">
-                            <h4 className="text-xl font-bold text-neutral-100 line-clamp-2 leading-tight mb-2 group-hover/maincard:text-amber-500 transition-colors tracking-tight">
+                          <div className="flex-1 flex flex-col justify-center min-w-0">
+                            <h4 className="text-2xl font-bold text-neutral-100 line-clamp-2 leading-tight mb-3 group-hover/maincard:text-amber-500 transition-colors tracking-tighter">
                               {stats.maisAvancado.titulo}
                             </h4>
-                            <p className="text-sm text-neutral-500 font-serif italic mb-6 truncate">{stats.maisAvancado.autor}</p>
+                            <p className="text-base text-neutral-500 font-serif italic mb-8 truncate">{stats.maisAvancado.autor}</p>
                             
-                            <div className="space-y-3">
-                              <div className="flex justify-between items-end text-[10px] font-black uppercase tracking-widest text-neutral-500">
+                            <div className="space-y-4">
+                              <div className="flex justify-between items-end text-[11px] font-black uppercase tracking-widest text-neutral-500">
                                 <span className="text-emerald-500">{stats.maisAvancado.progressPercentage || 0}% CONCLUÍDO</span>
-                                <span>
+                                <span className="text-neutral-600 italic">
                                   {stats.maisAvancado.currentPage || 0} / {(stats.maisAvancado.totalPages || stats.maisAvancado.pageCount) || '—'}
                                 </span>
                               </div>
-                              <div className="h-1.5 bg-neutral-950 rounded-full overflow-hidden border border-neutral-800/50">
+                              <div className="h-2 bg-neutral-950 rounded-full overflow-hidden border border-neutral-800/30">
                                 <motion.div 
                                   initial={{ width: 0 }}
                                   animate={{ width: `${stats.maisAvancado.progressPercentage || 0}%` }}
-                                  className="h-full bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.3)]"
+                                  className="h-full bg-emerald-500 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.3)]"
                                 />
                               </div>
                             </div>
@@ -441,27 +430,27 @@ export const Dashboard: React.FC = () => {
                         </Link>
                       )}
 
-                      <div className="space-y-4">
-                        {stats.lendoAgora.filter(b => b.id !== stats.maisAvancado?.id).slice(0, 2).map(book => (
+                      <div className="space-y-4 flex flex-col justify-center">
+                        {stats.lendoAgora.filter(b => b.id !== stats.maisAvancado?.id).slice(0, 3).map(book => (
                           <Link 
                             key={book.id} 
                             to={`/livro/${book.id}`}
-                            className="flex items-center gap-4 p-4 rounded-[1.5rem] bg-neutral-950/20 border border-neutral-800/30 hover:bg-neutral-950/40 hover:border-emerald-500/30 transition-all group/subcard"
+                            className="flex items-center gap-5 p-5 rounded-[2rem] bg-neutral-950/20 border border-neutral-800/40 hover:bg-neutral-950/40 hover:border-emerald-500/30 transition-all group/subcard"
                           >
-                            <div className="w-12 h-16 rounded-lg overflow-hidden bg-neutral-950 shrink-0 border border-neutral-800">
+                            <div className="w-14 h-20 rounded-xl overflow-hidden bg-neutral-950 shrink-0 border border-neutral-800/40">
                               {book.coverUrl ? (
                                 <img src={book.coverUrl} alt={book.titulo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center">
-                                  <BookOpen size={12} className="text-neutral-800" />
+                                  <BookOpen size={16} className="text-neutral-800" />
                                 </div>
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h5 className="text-sm font-bold text-neutral-300 truncate group-hover/subcard:text-emerald-500 transition-colors leading-tight">{book.titulo}</h5>
-                              <div className="mt-2 flex items-center gap-3">
-                                <div className="flex-1 h-1 bg-neutral-950 rounded-full overflow-hidden">
-                                  <div className="h-full bg-emerald-500/60 rounded-full" style={{ width: `${book.progressPercentage || 0}%` }} />
+                              <h5 className="text-sm font-bold text-neutral-300 truncate group-hover/subcard:text-emerald-500 transition-colors leading-tight mb-2 tracking-tight">{book.titulo}</h5>
+                              <div className="flex items-center gap-4">
+                                <div className="flex-1 h-1.5 bg-neutral-950 rounded-full overflow-hidden">
+                                  <div className="h-full bg-emerald-500/50 rounded-full" style={{ width: `${book.progressPercentage || 0}%` }} />
                                 </div>
                                 <span className="text-[10px] font-black text-neutral-600">{book.progressPercentage || 0}%</span>
                               </div>
@@ -472,78 +461,93 @@ export const Dashboard: React.FC = () => {
                     </div>
                   </div>
                ) : (
-                  <div className="bg-neutral-900/40 border border-dashed border-neutral-800 rounded-[2.5rem] p-12 text-center h-full flex flex-col items-center justify-center">
-                     <BookOpen size={40} className="mx-auto text-neutral-800 mb-4" />
-                     <h3 className="text-xl font-serif font-bold text-neutral-400 italic">Nenhum mergulho ativo</h3>
-                     <p className="text-xs text-neutral-600 mt-2 font-serif italic">Que tal começar uma nova história hoje?</p>
-                     <Link to="/adicionar" className="inline-block mt-6 px-8 py-3 bg-neutral-800 hover:bg-neutral-700 text-neutral-400 text-[10px] font-black uppercase tracking-widest rounded-xl transition-colors">Iniciar Leitura</Link>
+                  <div className="bg-neutral-900/30 border border-dashed border-neutral-800/50 rounded-[3rem] p-16 text-center h-full flex flex-col items-center justify-center">
+                     <BookOpen size={48} className="mx-auto text-neutral-800 mb-6" />
+                     <h3 className="text-2xl font-serif font-bold text-neutral-400 italic">Nenhum mergulho ativo</h3>
+                     <p className="text-sm text-neutral-600 mt-2 font-serif italic max-w-xs mx-auto">Sua estante aguarda por uma nova jornada. Que tal escolher uma hoje?</p>
+                     <Link to="/adicionar" className="inline-block mt-10 px-10 py-4 bg-neutral-800 hover:bg-neutral-700 text-neutral-400 text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl transition-all active:scale-95">Iniciar Leitura</Link>
                   </div>
                )}
             </div>
 
-            <div className="xl:col-span-4">
-               {/* Goal Card - Solid and compact */}
-               <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-[2.5rem] p-8 shadow-xl h-full flex flex-col justify-between">
-                  <div className="flex items-center justify-between mb-6">
+            <div className="xl:col-span-4 flex flex-col gap-10">
+               {/* Goal Card - Refined */}
+               <div className="bg-neutral-900/30 border border-neutral-800/40 rounded-[3rem] p-10 shadow-xl flex-1 flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-8">
                     <div>
-                      <h3 className="text-xl font-serif font-bold text-neutral-100 italic">Meta de {currentYear}</h3>
-                      <p className="text-[10px] text-neutral-500 font-black uppercase tracking-widest mt-1">Horizonte literário</p>
+                      <h3 className="text-2xl font-serif font-bold text-neutral-100 italic">Meta {currentYear}</h3>
+                      <p className="text-[11px] text-neutral-500 font-black uppercase tracking-[0.2em] mt-2">Horizonte anual</p>
                     </div>
-                    <Target className="text-amber-500/30" size={24} />
+                    <Target className="text-amber-500/20" size={32} />
                   </div>
 
                   {!userGoal ? (
-                    <div className="flex flex-col items-center justify-center flex-1 py-8 text-center space-y-4">
-                      <p className="text-xs text-neutral-600 font-serif italic leading-relaxed">Seu horizonte ainda não foi definido para este ciclo.</p>
-                      <Link to="/configuracoes" className="text-[10px] font-black text-amber-500 uppercase tracking-widest hover:underline">Configurar Agora</Link>
+                    <div className="flex flex-col items-center justify-center flex-1 py-10 text-center space-y-6">
+                      <p className="text-sm text-neutral-600 font-serif italic leading-relaxed">Você ainda não definiu seus objetivos para este ciclo literário.</p>
+                      <Link to="/configuracoes" className="text-[11px] font-black text-amber-500 uppercase tracking-[0.2em] bg-amber-500/10 px-6 py-3 rounded-xl hover:bg-amber-500/20 transition-all">Configurar Agora</Link>
                     </div>
                   ) : (
-                    <div className="space-y-8 flex-1 flex flex-col justify-center">
+                    <div className="space-y-10 flex-1 flex flex-col justify-center">
                        {safeParseNumber(userGoal.booksGoal) > 0 && (
-                          <div className="space-y-3">
+                          <div className="space-y-4">
                              <div className="flex justify-between items-baseline">
-                                <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Livros</p>
-                                <span className="text-lg font-black text-neutral-100 italic">{stats.totalLidosEsteAno} / {userGoal.booksGoal}</span>
+                                <p className="text-[11px] font-black text-neutral-600 uppercase tracking-[0.2em]">Livros Lidos</p>
+                                <span className="text-2xl font-black text-neutral-100 italic tracking-tighter">{stats.totalLidosEsteAno} <span className="text-neutral-700 not-italic text-sm">/ {userGoal.booksGoal}</span></span>
                              </div>
-                             <div className="h-1.5 bg-neutral-950 rounded-full overflow-hidden border border-neutral-800/50">
+                             <div className="h-2 bg-neutral-950 rounded-full overflow-hidden border border-neutral-800/30">
                                 <motion.div 
                                   initial={{ width: 0 }}
                                   animate={{ width: `${Math.min(100, (stats.totalLidosEsteAno / safeParseNumber(userGoal.booksGoal)) * 100)}%` }}
-                                  className="h-full bg-amber-500 rounded-full"
+                                  className="h-full bg-amber-500 rounded-full shadow-[0_0_10px_rgba(245,158,11,0.2)]"
                                 />
                              </div>
                           </div>
                        )}
 
                        {safeParseNumber(userGoal.pagesGoal) > 0 && (
-                          <div className="space-y-3">
+                          <div className="space-y-4">
                              <div className="flex justify-between items-baseline">
-                                <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Páginas</p>
-                                <span className="text-lg font-black text-neutral-100 italic">{formatPagesShort(stats.paginasLidasEsteAno)} / {formatPagesShort(safeParseNumber(userGoal.pagesGoal))}</span>
+                                <p className="text-[11px] font-black text-neutral-600 uppercase tracking-[0.2em]">Páginas Percorridas</p>
+                                <span className="text-2xl font-black text-neutral-100 italic tracking-tighter">{formatPagesShort(stats.paginasLidasEsteAno)} <span className="text-neutral-700 not-italic text-sm">/ {formatPagesShort(safeParseNumber(userGoal.pagesGoal))}</span></span>
                              </div>
-                             <div className="h-1.5 bg-neutral-950 rounded-full overflow-hidden border border-neutral-800/50">
+                             <div className="h-2 bg-neutral-950 rounded-full overflow-hidden border border-neutral-800/30">
                                 <motion.div 
                                   initial={{ width: 0 }}
                                   animate={{ width: `${Math.min(100, (stats.paginasLidasEsteAno / safeParseNumber(userGoal.pagesGoal)) * 100)}%` }}
-                                  className="h-full bg-blue-500 rounded-full"
+                                  className="h-full bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.2)]"
                                 />
                              </div>
                           </div>
                        )}
 
                        {insights && (
-                          <div className="mt-4 p-4 bg-neutral-950/40 rounded-2xl border border-neutral-800/50">
-                             <p className="text-[10px] text-neutral-400 font-serif italic leading-relaxed text-center">
-                               {insights.message}
+                          <div className="mt-6 p-6 bg-neutral-950/30 rounded-[2rem] border border-neutral-800/30 backdrop-blur-sm">
+                             <p className="text-xs text-neutral-400 font-serif italic leading-relaxed text-center opacity-80">
+                               "{insights.message}"
                              </p>
                           </div>
                        )}
                     </div>
                   )}
                </div>
+
+               {/* Weekly Rhythm - Compact and Sharp */}
+               <div className="bg-neutral-900/30 border border-neutral-800/40 rounded-[3rem] p-8 shadow-xl flex items-center justify-between group/weekly">
+                  <div className="flex items-center gap-6">
+                    <div className="p-5 bg-amber-500/10 text-amber-500 rounded-2xl shadow-inner group-hover/weekly:scale-105 transition-transform duration-500">
+                      <TrendingUp size={32} />
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-1">Ritmo Semanal</p>
+                      <h4 className="text-4xl font-black text-neutral-100 tracking-tighter italic">{formatPagesShort(stats.pagesThisWeek)}</h4>
+                      <p className="text-[10px] text-neutral-700 font-bold uppercase tracking-[0.15em] mt-1">{stats.sessionsThisWeek.length} sessões ativas</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={24} className="text-neutral-800 group-hover/weekly:text-amber-500 group-hover/weekly:translate-x-2 transition-all" />
+               </div>
             </div>
 
-            {/* Row 2: Companion + Ritmo semanal */}
+            {/* Row 2: Reading Companion & Statistics */}
             <div className="xl:col-span-8">
                <ReadingCompanion 
                   books={books} 
@@ -553,92 +557,94 @@ export const Dashboard: React.FC = () => {
             </div>
 
             <div className="xl:col-span-4">
-               <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-[2.5rem] p-8 shadow-xl h-full flex flex-col justify-center gap-6">
-                  <div className="flex items-center gap-4">
-                     <div className="p-4 bg-amber-500/10 text-amber-500 rounded-2xl shadow-inner shrink-0">
-                       <TrendingUp size={28} />
-                     </div>
-                     <div>
-                       <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-1">Ritmo Semanal</p>
-                       <h4 className="text-3xl font-black text-neutral-100 tracking-tighter italic">{formatPagesShort(stats.pagesThisWeek)}</h4>
-                       <p className="text-[9px] text-neutral-600 font-bold uppercase tracking-widest">{stats.sessionsThisWeek.length} sessões</p>
-                     </div>
-                  </div>
-                  <StreakCard sessions={sessions} />
-               </div>
+               <StreakCard sessions={sessions} />
             </div>
         </div>
 
-        {/* Heatmap Section - Proportional */}
-        <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-[2.5rem] p-8 shadow-xl overflow-hidden relative group/heatmap">
-          <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover/heatmap:opacity-[0.06] transition-opacity">
-             <Calendar size={120} className="text-neutral-100" />
+        {/* Heatmap Section - Premium Container */}
+        <div className="bg-neutral-900/30 border border-neutral-800/40 rounded-[3.5rem] p-12 shadow-xl overflow-hidden relative group/heatmap">
+          <div className="absolute top-0 right-0 p-12 opacity-[0.02] group-hover/heatmap:opacity-[0.05] transition-opacity">
+             <Calendar size={180} className="text-neutral-100" />
           </div>
-          <div className="flex items-center justify-between mb-8 relative z-10 px-2">
-             <div className="flex items-center gap-3">
-               <Calendar className="text-emerald-500" size={22} />
-               <h3 className="text-xl font-serif font-bold text-neutral-100 italic">Hábito de Leitura</h3>
+          <div className="flex items-center justify-between mb-12 relative z-10 px-4">
+             <div className="flex items-center gap-5">
+               <div className="p-3 bg-emerald-500/10 rounded-2xl text-emerald-500">
+                 <Calendar size={28} />
+               </div>
+               <div>
+                  <h3 className="text-2xl font-serif font-bold text-neutral-100 italic leading-none">Hábito de Leitura</h3>
+                  <p className="text-[11px] text-neutral-600 font-black uppercase tracking-[0.2em] mt-3">Constância nos últimos meses</p>
+               </div>
              </div>
-             <p className="text-[10px] text-neutral-600 font-black uppercase tracking-widest">Atividade nos últimos meses</p>
           </div>
-          <div className="relative z-10 overflow-x-auto custom-scrollbar-hide flex justify-center">
-            <div className="min-w-max scale-[0.98] lg:scale-100 origin-center py-2">
-              <ReadingHeatmap sessions={sessions} />
+          <div className="relative z-10 overflow-x-auto custom-scrollbar-hide flex justify-center pb-2">
+            <div className="min-w-max transform transition-transform duration-500">
+               <ReadingHeatmap sessions={sessions} />
             </div>
           </div>
         </div>
       </section>
 
       <section className="space-y-12 pt-12">
-        <div className="flex items-center gap-3 px-2">
-           <div className="w-1.5 h-8 bg-purple-500 rounded-full" />
-           <h2 className="text-3xl font-serif font-black text-neutral-100 tracking-tight italic">Descoberta & Curadoria</h2>
+        <div className="flex items-center gap-5 px-4">
+           <div className="w-2 h-10 bg-purple-500 rounded-full" />
+           <h2 className="text-3xl font-serif font-black text-neutral-100 tracking-tight italic leading-none">Descoberta & Curadoria</h2>
         </div>
 
-        {/* Atmosferas Literárias */}
+        {/* Atmosferas Literárias - Editorial Shelves */}
         {stats.moodShelves.length > 0 && (
-          <div className="space-y-8">
-            <div className="flex items-center justify-between px-2">
-              <div className="flex items-center gap-3">
-                <Sparkles className="text-purple-500" size={24} />
-                <h3 className="text-xl font-serif font-bold text-neutral-100 italic">Atmosferas Literárias</h3>
+          <div className="space-y-12">
+            <div className="flex items-center justify-between px-4">
+              <div className="flex items-center gap-5">
+                <div className="p-3 bg-purple-500/10 rounded-2xl text-purple-500">
+                  <Sparkles size={28} />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-serif font-bold text-neutral-100 italic leading-none">Atmosferas Literárias</h3>
+                  <p className="text-[11px] text-neutral-600 font-black uppercase tracking-[0.2em] mt-3">Curadoria por estado de espírito</p>
+                </div>
               </div>
-              <Link to="/livros" className="text-xs font-black text-neutral-600 hover:text-purple-500 transition-colors uppercase tracking-widest flex items-center gap-1 group">
-                Explorar mais
-                <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+              <Link to="/livros" className="text-[11px] font-black text-neutral-500 hover:text-purple-500 transition-all uppercase tracking-[0.15em] flex items-center gap-2 group">
+                Explorar Biblioteca
+                <ChevronRight size={16} className="group-hover:translate-x-2 transition-transform" />
               </Link>
             </div>
 
-            <div className="flex gap-6 overflow-x-auto pb-8 pt-2 custom-scrollbar-hide scroll-smooth">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 px-2">
               {stats.moodShelves.slice(0, 4).map((shelf) => (
                 <div 
                   key={shelf.mood} 
-                  className="flex-shrink-0 w-64 bg-neutral-900/40 border border-neutral-800/60 rounded-[2rem] p-6 hover:border-purple-500/30 transition-all flex flex-col gap-6 shadow-xl group/shelf"
+                  className="group/shelf bg-neutral-900/20 border border-neutral-800/30 rounded-[2.5rem] p-8 hover:bg-neutral-900/40 hover:border-purple-500/30 transition-all duration-500 shadow-lg flex flex-col gap-8"
                 >
                   <div className="flex items-center justify-between">
-                     <h4 className="text-base font-serif font-bold text-neutral-300 capitalize italic group-hover/shelf:text-purple-400 transition-colors tracking-tight">{shelf.mood}</h4>
-                     <span className="text-[8px] bg-neutral-950 text-neutral-600 font-black uppercase tracking-widest px-2.5 py-1 rounded-full border border-neutral-800/50">
-                       {shelf.books.length}
+                     <h4 className="text-xl font-serif font-bold text-neutral-300 capitalize italic group-hover/shelf:text-purple-400 transition-colors tracking-tight">{shelf.mood}</h4>
+                     <span className="text-[10px] bg-neutral-950 text-neutral-600 font-black uppercase tracking-widest px-3 py-1 rounded-full border border-neutral-800/50">
+                       {shelf.books.length} obras
                      </span>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-3">
                     {shelf.books.slice(0, 3).map((book) => (
                       <Link 
                         key={book.id} 
                         to={`/livro/${book.id}`}
-                        className="aspect-[2/3] rounded-lg overflow-hidden border border-neutral-800/50 group/book relative transition-all hover:scale-110 hover:z-10 shadow-md"
+                        className="aspect-[3/4.5] rounded-xl overflow-hidden border border-neutral-800/50 group/book relative transition-all hover:scale-110 hover:z-10 shadow-xl hover:shadow-purple-500/10"
                         title={book.titulo}
                       >
                         {book.coverUrl ? (
                            <img src={book.coverUrl} alt={book.titulo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                         ) : (
                           <div className="w-full h-full bg-neutral-950 flex items-center justify-center">
-                             <BookOpen size={14} className="text-neutral-800" />
+                             <BookOpen size={18} className="text-neutral-800" />
                           </div>
                         )}
                       </Link>
                     ))}
+                    {shelf.books.length > 3 && (
+                      <div className="aspect-[3/4.5] rounded-xl border border-dashed border-neutral-800/50 bg-neutral-950/20 flex items-center justify-center">
+                        <span className="text-[10px] font-black text-neutral-800">+{shelf.books.length - 3}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -646,49 +652,51 @@ export const Dashboard: React.FC = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
            {/* Fila de Leitura */}
            {stats.queroLerCount > 0 && (
-             <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden group/queue">
-               <div className="absolute top-0 right-0 p-8 opacity-5 group-hover/queue:opacity-10 transition-opacity">
-                 <BookmarkPlus size={120} className="text-neutral-100" />
+             <div className="bg-neutral-900/30 border border-neutral-800/40 rounded-[3rem] p-10 shadow-2xl relative overflow-hidden group/queue h-full">
+               <div className="absolute top-0 right-0 p-10 opacity-[0.02] group-hover/queue:opacity-[0.05] transition-opacity">
+                 <BookmarkPlus size={160} className="text-neutral-100" />
                </div>
                
-               <div className="flex items-center justify-between mb-8 relative z-10">
-                 <div className="flex items-center gap-3">
-                   <BookmarkPlus className="text-blue-500" size={24} />
-                   <h3 className="text-xl font-serif font-bold text-neutral-100 italic">Fila de Leitura</h3>
+               <div className="flex items-center justify-between mb-10 relative z-10">
+                 <div className="flex items-center gap-4">
+                   <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-500">
+                     <BookmarkPlus size={24} />
+                   </div>
+                   <h3 className="text-2xl font-serif font-bold text-neutral-100 italic tracking-tight">Fila de Leitura</h3>
                  </div>
-                 <Link to="/livros?status=quero+ler" className="text-xs font-black text-neutral-600 hover:text-blue-500 transition-colors uppercase tracking-widest">
+                 <Link to="/livros?status=quero+ler" className="text-[11px] font-black text-neutral-600 hover:text-blue-500 transition-all uppercase tracking-[0.15em]">
                     Ver tudo ({stats.queroLerCount})
                  </Link>
                </div>
 
-               <div className="space-y-4 relative z-10">
+               <div className="space-y-6 relative z-10">
                  {stats.nextRead && (
                    <Link 
                      to={`/livro/${stats.nextRead.id}`}
-                     className="bg-neutral-950/40 border border-neutral-800/50 rounded-2xl p-4 flex gap-6 hover:border-blue-500/30 transition-all group/next"
+                     className="bg-neutral-950/40 border border-neutral-800/40 rounded-[2rem] p-6 flex gap-8 hover:bg-neutral-950/60 hover:border-blue-500/30 transition-all group/next shadow-xl"
                    >
-                     <div className="w-16 h-24 rounded-xl overflow-hidden bg-neutral-950 shrink-0 shadow-xl border border-neutral-800 group-hover/next:scale-105 transition-transform duration-500">
+                     <div className="w-20 h-32 rounded-xl overflow-hidden bg-neutral-950 shrink-0 shadow-2xl border border-neutral-800/50 group-hover/next:scale-110 transition-transform duration-700">
                        {stats.nextRead.coverUrl ? (
                          <img src={stats.nextRead.coverUrl} alt={stats.nextRead.titulo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                        ) : (
                          <div className="w-full h-full flex items-center justify-center">
-                           <BookOpen size={20} className="text-neutral-800" />
+                           <BookOpen size={24} className="text-neutral-800" />
                          </div>
                        )}
                      </div>
                      <div className="flex-1 flex flex-col justify-center min-w-0">
-                       <span className="text-[9px] uppercase tracking-widest text-blue-500 font-black mb-1 block">Sugestão de Próxima Leitura</span>
-                       <h4 className="text-base font-bold text-neutral-100 line-clamp-1 mb-0.5 group-hover/next:text-blue-500 transition-colors tracking-tight">{stats.nextRead.titulo}</h4>
-                       <p className="text-xs text-neutral-500 font-serif italic mb-3">{stats.nextRead.autor}</p>
-                       <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest inline-flex self-start ${
-                          stats.nextRead.priority === 'high' ? 'bg-rose-500/10 text-rose-500' :
-                          stats.nextRead.priority === 'medium' ? 'bg-amber-500/10 text-amber-500' :
-                          'bg-emerald-500/10 text-emerald-500'
+                       <span className="text-[10px] uppercase tracking-[0.2em] text-blue-500/80 font-black mb-2 block">Sugestão de Próxima Jornada</span>
+                       <h4 className="text-xl font-bold text-neutral-100 line-clamp-1 mb-1 group-hover/next:text-blue-400 transition-colors tracking-tight leading-none">{stats.nextRead.titulo}</h4>
+                       <p className="text-sm text-neutral-500 font-serif italic mb-4">{stats.nextRead.autor}</p>
+                       <div className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest inline-flex self-start border border-current transition-colors ${
+                          stats.nextRead.priority === 'high' ? 'bg-rose-500/5 text-rose-500 border-rose-500/20' :
+                          stats.nextRead.priority === 'medium' ? 'bg-amber-500/5 text-amber-500 border-amber-500/20' :
+                          'bg-emerald-500/5 text-emerald-500 border-emerald-500/20'
                         }`}>
-                          {stats.nextRead.priority === 'high' ? 'Prioritário' : 'Normal'}
+                           {stats.nextRead.priority === 'high' ? 'Prioritário' : 'Normal'}
                        </div>
                      </div>
                    </Link>
@@ -698,26 +706,28 @@ export const Dashboard: React.FC = () => {
            )}
 
            {/* Timeline Monthly Preview - Editorial Style */}
-           <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden group/timeline">
-             <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover/timeline:opacity-[0.05] transition-opacity">
-               <History size={150} className="text-neutral-100" />
+           <div className="bg-neutral-900/30 border border-neutral-800/40 rounded-[3rem] p-10 shadow-2xl relative overflow-hidden group/timeline h-full">
+             <div className="absolute top-0 right-0 p-10 opacity-[0.02] group-hover/timeline:opacity-[0.05] transition-opacity">
+               <History size={180} className="text-neutral-100" />
              </div>
 
-             <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 relative z-10 gap-4">
-               <div>
-                 <div className="flex items-center gap-3">
-                   <Award className="text-amber-500" size={22} />
-                   <h3 className="text-xl font-serif font-bold text-neutral-100 italic">Conquistas de {currentMonthName}</h3>
+             <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 relative z-10 gap-6">
+               <div className="flex items-center gap-4">
+                 <div className="p-3 bg-amber-500/10 rounded-2xl text-amber-500">
+                    <Award size={24} />
                  </div>
-                 <p className="text-[10px] text-neutral-600 font-black uppercase tracking-widest mt-1">Marcos literários do mês</p>
+                 <div>
+                    <h3 className="text-2xl font-serif font-bold text-neutral-100 italic leading-none">Conquistas de {currentMonthName}</h3>
+                    <p className="text-[11px] text-neutral-600 font-black uppercase tracking-[0.2em] mt-2">Marcos literários do mês</p>
+                 </div>
                </div>
-               <Link to="/linha-do-tempo" className="text-[10px] font-black text-neutral-500 hover:text-amber-500 transition-colors uppercase tracking-widest flex items-center gap-1 group/link">
-                  Linha do Tempo
-                  <ChevronRight size={14} className="group-hover/link:translate-x-1 transition-transform" />
+               <Link to="/linha-do-tempo" className="text-[11px] font-black text-neutral-500 hover:text-amber-500 transition-colors uppercase tracking-[0.15em] flex items-center gap-2 group/link">
+                  Explorar Histórico
+                  <ChevronRight size={16} className="group-hover/link:translate-x-2 transition-transform" />
                </Link>
              </div>
 
-             <div className="flex flex-wrap gap-5 relative z-10">
+             <div className="flex flex-wrap gap-6 relative z-10">
                 {stats.lidosEsteMes.length > 0 ? (
                   stats.lidosEsteMes.slice(0, 4).map(book => (
                     <Link 
@@ -725,34 +735,33 @@ export const Dashboard: React.FC = () => {
                       to={`/livro/${book.id}`}
                       className="group/titem relative"
                     >
-                      <div className="w-24 h-32 rounded-xl overflow-hidden bg-neutral-950 border border-neutral-800 shadow-[0_15px_30px_rgba(0,0,0,0.4)] transition-all group-hover/titem:-translate-y-2 group-hover/titem:border-amber-500/50 group-hover/titem:shadow-amber-500/10">
+                      <div className="w-28 h-40 rounded-2xl overflow-hidden bg-neutral-950 border border-neutral-800/40 shadow-[0_20px_40px_rgba(0,0,0,0.5)] transition-all duration-700 group-hover/titem:-translate-y-4 group-hover/titem:border-amber-500/40 group-hover/titem:shadow-amber-500/20">
                         {book.coverUrl ? (
                           <img src={book.coverUrl} alt={book.titulo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <BookOpen size={20} className="text-neutral-800" />
+                            <BookOpen size={28} className="text-neutral-800" />
                           </div>
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover/titem:opacity-100 transition-opacity flex items-end p-2.5">
-                           <div className="flex items-center gap-1 text-amber-500">
-                             <Star size={10} fill="currentColor" />
-                             <span className="text-[10px] font-black">{book.notaGeral.toFixed(1)}</span>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover/titem:opacity-100 transition-opacity flex items-end p-4">
+                           <div className="flex items-center gap-2 text-amber-500">
+                             <Star size={12} fill="currentColor" />
+                             <span className="text-xs font-black">{book.notaGeral.toFixed(1)}</span>
                            </div>
                         </div>
                       </div>
-                      <p className="mt-3 text-[10px] font-bold text-neutral-500 truncate max-w-[96px] group-hover/titem:text-neutral-300 transition-colors tracking-tight">{book.titulo}</p>
                     </Link>
                   ))
                 ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center py-10 border border-dashed border-neutral-800/60 rounded-[2rem] bg-neutral-950/20">
-                     <p className="text-xs text-neutral-700 font-serif italic">Nenhuma obra concluída este mês.</p>
-                     <Link to="/livros" className="mt-2 text-[9px] font-black text-neutral-600 uppercase tracking-widest hover:text-amber-500 transition-colors">Ver Estante</Link>
+                  <div className="flex-1 flex flex-col items-center justify-center py-16 border border-dashed border-neutral-800/40 rounded-[2.5rem] bg-neutral-950/10">
+                     <p className="text-sm text-neutral-700 font-serif italic text-center max-w-[200px]">Suas conquistas de {currentMonthName} ainda estão por vir.</p>
+                     <Link to="/livros" className="mt-6 text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] hover:text-amber-500 transition-all bg-neutral-900 px-6 py-2 rounded-xl">Explorar Estante</Link>
                   </div>
                 )}
                 {stats.lidosEsteMes.length > 4 && (
-                  <Link to="/linha-do-tempo" className="w-24 h-32 rounded-xl border border-dashed border-neutral-800/80 bg-neutral-950/20 flex flex-col items-center justify-center gap-1 hover:border-amber-500/50 transition-all group/morebox shadow-inner">
-                     <span className="text-xl font-black text-neutral-600 group-hover/morebox:text-amber-500 transition-colors tracking-tighter">+{stats.lidosEsteMes.length - 4}</span>
-                     <span className="text-[8px] font-black uppercase text-neutral-700">Explorar</span>
+                  <Link to="/linha-do-tempo" className="w-28 h-40 rounded-2xl border border-dashed border-neutral-800/60 bg-neutral-950/20 flex flex-col items-center justify-center gap-2 hover:border-amber-500/40 transition-all group/morebox shadow-inner">
+                     <span className="text-3xl font-black text-neutral-700 group-hover/morebox:text-amber-500 transition-colors tracking-tighter">+{stats.lidosEsteMes.length - 4}</span>
+                     <span className="text-[9px] font-black uppercase text-neutral-800 tracking-widest">Obras</span>
                   </Link>
                 )}
              </div>
@@ -761,16 +770,16 @@ export const Dashboard: React.FC = () => {
       </section>
 
       <section className="space-y-12 pt-12">
-        <div className="flex items-center gap-3 px-2">
-           <div className="w-1.5 h-8 bg-neutral-700 rounded-full" />
-           <h2 className="text-3xl font-serif font-black text-neutral-100 tracking-tight italic">Profundidade Analítica</h2>
+        <div className="flex items-center gap-5 px-4">
+           <div className="w-2 h-10 bg-neutral-700 rounded-full" />
+           <h2 className="text-3xl font-serif font-black text-neutral-100 tracking-tight italic leading-none">Profundidade Analítica</h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard icon={Star} label="Média de Notas" value={stats.mediaGeral > 0 ? stats.mediaGeral.toFixed(1) : '—'} color="text-rose-500" bg="bg-rose-500/10" />
-          <StatCard icon={TrendingUp} label="Autor Preferido" value={stats.autorMaisLido || 'A definir'} color="text-violet-500" bg="bg-violet-500/10" truncate />
-          <StatCard icon={Clock} label="Ritmo Médio" value={stats.mediaDiasParaConcluir > 0 ? `${stats.mediaDiasParaConcluir}d` : 'Construindo'} subValue="por livro" color="text-amber-500" bg="bg-amber-500/10" />
-          <StatCard icon={Award} label="Maior Obra" value={stats.maiorLivro ? formatPagesShort(safeParseNumber(stats.maiorLivro.pageCount)) : '—'} subValue={stats.maiorLivro?.titulo} color="text-blue-500" bg="bg-blue-500/10" truncate />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <StatCard icon={Star} label="Média de Notas" value={stats.mediaGeral > 0 ? stats.mediaGeral.toFixed(1) : '—'} color="text-rose-500" bg="bg-rose-500/5 shadow-[0_15px_35px_rgba(244,63,94,0.05)] border-rose-500/10" />
+          <StatCard icon={TrendingUp} label="Autor Preferido" value={stats.autorMaisLido || 'Início de jornada'} color="text-violet-400" bg="bg-violet-500/5 shadow-[0_15px_35px_rgba(139,92,246,0.05)] border-violet-500/10" truncate />
+          <StatCard icon={Clock} label="Ritmo Médio" value={stats.mediaDiasParaConcluir > 0 ? `${stats.mediaDiasParaConcluir}d` : 'Calibrando'} subValue="por obra" color="text-amber-400" bg="bg-amber-500/5 shadow-[0_15px_35px_rgba(245,158,11,0.05)] border-amber-500/10" />
+          <StatCard icon={Award} label="Maior Obra" value={stats.maiorLivro ? formatPagesShort(safeParseNumber(stats.maiorLivro.pageCount)) : '—'} subValue={stats.maiorLivro?.titulo} color="text-blue-400" bg="bg-blue-500/5 shadow-[0_15px_35px_rgba(59,130,246,0.05)] border-blue-500/10" truncate />
         </div>
 
         <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-[2.5rem] p-10 shadow-xl relative overflow-hidden group/performance">
@@ -1062,16 +1071,20 @@ export const Dashboard: React.FC = () => {
 };
 
 const StatCard = ({ icon: Icon, label, value, subValue, color, bg }: any) => (
-  <div className="bg-neutral-900/50 border border-neutral-800/60 rounded-[2rem] p-6 shadow-xl flex flex-col justify-between hover:border-neutral-700 transition-colors group/stats">
-    <div className="flex items-center justify-between mb-6">
-      <p className="text-[9px] font-black text-neutral-600 uppercase tracking-widest group-hover/stats:text-neutral-400 transition-colors">{label}</p>
-      <div className={`p-2.5 rounded-xl ${bg} ${color} shadow-inner group-hover/stats:scale-110 transition-transform`}>
-        <Icon size={18} />
+  <div className="bg-neutral-900/30 border border-neutral-800/40 rounded-[2.5rem] p-8 shadow-xl flex flex-col justify-between hover:border-neutral-700/50 hover:bg-neutral-900/50 transition-all duration-500 group/stats h-full">
+    <div className="flex items-center justify-between mb-8">
+      <p className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] group-hover/stats:text-neutral-400 transition-colors uppercase leading-none">{label}</p>
+      <div className={`p-4 rounded-[1.25rem] ${bg} ${color} shadow-inner group-hover/stats:scale-110 transition-transform duration-500`}>
+        <Icon size={24} />
       </div>
     </div>
     <div className="min-w-0">
-      <h3 className="text-2xl font-black text-neutral-100 truncate italic tracking-tighter leading-none mb-1">{value}</h3>
-      {subValue && <p className="text-[10px] text-neutral-600 font-serif italic truncate group-hover/stats:text-neutral-500 transition-colors">{subValue}</p>}
+      <h3 className="text-4xl font-black text-neutral-100 truncate italic tracking-tighter leading-none mb-3 group-hover/stats:text-amber-500 transition-colors duration-500">{value}</h3>
+      {subValue ? (
+        <p className="text-[11px] text-neutral-600 font-serif italic truncate group-hover/stats:text-neutral-500 transition-colors uppercase tracking-[0.05em]">{subValue}</p>
+      ) : (
+        <div className="h-[11px] w-12 bg-neutral-800/20 rounded-full" />
+      )}
     </div>
   </div>
 );
