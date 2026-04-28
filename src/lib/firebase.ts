@@ -62,8 +62,13 @@ if (isConfigValid) {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
     
-    // Safety: Custom database ID might be in appletConfig or env
-    const firestoreDatabaseId = appletConfig.firestoreDatabaseId || import.meta.env.VITE_FIREBASE_DATABASE_ID;
+    // Safety: Custom database ID might be in env (priority) or appletConfig
+    // Only use appletConfig.firestoreDatabaseId if we are using the applet's project ID
+    let firestoreDatabaseId = import.meta.env.VITE_FIREBASE_DATABASE_ID;
+    
+    if (!firestoreDatabaseId && firebaseConfig.projectId === appletConfig.projectId) {
+      firestoreDatabaseId = appletConfig.firestoreDatabaseId;
+    }
     
     if (firestoreDatabaseId) {
       db = getFirestore(app, firestoreDatabaseId);
