@@ -9,14 +9,10 @@
         "displayName": { "type": "string" },
         "photoURL": { "type": "string" },
         "bio": { "type": "string" },
-        "communityPublic": { "type": "boolean" },
-        "showBooksPublicly": { "type": "boolean" },
-        "showStatsPublicly": { "type": "boolean" },
         "booksRead": { "type": "integer" },
         "pagesRead": { "type": "integer" },
         "averageRating": { "type": "number" },
         "favoriteGenre": { "type": "string" },
-        "favoriteBookId": { "type": "string" },
         "readingStreak": { "type": "integer" },
         "lastReadDate": { "type": "integer" },
         "createdAt": { "type": "integer" },
@@ -66,35 +62,6 @@
       },
       "required": ["userId", "year"]
     },
-    "Community": {
-      "title": "Community",
-      "description": "A reading community or private club",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "description": { "type": "string" },
-        "ownerId": { "type": "string" },
-        "visibility": { "type": "string" },
-        "inviteCode": { "type": "string" },
-        "imageUrl": { "type": "string" },
-        "bannerUrl": { "type": "string" },
-        "createdAt": { "type": "integer" },
-        "memberCount": { "type": "integer" },
-        "sharedBook": {
-          "type": "object",
-          "properties": {
-            "title": { "type": "string" },
-            "author": { "type": "string" },
-            "coverUrl": { "type": "string" },
-            "startDate": { "type": "integer" },
-            "endDate": { "type": "integer" },
-            "discussionPrompt": { "type": "string" }
-          }
-        }
-      },
-      "required": ["name", "ownerId", "visibility", "inviteCode"]
-    },
     "Quote": {
       "title": "Quote",
       "description": "A book quote with personal notes",
@@ -113,21 +80,6 @@
         "createdAt": { "type": "integer" }
       },
       "required": ["userId", "bookId", "text", "createdAt"]
-    },
-    "CommunityFeedItem": {
-      "title": "Community Feed Item",
-      "description": "An update in the community feed",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "userId": { "type": "string" },
-        "content": { "type": "string" },
-        "type": { "type": "string" },
-        "createdAt": { "type": "integer" },
-        "likesCount": { "type": "integer" },
-        "commentsCount": { "type": "integer" }
-      },
-      "required": ["userId", "content", "type", "createdAt"]
     }
   },
   "firestore": {
@@ -159,45 +111,17 @@
       "schema": "Recommendation",
       "description": "Analysis-based book recommendations"
     },
-    "/communityFeed/{itemId}": {
-      "schema": "CommunityFeedItem",
-      "description": "Social feed items"
+    "/retrospectives/{userId}": {
+      "schema": "Retrospective",
+      "description": "User annual retrospectives"
     },
-    "/communities/{communityId}": {
-      "schema": "Community",
-      "description": "Reading communities"
+    "/shelves/{shelfId}": {
+      "schema": "Shelf",
+      "description": "User book shelves"
     },
-    "/communityMembers/{memberId}": {
-      "schema": "CommunityMember",
-      "description": "Members of communities"
-    },
-    "/likes/{likeId}": {
-      "schema": "Like",
-      "description": "Reactions to feed items"
-    },
-    "/comments/{commentId}": {
-      "schema": "Comment",
-      "description": "Comments on feed items"
-    },
-    "/follows/{followId}": {
-      "schema": "Follow",
-      "description": "User follow relationships"
-    },
-    "/userChallenges/{id}": {
-      "schema": "UserChallenge",
-      "description": "Tracked challenges for users"
-    },
-    "/userBadges/{id}": {
-      "schema": "UserBadge",
-      "description": "Badges earned by users"
-    },
-    "/challenges/{id}": {
-      "schema": "Challenge",
-      "description": "Global challenges"
-    },
-    "/badges/{id}": {
-      "schema": "Badge",
-      "description": "Global badges"
+    "/reading_sessions/{sessionId}": {
+      "schema": "ReadingSession",
+      "description": "User reading history sessions"
     }
   }
 }

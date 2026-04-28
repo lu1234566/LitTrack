@@ -324,8 +324,8 @@ export const ShareableProfileCards: React.FC<ShareableProfileCardsProps> = ({ pr
         <div className="w-full md:w-[380px] bg-neutral-950 border-t md:border-t-0 md:border-l border-neutral-800 p-8 flex flex-col">
           <div className="flex items-center justify-between mb-8">
              <h2 className="text-xl font-serif font-bold text-neutral-100 flex items-center gap-2">
-                <Share2 size={24} className="text-amber-500" />
-                Compartilhar
+                <Download size={24} className="text-amber-500" />
+                Exportar Identidade
              </h2>
              <button 
                 onClick={onClose}

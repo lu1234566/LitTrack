@@ -4,7 +4,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ===============================================================
-    // PHASES 3 & 4: PRIMITIVE DEFINITIONS & HELPERS
+    // PRIMITIVE DEFINITIONS & HELPERS
     // ===============================================================
 
     function isSignedIn() {
@@ -13,10 +13,6 @@ service cloud.firestore {
 
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
-    }
-
-    function isDocOwner() {
-      return isSignedIn() && request.auth.uid == resource.data.userId;
     }
 
     function incoming() {
@@ -51,7 +47,7 @@ service cloud.firestore {
     }
 
     // ===============================================================
-    // USERS & PROFILES
+    // USERS
     // ===============================================================
     
     function isValidUser(data) {
@@ -63,28 +59,24 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // allow read: if isSignedIn() && isValidId(userId); // Simplified for get+list
-      allow get: if isSignedIn() && isValidId(userId);
-      allow list: if isSignedIn(); // Relies on query filters and visibility logic in future, for now allowed for community
-      
+      allow get: if isOwner(userId);
       allow create: if isOwner(userId) && isValidUser(incoming());
-      
       allow update: if isOwner(userId) && isValidUser(incoming()) && 
+                    incoming().id == existing().id &&
                     incoming().diff(existing()).affectedKeys().hasOnly([
                       'displayName', 'photoURL', 'bio', 'booksRead', 'pagesRead', 
                       'averageRating', 'favoriteGenre', 'lastReadDate', 'updatedAt', 
-                      'communityPublic', 'showBooksPublicly', 'showStatsPublicly', 
                       'favoriteBookId', 'readingStreak', 'profilePhoto', 'name'
                     ]);
     }
 
     match /profiles/{userId} {
-      allow read: if isSignedIn() && isValidId(userId);
+      allow read: if isOwner(userId);
       allow write: if isOwner(userId);
     }
 
     match /recommendations/{userId} {
-      allow read: if isOwner(userId) && isValidId(userId);
+      allow read: if isOwner(userId);
       allow create, update: if isOwner(userId) || isAdmin();
     }
 
@@ -103,12 +95,13 @@ service cloud.firestore {
     }
 
     match /books/{bookId} {
-      allow get: if isSignedIn() && isValidId(bookId);
-      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || resource.data.isPublic == true); 
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
       
       allow create: if isSignedIn() && isValidId(bookId) && isValidBook(incoming());
       
-      allow update: if isOwner(existing().userId) && isValidBook(incoming()) && 
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid && 
+                    isValidBook(incoming()) && 
                     incoming().userId == existing().userId &&
                     incoming().diff(existing()).affectedKeys().hasOnly([
                       'titulo', 'autor', 'mesLeitura', 'anoLeitura', 'genero', 'status', 
@@ -119,7 +112,7 @@ service cloud.firestore {
                       'currentPage', 'totalPages', 'progressPercentage', 'startedAt', 'finishedAt'
                     ]);
       
-      allow delete: if isOwner(existing().userId);
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
 
     // ===============================================================
@@ -135,11 +128,11 @@ service cloud.firestore {
     }
 
     match /reading_sessions/{sessionId} {
-      allow get: if isDocOwner();
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn() && isValidSession(incoming());
-      allow update: if isDocOwner() && isValidSession(incoming());
-      allow delete: if isDocOwner();
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid && isValidSession(incoming());
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
 
     // ===============================================================
@@ -162,89 +155,20 @@ service cloud.firestore {
       allow create: if isSignedIn() && incoming().userId == request.auth.uid;
     }
 
-    // ===============================================================
-    // COMMUNITY & SOCIAL
-    // ===============================================================
-
-    function isValidFeedItem(data) {
-      return data.userId == request.auth.uid &&
-             data.content is string && data.content.size() <= 2000;
-    }
-
-    match /communityFeed/{itemId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() && isValidFeedItem(incoming());
-      allow update: if (isSignedIn() && (
-        (existing().userId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['content', 'metadata', 'type', 'communityId'])) ||
-        (incoming().diff(existing()).affectedKeys().hasOnly(['likesCount', 'commentsCount']))
-      ));
-      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
-    }
-
-    match /likes/{id} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() && incoming().userId == request.auth.uid && isValidId(incoming().feedItemId);
-      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
-    }
-
-    match /comments/{id} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() && incoming().userId == request.auth.uid && isValidId(incoming().feedItemId);
-      allow update: if isSignedIn() && existing().userId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['content']);
-      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
-    }
-
-    match /communities/{id} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() && incoming().ownerId == request.auth.uid;
-      allow update: if isSignedIn() && (
-        existing().ownerId == request.auth.uid ||
-        incoming().diff(existing()).affectedKeys().hasOnly(['memberCount'])
-      );
-      allow delete: if isAdmin();
-    }
-
-    match /communityMembers/{id} {
-      allow read: if isSignedIn();
+    match /quotes/{quoteId} {
+      allow get: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn() && incoming().userId == request.auth.uid;
-      allow update: if isSignedIn() && (
-        (existing().userId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['sharedBookProgress', 'sharedBookFinished', 'lastProgressUpdate'])) ||
-        (get(/databases/$(database)/documents/communities/$(existing().communityId)).data.ownerId == request.auth.uid)
-      );
-      allow delete: if isSignedIn() && (
-        existing().userId == request.auth.uid || 
-        get(/databases/$(database)/documents/communities/$(existing().communityId)).data.ownerId == request.auth.uid
-      );
+      allow update: if isSignedIn() && existing().userId == request.auth.uid && incoming().userId == request.auth.uid;
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
     }
 
-    match /follows/{id} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() && incoming().followerId == request.auth.uid;
-      allow delete: if isSignedIn() && existing().followerId == request.auth.uid;
-    }
-
-    // ===============================================================
-    // CHALLENGES & BADGES
-    // ===============================================================
-
-    match /challenges/{id} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
-    }
-
-    match /badges/{id} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
-    }
-
-    match /userChallenges/{id} {
-      allow read: if isSignedIn();
-      allow create, update: if isSignedIn() && incoming().userId == request.auth.uid;
-    }
-
-    match /userBadges/{id} {
-      allow read: if isSignedIn();
-      allow create, update: if isSignedIn() && incoming().userId == request.auth.uid;
+    match /shelves/{shelfId} {
+      allow get: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && existing().userId == request.auth.uid && incoming().userId == request.auth.uid;
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
     }
   }
 }

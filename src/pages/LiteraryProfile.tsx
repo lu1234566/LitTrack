@@ -6,7 +6,7 @@ import { analysisService } from '../services/analysisService';
 import { 
   UserCircle, Sparkles, Loader2, RefreshCw, BookOpen, Star, Heart, TrendingUp, 
   Brain, Award, ShieldAlert, Activity, Smile, History, Ghost, Zap, Wind, 
-  Search, Target, Flame, Share2, Clock, Plus
+  Search, Target, Flame, Download, Clock, Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -89,7 +89,7 @@ export const LiteraryProfile: React.FC = () => {
               onClick={() => setShowShareModal(true)}
               className="bg-neutral-900 border border-neutral-800 hover:border-neutral-700 text-neutral-100 px-6 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-3 shadow-xl"
             >
-              <Share2 size={20} /> Compartilhar Perfil
+              <Download size={20} /> Exportar Identidade
             </button>
           )}
           <button 

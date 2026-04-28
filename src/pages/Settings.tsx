@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useBooks } from '../context/BookContext';
 import { db } from '../lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { Settings as SettingsIcon, Monitor, Smartphone, MonitorSmartphone, Users, Save, Loader2, Target, BookOpen, FileText, Bell, Clock as ClockIcon } from 'lucide-react';
+import { Settings as SettingsIcon, Monitor, Smartphone, MonitorSmartphone, UserCircle, Save, Loader2, Target, BookOpen, FileText, Bell, Clock as ClockIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const Settings: React.FC = () => {
@@ -13,9 +13,6 @@ export const Settings: React.FC = () => {
   const { userGoal, saveUserGoal } = useBooks();
   
   const [bio, setBio] = useState('');
-  const [communityPublic, setCommunityPublic] = useState(true);
-  const [showBooksPublicly, setShowBooksPublicly] = useState(true);
-  const [showStatsPublicly, setShowStatsPublicly] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingGoal, setIsSavingGoal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,9 +36,6 @@ export const Settings: React.FC = () => {
         if (docSnap.exists()) {
           const data = docSnap.data();
           setBio(data.bio || '');
-          setCommunityPublic(data.communityPublic ?? true);
-          setShowBooksPublicly(data.showBooksPublicly ?? true);
-          setShowStatsPublicly(data.showStatsPublicly ?? true);
         }
       } catch (error) {
         console.error("Error loading profile:", error);
@@ -63,9 +57,6 @@ export const Settings: React.FC = () => {
       const docRef = doc(db, 'users', user.userId);
       await setDoc(docRef, {
         bio,
-        communityPublic,
-        showBooksPublicly,
-        showStatsPublicly,
         updatedAt: Date.now()
       }, { merge: true });
       alert('Perfil atualizado com sucesso!');
@@ -315,8 +306,8 @@ export const Settings: React.FC = () => {
       {user && (
         <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8 shadow-xl">
           <h2 className="text-xl font-serif font-semibold mb-6 text-amber-500 flex items-center gap-2">
-            <Users size={24} />
-            Perfil e Comunidade
+            <UserCircle size={24} />
+            Perfil Literário
           </h2>
           
           {isLoading ? (
@@ -337,63 +328,6 @@ export const Settings: React.FC = () => {
                 <p className="text-xs text-neutral-500 text-right">{bio.length}/500</p>
               </div>
 
-              <div className="space-y-4 pt-4 border-t border-neutral-800/50">
-                <h3 className="text-lg font-medium text-neutral-200">Privacidade</h3>
-                
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <div className="relative flex items-center">
-                    <input 
-                      type="checkbox" 
-                      checked={communityPublic}
-                      onChange={(e) => setCommunityPublic(e.target.checked)}
-                      className="sr-only" 
-                    />
-                    <div className={`w-11 h-6 rounded-full transition-colors ${communityPublic ? 'bg-amber-500' : 'bg-neutral-700'}`}></div>
-                    <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${communityPublic ? 'translate-x-5' : 'translate-x-0'}`}></div>
-                  </div>
-                  <div>
-                    <span className="text-neutral-200 font-medium group-hover:text-amber-500 transition-colors">Perfil Público na Comunidade</span>
-                    <p className="text-xs text-neutral-500">Permite que outros usuários vejam seu perfil e você apareça nos rankings.</p>
-                  </div>
-                </label>
-
-                <label className={`flex items-center gap-3 cursor-pointer group ${!communityPublic ? 'opacity-50 pointer-events-none' : ''}`}>
-                  <div className="relative flex items-center">
-                    <input 
-                      type="checkbox" 
-                      checked={showBooksPublicly}
-                      onChange={(e) => setShowBooksPublicly(e.target.checked)}
-                      disabled={!communityPublic}
-                      className="sr-only" 
-                    />
-                    <div className={`w-11 h-6 rounded-full transition-colors ${showBooksPublicly ? 'bg-amber-500' : 'bg-neutral-700'}`}></div>
-                    <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${showBooksPublicly ? 'translate-x-5' : 'translate-x-0'}`}></div>
-                  </div>
-                  <div>
-                    <span className="text-neutral-200 font-medium group-hover:text-amber-500 transition-colors">Mostrar Livros Lidos</span>
-                    <p className="text-xs text-neutral-500">Exibe a lista dos seus livros recentes no seu perfil público.</p>
-                  </div>
-                </label>
-
-                <label className={`flex items-center gap-3 cursor-pointer group ${!communityPublic ? 'opacity-50 pointer-events-none' : ''}`}>
-                  <div className="relative flex items-center">
-                    <input 
-                      type="checkbox" 
-                      checked={showStatsPublicly}
-                      onChange={(e) => setShowStatsPublicly(e.target.checked)}
-                      disabled={!communityPublic}
-                      className="sr-only" 
-                    />
-                    <div className={`w-11 h-6 rounded-full transition-colors ${showStatsPublicly ? 'bg-amber-500' : 'bg-neutral-700'}`}></div>
-                    <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${showStatsPublicly ? 'translate-x-5' : 'translate-x-0'}`}></div>
-                  </div>
-                  <div>
-                    <span className="text-neutral-200 font-medium group-hover:text-amber-500 transition-colors">Mostrar Estatísticas</span>
-                    <p className="text-xs text-neutral-500">Exibe suas páginas lidas, média de notas e outros dados no seu perfil.</p>
-                  </div>
-                </label>
-              </div>
-
               <div className="pt-6 flex justify-end">
                 <button
                   onClick={handleSaveProfile}
@@ -408,6 +342,7 @@ export const Settings: React.FC = () => {
           )}
         </div>
       )}
+
     </motion.div>
   );
 };

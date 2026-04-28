@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { db } from '../lib/firebase';
 import { collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDocs, setDoc } from 'firebase/firestore';
 import { useAuth, handleFirestoreError, OperationType } from './AuthContext';
-import { Book, FeedItemType } from '../types';
+import { Book } from '../types';
 import { safeParseNumber } from '../lib/statsUtils';
 
 interface BooksContextType {
@@ -111,51 +111,24 @@ export const BooksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, []);
 
-  const createFeedItem = useCallback(async (type: FeedItemType, content: string, relatedBookId?: string, metadata?: any) => {
-    if (!db || !user) return;
-    try {
-      await addDoc(collection(db, 'communityFeed'), {
-        userId: user.userId,
-        userDisplayName: user.name,
-        userPhotoURL: user.profilePhoto,
-        type,
-        content,
-        relatedBookId,
-        metadata,
-        createdAt: Date.now(),
-        likesCount: 0,
-        commentsCount: 0
-      });
-    } catch (error) {
-      console.error("Error creating feed item: ", error);
-    }
-  }, [user]);
-
   const addBook = useCallback(async (bookData: Omit<Book, 'id' | 'userId' | 'dataCadastro'>) => {
     if (!user || !db) return;
     const normalizedData = {
       ...bookData,
       pageCount: safeParseNumber(bookData.pageCount)
     };
-    const docRef = await addDoc(collection(db, 'books'), {
+    await addDoc(collection(db, 'books'), {
       ...normalizedData,
       userId: user.userId,
       createdAt: serverTimestamp(),
     });
     
     await updateUserStats(user.userId);
-    
-    if (normalizedData.status === 'lido') {
-      await createFeedItem('finished_book', `terminou de ler ${normalizedData.titulo}`, docRef.id, { bookTitle: normalizedData.titulo, coverUrl: normalizedData.coverUrl, rating: normalizedData.notaGeral });
-    } else {
-      await createFeedItem('added_book', `adicionou ${normalizedData.titulo} à sua lista`, docRef.id, { bookTitle: normalizedData.titulo, coverUrl: normalizedData.coverUrl });
-    }
-  }, [user, updateUserStats, createFeedItem]);
+  }, [user, updateUserStats]);
 
   const updateBook = useCallback(async (id: string, bookData: Partial<Book>) => {
     if (!user || !db) return;
     const bookRef = doc(db, 'books', id);
-    const oldBook = books.find(b => b.id === id);
     
     const normalizedData = { ...bookData };
     if ('pageCount' in normalizedData) {
@@ -164,15 +137,7 @@ export const BooksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     await updateDoc(bookRef, normalizedData);
     await updateUserStats(user.userId);
-    
-    if (oldBook) {
-      if (oldBook.status !== 'lido' && normalizedData.status === 'lido') {
-        await createFeedItem('finished_book', `terminou de ler ${normalizedData.titulo || oldBook.titulo}`, id, { bookTitle: normalizedData.titulo || oldBook.titulo, coverUrl: normalizedData.coverUrl || oldBook.coverUrl, rating: normalizedData.notaGeral || oldBook.notaGeral });
-      } else if ((!oldBook.notaGeral || oldBook.notaGeral === 0) && normalizedData.notaGeral && normalizedData.notaGeral > 0) {
-        await createFeedItem('rated_book', `avaliou ${normalizedData.titulo || oldBook.titulo} com ${normalizedData.notaGeral} estrelas`, id, { bookTitle: normalizedData.titulo || oldBook.titulo, coverUrl: normalizedData.coverUrl || oldBook.coverUrl, rating: normalizedData.notaGeral });
-      }
-    }
-  }, [user, books, updateUserStats, createFeedItem]);
+  }, [user, updateUserStats]);
 
   const deleteBook = useCallback(async (id: string) => {
     if (!user || !db) return;

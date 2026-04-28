@@ -157,9 +157,6 @@ export interface UserProfile {
   displayName: string;
   photoURL: string;
   bio: string;
-  communityPublic: boolean;
-  showBooksPublicly: boolean;
-  showStatsPublicly: boolean;
   booksRead: number;
   pagesRead: number;
   averageRating: number;
@@ -169,121 +166,6 @@ export interface UserProfile {
   lastReadDate?: number;
   createdAt: number;
   updatedAt: number;
-}
-
-export type FeedItemType = 'finished_book' | 'added_book' | 'rated_book' | 'milestone' | 'leaderboard' | 'manual' | 'challenge_completed' | 'badge_earned' | 'community_created' | 'shared_book_updated' | 'club_post';
-
-export type CommunityVisibility = 'public' | 'private';
-export type CommunityRole = 'owner' | 'admin' | 'member';
-
-export interface SharedBook {
-  bookId?: string;
-  title: string;
-  author: string;
-  coverUrl?: string;
-  startDate?: number;
-  endDate?: number;
-  discussionPrompt?: string;
-}
-
-export interface Community {
-  id: string;
-  name: string;
-  description: string;
-  imageUrl?: string;
-  bannerUrl?: string;
-  ownerId: string;
-  visibility: CommunityVisibility;
-  inviteCode: string;
-  createdAt: number;
-  memberCount: number;
-  sharedBook?: SharedBook;
-  pastSharedBooks?: SharedBook[];
-}
-
-export interface CommunityMember {
-  id: string;
-  communityId: string;
-  userId: string;
-  userDisplayName: string;
-  userPhotoURL: string;
-  role: CommunityRole;
-  joinedAt: number;
-  sharedBookProgress?: number;
-  sharedBookFinished?: boolean;
-  lastProgressUpdate?: number;
-}
-
-export interface CommunityFeedItem {
-  id: string;
-  userId: string;
-  userDisplayName?: string;
-  userPhotoURL?: string;
-  type: FeedItemType;
-  content: string;
-  createdAt: number;
-  relatedBookId?: string;
-  metadata?: any;
-  likesCount?: number;
-  commentsCount?: number;
-}
-
-export interface Comment {
-  id: string;
-  feedItemId: string;
-  userId: string;
-  userDisplayName: string;
-  userPhotoURL: string;
-  content: string;
-  createdAt: number;
-}
-
-export interface Like {
-  id: string;
-  feedItemId: string;
-  userId: string;
-  reactionType: string; // 'biblio', 'star', etc
-  createdAt: number;
-}
-
-export interface Challenge {
-  id: string;
-  title: string;
-  description: string;
-  goalType: 'books_read' | 'pages_read' | 'streak' | 'genre' | 'specific_book';
-  goalValue: number | string;
-  active: boolean;
-  icon?: string;
-}
-
-export interface UserChallenge {
-  id: string;
-  userId: string;
-  challengeId: string;
-  progress: number;
-  completed: boolean;
-  completedAt?: number;
-}
-
-export interface Badge {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-}
-
-export interface UserBadge {
-  id: string;
-  userId: string;
-  badgeId: string;
-  awardedAt: number;
-}
-
-export interface Follow {
-  id: string;
-  followerId: string;
-  followingId: string;
-  createdAt: number;
 }
 
 export interface UserGoal {
