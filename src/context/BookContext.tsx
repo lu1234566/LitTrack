@@ -43,6 +43,10 @@ interface BookContextType {
   addBookToShelf: (shelfId: string, bookId: string) => Promise<void>;
   removeBookFromShelf: (shelfId: string, bookId: string) => Promise<void>;
   reorderBooksInShelf: (shelfId: string, bookIds: string[]) => Promise<void>;
+  addQuote: (quote: Omit<Quote, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
+  updateQuote: (id: string, quote: Partial<Quote>) => Promise<void>;
+  deleteQuote: (id: string) => Promise<void>;
+  getQuotesByBook: (bookId: string) => Quote[];
 }
 
 const BookContext = createContext<BookContextType | undefined>(undefined);
@@ -55,21 +59,20 @@ const BookContextBridge: React.FC<{ children: React.ReactNode }> = ({ children }
   const { recommendations, saveRecommendations } = useRecommendations();
   const { backupHistory, logBackupAction } = useBackup();
   const { sessions, addSession, getSessionsByBook } = useReadingSessions();
-  const { shelves, loading: shelvesLoading, createShelf, updateShelf, deleteShelf, addBookToShelf, removeBookFromShelf, reorderBooksInShelf } = useShelves();
+  const { shelves, createShelf, updateShelf, deleteShelf, addBookToShelf, removeBookFromShelf, reorderBooksInShelf } = useShelves();
   const { quotes, addQuote, updateQuote, deleteQuote, getQuotesByBook } = useQuotes();
   const { getNarratives, saveNarratives } = useRetrospective();
 
   const importData = useCallback(async (data: any, mode: 'merge' | 'replace') => {
-    if (!user || !db) throw new Error("Usuário não autenticado");
-    
+    if (!user || !db) throw new Error('Usuário não autenticado');
+
     let importedCount = 0;
     let ignoredCount = 0;
     let goalsCount = 0;
 
     try {
       const batch = writeBatch(db);
-      
-      // 1. Handle Books
+
       if (data.books && Array.isArray(data.books)) {
         if (mode === 'replace') {
           const q = query(collection(db, 'books'), where('userId', '==', user.userId));
@@ -81,11 +84,13 @@ const BookContextBridge: React.FC<{ children: React.ReactNode }> = ({ children }
 
         for (const bookData of data.books) {
           if (mode === 'merge') {
-            const isDuplicate = books.some(b => 
-              (b.titulo.toLowerCase() === bookData.titulo.toLowerCase() && b.autor.toLowerCase() === bookData.autor.toLowerCase()) ||
-              (b.isbn && bookData.isbn && b.isbn === bookData.isbn)
+            const isDuplicate = books.some(
+              (b) =>
+                (b.titulo.toLowerCase() === bookData.titulo.toLowerCase() &&
+                  b.autor.toLowerCase() === bookData.autor.toLowerCase()) ||
+                (b.isbn && bookData.isbn && b.isbn === bookData.isbn)
             );
-            
+
             if (isDuplicate) {
               ignoredCount++;
               continue;
@@ -94,7 +99,7 @@ const BookContextBridge: React.FC<{ children: React.ReactNode }> = ({ children }
 
           const newBookRef = doc(collection(db, 'books'));
           const { id, userId, createdAt, dataCadastro, ...cleanBookData } = bookData;
-          
+
           batch.set(newBookRef, {
             ...cleanBookData,
             userId: user.userId,
@@ -104,7 +109,6 @@ const BookContextBridge: React.FC<{ children: React.ReactNode }> = ({ children }
         }
       }
 
-      // 2. Handle User Goals
       if (data.userGoal) {
         const goals = Array.isArray(data.userGoal) ? data.userGoal : [data.userGoal];
         for (const goalData of goals) {
@@ -112,19 +116,22 @@ const BookContextBridge: React.FC<{ children: React.ReactNode }> = ({ children }
           const goalId = `${user.userId}_${goalData.year}`;
           const goalRef = doc(db, 'userGoals', goalId);
           const { id, userId, createdAt, updatedAt, ...cleanGoalData } = goalData;
-          
-          batch.set(goalRef, {
-            ...cleanGoalData,
-            id: goalId,
-            userId: user.userId,
-            createdAt: Date.now(),
-            updatedAt: Date.now()
-          }, { merge: true });
+
+          batch.set(
+            goalRef,
+            {
+              ...cleanGoalData,
+              id: goalId,
+              userId: user.userId,
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+            },
+            { merge: true }
+          );
           goalsCount++;
         }
       }
 
-      // 3. Handle Literary Profile
       if (data.literaryProfile) {
         const profileRef = doc(db, 'profiles', user.userId);
         batch.set(profileRef, data.literaryProfile, { merge: true });
@@ -132,72 +139,102 @@ const BookContextBridge: React.FC<{ children: React.ReactNode }> = ({ children }
 
       await batch.commit();
       await updateUserStats(user.userId);
-      
+
       await logBackupAction({
         actionType: mode === 'replace' ? 'restore_backup' : 'import_json',
         format: 'json',
         status: 'sucesso',
         details: `${importedCount} livros importados, ${ignoredCount} duplicados ignorados`,
-        affectedRecords: importedCount
+        affectedRecords: importedCount,
       });
-      
+
       return { imported: importedCount, ignored: ignoredCount, goals: goalsCount };
     } catch (error) {
-      console.error("Error importing data: ", error);
+      console.error('Error importing data: ', error);
       await logBackupAction({
         actionType: mode === 'replace' ? 'restore_backup' : 'import_json',
         format: 'json',
         status: 'falha',
         details: 'Erro durante a importação de dados',
         affectedRecords: 0,
-        errorMessage: error instanceof Error ? error.message : String(error)
+        errorMessage: error instanceof Error ? error.message : String(error),
       });
       throw error;
     }
   }, [user, books, updateUserStats, logBackupAction]);
 
-  const value = useMemo(() => ({
-    books,
-    loading,
-    literaryProfile,
-    recommendations,
-    userGoal,
-    backupHistory,
-    sessions,
-    shelves,
-    quotes,
-    narratives: getNarratives(new Date().getFullYear()),
-    saveRetrospectiveNarratives: saveNarratives,
-    addBook,
-    updateBook,
-    deleteBook,
-    deleteMultipleBooks,
-    getBook,
-    saveLiteraryProfile,
-    saveRecommendations,
-    saveUserGoal,
-    importData,
-    logBackupAction,
-    addSession,
-    getSessionsByBook,
-    createShelf,
-    updateShelf,
-    deleteShelf,
-    addBookToShelf,
-    removeBookFromShelf,
-    reorderBooksInShelf,
-    addQuote,
-    updateQuote,
-    deleteQuote,
-    getQuotesByBook
-  }), [
-    books, loading, literaryProfile, recommendations, userGoal, backupHistory, sessions, shelves, quotes, getNarratives, saveNarratives,
-    addBook, updateBook, deleteBook, deleteMultipleBooks, getBook,
-    saveLiteraryProfile, saveRecommendations, saveUserGoal, importData, logBackupAction,
-    addSession, getSessionsByBook,
-    createShelf, updateShelf, deleteShelf, addBookToShelf, removeBookFromShelf,
-    addQuote, updateQuote, deleteQuote, getQuotesByBook
-  ]);
+  const value = useMemo(
+    () => ({
+      books,
+      loading,
+      literaryProfile,
+      recommendations,
+      userGoal,
+      backupHistory,
+      sessions,
+      shelves,
+      quotes,
+      narratives: getNarratives(new Date().getFullYear()),
+      saveRetrospectiveNarratives: saveNarratives,
+      addBook,
+      updateBook,
+      deleteBook,
+      deleteMultipleBooks,
+      getBook,
+      saveLiteraryProfile,
+      saveRecommendations,
+      saveUserGoal,
+      importData,
+      logBackupAction,
+      addSession,
+      getSessionsByBook,
+      createShelf,
+      updateShelf,
+      deleteShelf,
+      addBookToShelf,
+      removeBookFromShelf,
+      reorderBooksInShelf,
+      addQuote,
+      updateQuote,
+      deleteQuote,
+      getQuotesByBook,
+    }),
+    [
+      books,
+      loading,
+      literaryProfile,
+      recommendations,
+      userGoal,
+      backupHistory,
+      sessions,
+      shelves,
+      quotes,
+      getNarratives,
+      saveNarratives,
+      addBook,
+      updateBook,
+      deleteBook,
+      deleteMultipleBooks,
+      getBook,
+      saveLiteraryProfile,
+      saveRecommendations,
+      saveUserGoal,
+      importData,
+      logBackupAction,
+      addSession,
+      getSessionsByBook,
+      createShelf,
+      updateShelf,
+      deleteShelf,
+      addBookToShelf,
+      removeBookFromShelf,
+      reorderBooksInShelf,
+      addQuote,
+      updateQuote,
+      deleteQuote,
+      getQuotesByBook,
+    ]
+  );
 
   return <BookContext.Provider value={value}>{children}</BookContext.Provider>;
 };
@@ -210,16 +247,16 @@ export const BookProvider: React.FC<{ children: React.ReactNode }> = ({ children
           <QuotesProvider>
             <RetrospectiveProvider>
               <GoalsProvider>
-              <LiteraryProfileProvider>
-                <RecommendationsProvider>
-                  <BackupProvider>
-                    <BookContextBridge>{children}</BookContextBridge>
-                  </BackupProvider>
-                </RecommendationsProvider>
-              </LiteraryProfileProvider>
-            </GoalsProvider>
-          </RetrospectiveProvider>
-        </QuotesProvider>
+                <LiteraryProfileProvider>
+                  <RecommendationsProvider>
+                    <BackupProvider>
+                      <BookContextBridge>{children}</BookContextBridge>
+                    </BackupProvider>
+                  </RecommendationsProvider>
+                </LiteraryProfileProvider>
+              </GoalsProvider>
+            </RetrospectiveProvider>
+          </QuotesProvider>
         </ReadingSessionsProvider>
       </ShelvesProvider>
     </BooksProvider>
