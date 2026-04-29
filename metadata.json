@@ -1,5 +1,5 @@
 {
   "name": "Readora",
-  "description": "Seu diário literário definitivo para acompanhamento de metas, análises profundas e gestão de biblioteca pessoal com integração Firebase segura.",
-  "requestFramePermissions": ["camera"]
+  "description": "Readora reading journal.",
+  "requestFramePermissions": []
 }
