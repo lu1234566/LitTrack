@@ -73,13 +73,17 @@ const BookContextBridge: React.FC<{ children: React.ReactNode }> = ({ children }
     try {
       const batch = writeBatch(db);
 
+      const replaceUserCollection = async (collectionName: string) => {
+        const q = query(collection(db, collectionName), where('userId', '==', user.userId));
+        const snapshot = await getDocs(q);
+        snapshot.forEach((docSnap) => {
+          batch.delete(docSnap.ref);
+        });
+      };
+
       if (data.books && Array.isArray(data.books)) {
         if (mode === 'replace') {
-          const q = query(collection(db, 'books'), where('userId', '==', user.userId));
-          const snapshot = await getDocs(q);
-          snapshot.forEach((doc) => {
-            batch.delete(doc.ref);
-          });
+          await replaceUserCollection('books');
         }
 
         for (const bookData of data.books) {
@@ -132,6 +136,55 @@ const BookContextBridge: React.FC<{ children: React.ReactNode }> = ({ children }
         }
       }
 
+      if (Array.isArray(data.sessions) && data.sessions.length > 0) {
+        if (mode === 'replace') {
+          await replaceUserCollection('reading_sessions');
+        }
+
+        for (const sessionData of data.sessions) {
+          const newSessionRef = doc(collection(db, 'reading_sessions'));
+          const { id, userId, createdAt, ...cleanSessionData } = sessionData;
+          batch.set(newSessionRef, {
+            ...cleanSessionData,
+            userId: user.userId,
+            createdAt: serverTimestamp(),
+          });
+        }
+      }
+
+      if (Array.isArray(data.quotes) && data.quotes.length > 0) {
+        if (mode === 'replace') {
+          await replaceUserCollection('quotes');
+        }
+
+        for (const quoteData of data.quotes) {
+          const newQuoteRef = doc(collection(db, 'quotes'));
+          const { id, userId, createdAt, ...cleanQuoteData } = quoteData;
+          batch.set(newQuoteRef, {
+            ...cleanQuoteData,
+            userId: user.userId,
+            createdAt: Date.now(),
+          });
+        }
+      }
+
+      if (Array.isArray(data.shelves) && data.shelves.length > 0) {
+        if (mode === 'replace') {
+          await replaceUserCollection('shelves');
+        }
+
+        for (const shelfData of data.shelves) {
+          const newShelfRef = doc(collection(db, 'shelves'));
+          const { id, userId, createdAt, updatedAt, ...cleanShelfData } = shelfData;
+          batch.set(newShelfRef, {
+            ...cleanShelfData,
+            userId: user.userId,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          });
+        }
+      }
+
       if (data.literaryProfile) {
         const profileRef = doc(db, 'profiles', user.userId);
         batch.set(profileRef, data.literaryProfile, { merge: true });
@@ -144,7 +197,7 @@ const BookContextBridge: React.FC<{ children: React.ReactNode }> = ({ children }
         actionType: mode === 'replace' ? 'restore_backup' : 'import_json',
         format: 'json',
         status: 'sucesso',
-        details: `${importedCount} livros importados, ${ignoredCount} duplicados ignorados`,
+        details: `${importedCount} livros importados, ${ignoredCount} duplicados ignorados, ${goalsCount} metas tratadas`,
         affectedRecords: importedCount,
       });
 
