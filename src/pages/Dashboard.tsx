@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useBooks } from '../context/BookContext';
-import { Book, Star, TrendingUp, Award, BookOpen, Calendar, Sparkles, X, Target, FileText, ChevronRight, History, RefreshCw, Plus, Clock, Filter, ArrowUpRight, ArrowDownRight, BookmarkPlus } from 'lucide-react';
+import { Book, Star, TrendingUp, Award, BookOpen, Calendar, Sparkles, X, Target, FileText, ChevronRight, History, RefreshCw, Plus, Clock, Filter, ArrowUpRight, ArrowDownRight, BookmarkPlus, Zap, Folder, Trophy } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
@@ -28,7 +28,7 @@ const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Jul
 const MOODS = ['Sombrio', 'Tenso', 'Reflexivo', 'Aconchegante', 'Emocional', 'Misterioso', 'Caótico', 'Inspirador', 'Cerebral', 'Mágico'];
 
 export const Dashboard: React.FC = () => {
-  const { books, loading, userGoal, sessions } = useBooks();
+  const { books, loading, userGoal, sessions, shelves } = useBooks();
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [chartMode, setChartMode] = useState<'livros' | 'paginas'>('livros');
   const [showSessionModal, setShowSessionModal] = useState(false);
@@ -70,6 +70,33 @@ export const Dashboard: React.FC = () => {
     });
     const totalPaginas = lidos.reduce((acc, b) => acc + safeParseNumber(b.pageCount), 0);
     const mediaPaginas = lidosComPaginas.length > 0 ? totalPaginas / lidosComPaginas.length : 0;
+    
+    // Rich Session Stats
+    const sessionCount = sessions.length;
+    const totalPagesReadInSessions = sessions.reduce((acc, s) => acc + s.pagesRead, 0);
+    const totalDurationMinutes = sessions.reduce((acc, s) => acc + (s.durationMinutes || 0), 0);
+    const avgPagesPerSession = sessionCount > 0 ? Math.round(totalPagesReadInSessions / sessionCount) : 0;
+    
+    // Day with most pages
+    const sessionsByDay: Record<string, number> = {};
+    sessions.forEach(s => {
+      const d = format(new Date(s.date), 'yyyy-MM-dd');
+      sessionsByDay[d] = (sessionsByDay[d] || 0) + s.pagesRead;
+    });
+    const bestDayDate = Object.keys(sessionsByDay).length > 0 ? Object.keys(sessionsByDay).reduce((a, b) => sessionsByDay[a] > sessionsByDay[b] ? a : b) : null;
+    const bestDayVolume = bestDayDate ? sessionsByDay[bestDayDate] : 0;
+    
+    // Average pages per active day
+    const activeDaysCount = Object.keys(sessionsByDay).length;
+    const avgPagesPerActiveDay = activeDaysCount > 0 ? Math.round(totalPagesReadInSessions / activeDaysCount) : 0;
+
+    // Mood frequency
+    const moodFreq: Record<string, number> = {};
+    sessions.forEach(s => {
+      if (s.mood) moodFreq[s.mood] = (moodFreq[s.mood] || 0) + 1;
+    });
+    const topMood = Object.keys(moodFreq).length > 0 ? Object.keys(moodFreq).reduce((a, b) => moodFreq[a] > moodFreq[b] ? a : b) : null;
+
     const maiorLivro = lidosComPaginas.length > 0 ? lidosComPaginas.reduce((prev, curr) => (safeParseNumber(prev.pageCount) > safeParseNumber(curr.pageCount) ? prev : curr), lidosComPaginas[0]) : null;
     const menorLivro = lidosComPaginas.length > 0 ? lidosComPaginas.reduce((prev, curr) => (safeParseNumber(prev.pageCount) < safeParseNumber(curr.pageCount) ? prev : curr), lidosComPaginas[0]) : null;
 
@@ -159,6 +186,14 @@ export const Dashboard: React.FC = () => {
       pagesThisWeek,
       totalPaginas,
       mediaPaginas,
+      sessionCount,
+      totalPagesReadInSessions,
+      totalDurationMinutes,
+      avgPagesPerSession,
+      bestDayDate,
+      bestDayVolume,
+      avgPagesPerActiveDay,
+      topMood,
       maiorLivro,
       menorLivro,
       mediaDiasParaConcluir,
@@ -304,50 +339,57 @@ export const Dashboard: React.FC = () => {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
-      <header className="relative py-20 px-10 rounded-[4rem] bg-gradient-to-br from-neutral-900 via-neutral-900/60 to-transparent border border-neutral-800/40 overflow-hidden mb-16">
-        <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none">
-          <BookOpen size={280} className="text-neutral-100" />
+      <header className="relative py-28 px-8 md:px-20 rounded-[4rem] bg-neutral-900/10 border border-neutral-800/20 overflow-hidden mb-24 group/hero">
+        <div className="absolute top-0 right-0 p-12 opacity-[0.015] group-hover/hero:opacity-[0.035] transition-all duration-1000 pointer-events-none">
+          <BookOpen size={450} className="text-neutral-100 rotate-12" />
         </div>
         
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-end justify-between gap-12">
-          <div className="space-y-6">
-             <div className="space-y-2">
-               <h1 className="text-7xl font-serif font-black text-neutral-100 tracking-tighter leading-none">Readora</h1>
-               <p className="text-neutral-500 text-xl font-serif italic max-w-lg leading-relaxed">
-                 Sua curadoria literária pessoal. Transformando cada página em um rastro de sabedoria.
+        <div className="relative z-10 flex flex-col xl:flex-row xl:items-start justify-between gap-20">
+          <div className="space-y-12 max-w-3xl">
+             <div className="space-y-6">
+               <div className="flex items-center gap-4 animate-in fade-in slide-in-from-left-4 duration-700">
+                  <div className="w-16 h-1 bg-amber-500/60 rounded-full" />
+                  <span className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.5em] leading-none">Arquivos do Espírito</span>
+               </div>
+               <h1 className="text-8xl md:text-[10rem] font-serif font-black text-neutral-100 tracking-tighter leading-[0.85] animate-in fade-in slide-in-from-left-6 duration-1000 delay-100">Readora</h1>
+               <p className="text-neutral-400 text-xl font-serif italic leading-relaxed max-w-xl animate-in fade-in slide-in-from-left-8 duration-1000 delay-200">
+                 Sincronia entre o silêncio das páginas e a ressonância da sua própria voz. Onde cada percurso se torna um monumento à sabedoria.
                </p>
              </div>
              
-             <div className="flex flex-wrap gap-4 pt-4">
+             <div className="flex flex-wrap gap-6 pt-2 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300">
                 <button 
                   onClick={() => setShowSessionModal(true)}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] transition-all flex items-center justify-center gap-2 shadow-2xl shadow-emerald-500/20 active:scale-95"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white px-14 py-5 rounded-[3rem] font-black uppercase tracking-[0.3em] text-[10px] transition-all flex items-center justify-center gap-3 shadow-3xl shadow-emerald-500/20 active:scale-95 group/btn"
                 >
-                  <Clock size={16} />
-                  Registrar Sessão
+                  <Clock size={16} strokeWidth={3} className="group-hover/btn:rotate-12 transition-transform" />
+                  Abrir Sessão
                 </button>
                 <Link 
                   to="/adicionar" 
-                  className="bg-amber-500 hover:bg-amber-400 text-neutral-950 px-10 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] transition-all flex items-center justify-center gap-2 shadow-2xl shadow-amber-500/20 active:scale-95"
+                  className="bg-neutral-100 hover:bg-amber-400 text-neutral-950 px-14 py-5 rounded-[3rem] font-black uppercase tracking-[0.3em] text-[10px] transition-all flex items-center justify-center gap-3 shadow-3xl shadow-neutral-100/10 active:scale-95"
                 >
-                  <Plus size={16} />
-                  Nova Leitura
+                  <Plus size={16} strokeWidth={3} />
+                  Nova Jornada
                 </Link>
              </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 lg:w-[480px]">
+          <div className="grid grid-cols-2 gap-8 lg:w-[600px] animate-in fade-in zoom-in-95 duration-1000 delay-500">
              {[
-               { label: 'Livros Ano', value: stats.totalLidosEsteAno, color: 'text-neutral-100' },
-               { label: 'Páginas', value: formatPagesShort(stats.paginasLidasEsteAno), color: 'text-neutral-100' },
-               { label: 'Média Global', value: stats.mediaGeral.toFixed(1), color: 'text-rose-500' },
-               { label: 'Streak Atual', value: sessions.length > 0 ? analysisService.calculateStreak(sessions) : 0, color: 'text-amber-500', unit: 'dias' }
+               { label: 'Obras do Ano', value: stats.totalLidosEsteAno, color: 'text-neutral-100', icon: Book },
+               { label: 'Páginas do Ciclo', value: formatPagesShort(stats.paginasLidasEsteAno), color: 'text-neutral-100', icon: FileText },
+               { label: 'Média Crítica', value: stats.mediaGeral.toFixed(1), color: 'text-rose-500', icon: Star },
+               { label: 'Constância', value: sessions.length > 0 ? analysisService.calculateStreak(sessions) : 0, color: 'text-amber-500', unit: 'dias', icon: TrendingUp }
              ].map((item, i) => (
-               <div key={i} className="bg-neutral-950/40 backdrop-blur-xl border border-neutral-800/30 rounded-3xl p-6 transition-colors hover:border-neutral-700/50">
-                  <p className="text-[9px] font-black text-neutral-600 uppercase tracking-[0.2em] mb-2">{item.label}</p>
-                  <div className="flex items-baseline gap-2">
-                    <span className={`text-3xl font-black tracking-tighter ${item.color}`}>{item.value}</span>
-                    {item.unit && <span className="text-[10px] text-neutral-700 font-bold italic">{item.unit}</span>}
+               <div key={i} className="bg-neutral-900/40 backdrop-blur-3xl border border-neutral-800/40 rounded-[3rem] p-10 transition-all hover:bg-neutral-900/60 hover:border-neutral-600/60 group/stat relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover/stat:opacity-[0.06] transition-opacity pointer-events-none">
+                     <item.icon size={80} />
+                  </div>
+                  <p className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.3em] mb-6 group-hover/stat:text-neutral-400 transition-colors relative z-10">{item.label}</p>
+                  <div className="flex items-baseline gap-4 relative z-10">
+                    <span className={`text-5xl font-black tracking-tighter ${item.color}`}>{item.value}</span>
+                    {item.unit && <span className="text-xs text-neutral-700 font-bold italic lowercase">{item.unit}</span>}
                   </div>
                </div>
              ))}
@@ -356,173 +398,200 @@ export const Dashboard: React.FC = () => {
       </header>
 
       <section className="space-y-16">
-        <div className="flex items-center justify-between px-4">
-           <div className="flex items-center gap-4">
-             <div className="w-2 h-10 bg-amber-500 rounded-full" />
-             <h2 className="text-4xl font-serif font-black text-neutral-100 tracking-tight italic leading-none">Momento de Leitura</h2>
+        <div className="flex items-center justify-between px-8">
+           <div className="flex items-center gap-8">
+             <div className="w-1.5 h-16 bg-amber-500 rounded-full" />
+             <div>
+                <h2 className="text-6xl font-serif font-black text-neutral-100 tracking-tight italic leading-none">Imersão</h2>
+                <p className="text-[10px] text-neutral-600 font-black uppercase tracking-[0.4em] mt-3 ml-1">Onde a mente repousa e se expande</p>
+             </div>
            </div>
-           <div className="flex bg-neutral-900/50 p-1 rounded-2xl border border-neutral-800/50">
-             <Link to="/comparativo-anual" className="p-3 text-neutral-500 hover:text-amber-500 transition-colors" title="Comparativo">
-               <TrendingUp size={20} />
+           <div className="flex bg-neutral-900/50 p-1.5 rounded-2xl border border-neutral-800/40 backdrop-blur-md">
+             <Link to="/comparativo-anual" className="p-3.5 text-neutral-500 hover:text-amber-500 transition-all hover:scale-110" title="Comparativo">
+               <TrendingUp size={22} />
              </Link>
-             <Link to="/retrospectiva" className="p-3 text-neutral-500 hover:text-amber-500 transition-colors" title="Retrospectiva">
-               <History size={20} />
+             <Link to="/retrospectiva" className="p-3.5 text-neutral-500 hover:text-amber-500 transition-all hover:scale-110" title="Retrospectiva">
+               <History size={22} />
              </Link>
            </div>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-12">
             {/* Main Current Reading Focus */}
-            <div className="xl:col-span-8">
+            <div className="xl:col-span-8 space-y-12">
                {stats.lendoAgora.length > 0 ? (
-                  <div className="bg-neutral-900/30 border border-neutral-800/40 rounded-[3rem] p-10 shadow-2xl relative overflow-hidden group/readnow h-full">
-                    <div className="absolute top-0 right-0 p-10 opacity-[0.02] group-hover/readnow:opacity-[0.05] transition-opacity">
-                       <RefreshCw size={140} className="text-neutral-100 animate-spin-slow" />
+                  <div className="bg-neutral-900/5 border border-neutral-800/40 rounded-[4rem] p-16 shadow-3xl relative overflow-hidden group/readnow min-h-[500px] flex flex-col">
+                    <div className="absolute top-0 right-0 p-12 opacity-[0.01] group-hover/readnow:opacity-[0.03] transition-opacity duration-1000">
+                       <RefreshCw size={280} className="text-neutral-100 animate-spin-slow opacity-10" />
                     </div>
                     
-                    <div className="flex items-center justify-between mb-12 relative z-10">
-                      <div>
-                        <h3 className="text-3xl font-serif font-bold text-neutral-100 italic">Lendo Agora</h3>
-                        <p className="text-[11px] text-neutral-500 font-black uppercase tracking-[0.2em] mt-2">Sua imersão atual</p>
+                    <div className="flex items-center justify-between mb-20 relative z-10">
+                      <div className="flex items-center gap-5">
+                        <div className="w-2 h-10 bg-emerald-500 rounded-full" />
+                        <div>
+                          <h3 className="text-4xl font-serif font-bold text-neutral-100 italic leading-none">Lendo Agora</h3>
+                          <p className="text-[10px] text-neutral-600 font-black uppercase tracking-[0.3em] mt-3 ml-0.5">Sua consciência expandida</p>
+                        </div>
                       </div>
-                      <Link to="/livros?status=lendo" className="text-[10px] font-black text-neutral-500 hover:text-amber-500 transition-colors uppercase tracking-[0.15em]">
-                        Gerenciar todos ({stats.lendoAgora.length})
+                      <Link to="/livros?status=lendo" className="text-[10px] font-black text-neutral-500 hover:text-emerald-500 transition-all uppercase tracking-[0.25em] bg-neutral-950/40 px-8 py-3 rounded-full border border-neutral-800/40 flex items-center gap-3 group/link">
+                        Biblioteca ({stats.lendoAgora.length})
+                        <ChevronRight size={14} className="group-hover/link:translate-x-1 transition-transform" />
                       </Link>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 relative z-10">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-20 relative z-10 flex-1">
                       {stats.maisAvancado && (
-                        <Link 
-                          to={`/livro/${stats.maisAvancado.id}`}
-                          className="flex gap-8 group/maincard"
-                        >
-                          <div className="w-36 h-52 rounded-2xl overflow-hidden bg-neutral-950 shrink-0 shadow-[0_30px_60px_rgba(0,0,0,0.6)] group-hover/maincard:scale-105 transition-transform duration-700 border border-neutral-800/50">
-                            {stats.maisAvancado.coverUrl ? (
-                              <img src={stats.maisAvancado.coverUrl} alt={stats.maisAvancado.titulo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <BookOpen size={32} className="text-neutral-800" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1 flex flex-col justify-center min-w-0">
-                            <h4 className="text-2xl font-bold text-neutral-100 line-clamp-2 leading-tight mb-3 group-hover/maincard:text-amber-500 transition-colors tracking-tighter">
-                              {stats.maisAvancado.titulo}
-                            </h4>
-                            <p className="text-base text-neutral-500 font-serif italic mb-8 truncate">{stats.maisAvancado.autor}</p>
-                            
-                            <div className="space-y-4">
-                              <div className="flex justify-between items-end text-[11px] font-black uppercase tracking-widest text-neutral-500">
-                                <span className="text-emerald-500">{stats.maisAvancado.progressPercentage || 0}% CONCLUÍDO</span>
-                                <span className="text-neutral-600 italic">
-                                  {stats.maisAvancado.currentPage || 0} / {(stats.maisAvancado.totalPages || stats.maisAvancado.pageCount) || '—'}
-                                </span>
-                              </div>
-                              <div className="h-2 bg-neutral-950 rounded-full overflow-hidden border border-neutral-800/30">
-                                <motion.div 
-                                  initial={{ width: 0 }}
-                                  animate={{ width: `${stats.maisAvancado.progressPercentage || 0}%` }}
-                                  className="h-full bg-emerald-500 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.3)]"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </Link>
-                      )}
-
-                      <div className="space-y-4 flex flex-col justify-center">
-                        {stats.lendoAgora.filter(b => b.id !== stats.maisAvancado?.id).slice(0, 3).map(book => (
+                        <div className="lg:col-span-12 xl:col-span-12">
                           <Link 
-                            key={book.id} 
-                            to={`/livro/${book.id}`}
-                            className="flex items-center gap-5 p-5 rounded-[2rem] bg-neutral-950/20 border border-neutral-800/40 hover:bg-neutral-950/40 hover:border-emerald-500/30 transition-all group/subcard"
+                            to={`/livro/${stats.maisAvancado.id}`}
+                            className="flex flex-col md:flex-row gap-16 group/maincard items-center lg:items-start"
                           >
-                            <div className="w-14 h-20 rounded-xl overflow-hidden bg-neutral-950 shrink-0 border border-neutral-800/40">
-                              {book.coverUrl ? (
-                                <img src={book.coverUrl} alt={book.titulo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                            <div className="w-56 h-80 rounded-2xl overflow-hidden bg-neutral-950 shrink-0 shadow-[0_50px_100px_rgba(0,0,0,0.8)] group-hover/maincard:scale-105 transition-all duration-1000 border border-neutral-800/50 relative">
+                              <div className="absolute inset-0 bg-gradient-to-tr from-amber-400/20 to-transparent opacity-0 group-hover/maincard:opacity-100 transition-opacity" />
+                              {stats.maisAvancado.coverUrl ? (
+                                <img src={stats.maisAvancado.coverUrl} alt={stats.maisAvancado.titulo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center">
-                                  <BookOpen size={16} className="text-neutral-800" />
+                                  <BookOpen size={64} className="text-neutral-800" />
                                 </div>
                               )}
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <h5 className="text-sm font-bold text-neutral-300 truncate group-hover/subcard:text-emerald-500 transition-colors leading-tight mb-2 tracking-tight">{book.titulo}</h5>
-                              <div className="flex items-center gap-4">
-                                <div className="flex-1 h-1.5 bg-neutral-950 rounded-full overflow-hidden">
-                                  <div className="h-full bg-emerald-500/50 rounded-full" style={{ width: `${book.progressPercentage || 0}%` }} />
+                            <div className="flex-1 flex flex-col justify-center min-w-0 py-6 w-full">
+                              <div className="mb-12">
+                                <h4 className="text-5xl font-bold text-neutral-100 line-clamp-2 leading-[1.1] mb-6 group-hover/maincard:text-amber-500 transition-colors tracking-tighter">
+                                  {stats.maisAvancado.titulo}
+                                </h4>
+                                <p className="text-2xl text-neutral-500 font-serif italic tracking-tight">{stats.maisAvancado.autor}</p>
+                              </div>
+                              
+                              <div className="space-y-8">
+                                <div className="flex justify-between items-end text-[11px] font-black uppercase tracking-[0.3em] text-neutral-600">
+                                  <span className="text-emerald-500 flex items-center gap-2">
+                                    <Sparkles size={12} />
+                                    {stats.maisAvancado.progressPercentage || 0}% de Evolução
+                                  </span>
+                                  <span className="italic font-serif">
+                                    Página {stats.maisAvancado.currentPage || 0} de {(stats.maisAvancado.totalPages || stats.maisAvancado.pageCount) || '—'}
+                                  </span>
                                 </div>
-                                <span className="text-[10px] font-black text-neutral-600">{book.progressPercentage || 0}%</span>
+                                <div className="h-3 bg-neutral-950 rounded-full overflow-hidden border border-neutral-800/40 p-0.5">
+                                  <motion.div 
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${stats.maisAvancado.progressPercentage || 0}%` }}
+                                    className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full shadow-[0_0_25px_rgba(16,185,129,0.5)]"
+                                  />
+                                </div>
                               </div>
                             </div>
                           </Link>
-                        ))}
-                      </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                ) : (
-                  <div className="bg-neutral-900/30 border border-dashed border-neutral-800/50 rounded-[3rem] p-16 text-center h-full flex flex-col items-center justify-center">
-                     <BookOpen size={48} className="mx-auto text-neutral-800 mb-6" />
-                     <h3 className="text-2xl font-serif font-bold text-neutral-400 italic">Nenhum mergulho ativo</h3>
-                     <p className="text-sm text-neutral-600 mt-2 font-serif italic max-w-xs mx-auto">Sua estante aguarda por uma nova jornada. Que tal escolher uma hoje?</p>
-                     <Link to="/adicionar" className="inline-block mt-10 px-10 py-4 bg-neutral-800 hover:bg-neutral-700 text-neutral-400 text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl transition-all active:scale-95">Iniciar Leitura</Link>
+                  <div className="bg-neutral-900/5 border border-dashed border-neutral-800/60 rounded-[4rem] p-24 text-center h-[500px] flex flex-col items-center justify-center group/empty">
+                     <div className="w-32 h-32 bg-neutral-900/50 rounded-full flex items-center justify-center mb-10 border border-neutral-800/60 group-hover/empty:scale-110 transition-all duration-1000 shadow-inner">
+                        <BookOpen size={56} className="text-neutral-700" />
+                     </div>
+                     <h3 className="text-4xl font-serif font-bold text-neutral-400 italic">Espaço do Possível</h3>
+                     <p className="text-lg text-neutral-600 mt-6 font-serif italic max-w-sm leading-relaxed">Suas prateleiras contêm mundos inteiros aguardando a ignição da sua curiosidade.</p>
+                     <Link to="/adicionar" className="mt-14 px-14 py-6 bg-neutral-800 hover:bg-neutral-100 text-neutral-400 hover:text-neutral-950 text-[11px] font-black uppercase tracking-[0.4em] rounded-[3rem] transition-all active:scale-95 shadow-xl">Dar o Primeiro Passo</Link>
+                  </div>
+               )}
+
+               {stats.lendoAgora.length > 1 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {stats.lendoAgora.filter(b => b.id !== stats.maisAvancado?.id).slice(0, 4).map(book => (
+                      <Link 
+                        key={book.id} 
+                        to={`/livro/${book.id}`}
+                        className="flex items-center gap-8 p-6 rounded-[3rem] bg-neutral-950/20 border border-neutral-800/40 hover:bg-neutral-950/40 hover:border-emerald-500/30 transition-all group/subcard shadow-sm"
+                      >
+                        <div className="w-20 h-28 rounded-xl overflow-hidden bg-neutral-950 shrink-0 border border-neutral-800/40 shadow-2xl group-hover/subcard:rotate-3 transition-transform duration-500">
+                          {book.coverUrl ? (
+                            <img src={book.coverUrl} alt={book.titulo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <BookOpen size={24} className="text-neutral-800" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h5 className="text-lg font-bold text-neutral-200 truncate group-hover/subcard:text-emerald-500 transition-colors leading-tight mb-3 tracking-tight">{book.titulo}</h5>
+                          <div className="flex items-center gap-6">
+                            <div className="flex-1 h-2 bg-neutral-950 rounded-full overflow-hidden">
+                              <div className="h-full bg-emerald-500/60 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.3)]" style={{ width: `${book.progressPercentage || 0}%` }} />
+                            </div>
+                            <span className="text-[10px] font-black text-neutral-600 font-mono">{book.progressPercentage || 0}%</span>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
                   </div>
                )}
             </div>
 
-            <div className="xl:col-span-4 flex flex-col gap-10">
+            <div className="xl:col-span-4 flex flex-col gap-12">
                {/* Goal Card - Refined */}
-               <div className="bg-neutral-900/30 border border-neutral-800/40 rounded-[3rem] p-10 shadow-xl flex-1 flex flex-col justify-between">
-                  <div className="flex items-center justify-between mb-8">
+               <div className="bg-neutral-900/10 border border-neutral-800/40 rounded-[3rem] p-12 shadow-2xl flex flex-col justify-between group/goal relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-12 opacity-[0.015] group-hover/goal:opacity-[0.04] transition-opacity duration-1000">
+                     <Target size={160} />
+                  </div>
+                  <div className="flex items-center justify-between mb-12 relative z-10">
                     <div>
-                      <h3 className="text-2xl font-serif font-bold text-neutral-100 italic">Meta {currentYear}</h3>
-                      <p className="text-[11px] text-neutral-500 font-black uppercase tracking-[0.2em] mt-2">Horizonte anual</p>
+                      <h3 className="text-3xl font-serif font-bold text-neutral-100 italic">Meta {currentYear}</h3>
+                      <p className="text-[10px] text-neutral-500 font-black uppercase tracking-[0.3em] mt-3">Rumo ao Horizonte</p>
                     </div>
-                    <Target className="text-amber-500/20" size={32} />
                   </div>
 
                   {!userGoal ? (
-                    <div className="flex flex-col items-center justify-center flex-1 py-10 text-center space-y-6">
-                      <p className="text-sm text-neutral-600 font-serif italic leading-relaxed">Você ainda não definiu seus objetivos para este ciclo literário.</p>
-                      <Link to="/configuracoes" className="text-[11px] font-black text-amber-500 uppercase tracking-[0.2em] bg-amber-500/10 px-6 py-3 rounded-xl hover:bg-amber-500/20 transition-all">Configurar Agora</Link>
+                    <div className="flex flex-col items-center justify-center py-16 text-center space-y-10 relative z-10">
+                      <div className="w-20 h-20 bg-neutral-900/50 rounded-full flex items-center justify-center border border-neutral-800/60 shadow-inner">
+                        <Target className="text-neutral-700" size={32} />
+                      </div>
+                      <p className="text-base text-neutral-600 font-serif italic leading-relaxed max-w-[200px]">Caminhos sem direção levam a lugares vazios. Documente sua ambição.</p>
+                      <Link to="/configuracoes" className="text-[10px] font-black text-amber-500 uppercase tracking-[0.3em] bg-amber-500/10 px-10 py-5 rounded-[2rem] border border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-3 group/link">
+                        Definir Metas
+                        <Plus size={14} className="group-hover/link:rotate-90 transition-transform" />
+                      </Link>
                     </div>
                   ) : (
-                    <div className="space-y-10 flex-1 flex flex-col justify-center">
+                    <div className="space-y-12 flex-1 flex flex-col justify-center relative z-10">
                        {safeParseNumber(userGoal.booksGoal) > 0 && (
-                          <div className="space-y-4">
+                          <div className="space-y-6">
                              <div className="flex justify-between items-baseline">
-                                <p className="text-[11px] font-black text-neutral-600 uppercase tracking-[0.2em]">Livros Lidos</p>
-                                <span className="text-2xl font-black text-neutral-100 italic tracking-tighter">{stats.totalLidosEsteAno} <span className="text-neutral-700 not-italic text-sm">/ {userGoal.booksGoal}</span></span>
+                                <p className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.3em]">Volume Literário</p>
+                                <span className="text-3xl font-black text-neutral-100 italic tracking-tighter">{stats.totalLidosEsteAno} <span className="text-neutral-700 not-italic text-sm">/ {userGoal.booksGoal}</span></span>
                              </div>
-                             <div className="h-2 bg-neutral-950 rounded-full overflow-hidden border border-neutral-800/30">
+                             <div className="h-3 bg-neutral-950 rounded-full overflow-hidden border border-neutral-800/40 p-0.5">
                                 <motion.div 
                                   initial={{ width: 0 }}
                                   animate={{ width: `${Math.min(100, (stats.totalLidosEsteAno / safeParseNumber(userGoal.booksGoal)) * 100)}%` }}
-                                  className="h-full bg-amber-500 rounded-full shadow-[0_0_10px_rgba(245,158,11,0.2)]"
+                                  className="h-full bg-amber-500 rounded-full shadow-[0_0_15px_rgba(245,158,11,0.4)]"
                                 />
                              </div>
                           </div>
                        )}
 
                        {safeParseNumber(userGoal.pagesGoal) > 0 && (
-                          <div className="space-y-4">
+                          <div className="space-y-6">
                              <div className="flex justify-between items-baseline">
-                                <p className="text-[11px] font-black text-neutral-600 uppercase tracking-[0.2em]">Páginas Percorridas</p>
-                                <span className="text-2xl font-black text-neutral-100 italic tracking-tighter">{formatPagesShort(stats.paginasLidasEsteAno)} <span className="text-neutral-700 not-italic text-sm">/ {formatPagesShort(safeParseNumber(userGoal.pagesGoal))}</span></span>
+                                <p className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.3em]">Densidade de Páginas</p>
+                                <span className="text-3xl font-black text-neutral-100 italic tracking-tighter">{formatPagesShort(stats.paginasLidasEsteAno)} <span className="text-neutral-700 not-italic text-sm">/ {formatPagesShort(safeParseNumber(userGoal.pagesGoal))}</span></span>
                              </div>
-                             <div className="h-2 bg-neutral-950 rounded-full overflow-hidden border border-neutral-800/30">
+                             <div className="h-3 bg-neutral-950 rounded-full overflow-hidden border border-neutral-800/40 p-0.5">
                                 <motion.div 
                                   initial={{ width: 0 }}
                                   animate={{ width: `${Math.min(100, (stats.paginasLidasEsteAno / safeParseNumber(userGoal.pagesGoal)) * 100)}%` }}
-                                  className="h-full bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.2)]"
+                                  className="h-full bg-blue-500 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.4)]"
                                 />
                              </div>
                           </div>
                        )}
 
                        {insights && (
-                          <div className="mt-6 p-6 bg-neutral-950/30 rounded-[2rem] border border-neutral-800/30 backdrop-blur-sm">
-                             <p className="text-xs text-neutral-400 font-serif italic leading-relaxed text-center opacity-80">
+                          <div className="mt-4 p-8 bg-neutral-950/40 rounded-[2.5rem] border border-neutral-800/40 backdrop-blur-sm group-hover/goal:border-amber-500/20 transition-all duration-700">
+                             <p className="text-sm text-neutral-400 font-serif italic leading-relaxed text-center opacity-90 group-hover/goal:opacity-100 transition-opacity">
                                "{insights.message}"
                              </p>
                           </div>
@@ -545,6 +614,56 @@ export const Dashboard: React.FC = () => {
                   </div>
                   <ChevronRight size={24} className="text-neutral-800 group-hover/weekly:text-amber-500 group-hover/weekly:translate-x-2 transition-all" />
                </div>
+
+               {/* Pulse de Leitura - Rich Insights */}
+               <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-[3rem] p-10 shadow-2xl relative overflow-hidden group/pulse">
+                 <div className="absolute top-0 right-0 p-10 opacity-[0.02] group-hover/pulse:opacity-[0.05] transition-opacity">
+                   <Zap size={140} className="text-emerald-500" />
+                 </div>
+                 
+                 <div className="flex items-center justify-between mb-8 relative z-10">
+                   <div>
+                     <h3 className="text-2xl font-serif font-bold text-neutral-100 italic">Pulse de Leitura</h3>
+                     <p className="text-[10px] text-neutral-500 font-black uppercase tracking-[0.2em] mt-2">Sua constância em dados</p>
+                   </div>
+                 </div>
+
+                 <div className="grid grid-cols-2 gap-4 mb-8">
+                    <div className="bg-neutral-950/40 p-5 rounded-2xl border border-neutral-800/40">
+                       <p className="text-[9px] font-black text-neutral-600 uppercase tracking-widest mb-1">Média por Sessão</p>
+                       <p className="text-xl font-bold text-emerald-400 font-mono">{stats.avgPagesPerSession} págs</p>
+                    </div>
+                    <div className="bg-neutral-950/40 p-5 rounded-2xl border border-neutral-800/40">
+                       <p className="text-[9px] font-black text-neutral-600 uppercase tracking-widest mb-1">Tempo Total</p>
+                       <p className="text-xl font-bold text-amber-500 font-mono">{Math.floor(stats.totalDurationMinutes / 60)}h {stats.totalDurationMinutes % 60}m</p>
+                    </div>
+                 </div>
+
+                 <div className="space-y-4 relative z-10">
+                    <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest mb-4">Últimas Incursões</p>
+                    {sessions.slice(0, 3).map(session => (
+                      <div key={session.id} className="flex gap-4 p-4 bg-neutral-950/60 rounded-2xl border border-neutral-800/60 group/session hover:border-emerald-500/30 transition-all">
+                         <div className="w-1.5 h-10 bg-emerald-500/20 rounded-full group-hover/session:h-12 transition-all shrink-0" />
+                         <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-start mb-1">
+                               <h4 className="text-sm font-bold text-neutral-200 truncate">{session.bookTitle || 'Leitura Geral'}</h4>
+                               <span className="text-[10px] font-mono text-neutral-600">{format(new Date(session.date), 'dd MMM', { locale: ptBR })}</span>
+                            </div>
+                            <p className="text-[11px] text-neutral-500 italic font-serif truncate mb-2">{session.quickNote || "Sem anotações nesta jornada."}</p>
+                            <div className="flex items-center gap-3">
+                               <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">+{session.pagesRead} págs</span>
+                               {session.mood && (
+                                  <span className="text-[9px] px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-md font-black uppercase">{session.mood}</span>
+                               )}
+                            </div>
+                         </div>
+                      </div>
+                    ))}
+                    {sessions.length === 0 && (
+                       <p className="text-xs text-neutral-600 italic font-serif text-center py-4">Nenhum registro de sessão ainda.</p>
+                    )}
+                 </div>
+               </div>
             </div>
 
             {/* Row 2: Reading Companion & Statistics */}
@@ -561,96 +680,193 @@ export const Dashboard: React.FC = () => {
             </div>
         </div>
 
-        {/* Heatmap Section - Premium Container */}
-        <div className="bg-neutral-900/30 border border-neutral-800/40 rounded-[3.5rem] p-12 shadow-xl overflow-hidden relative group/heatmap">
-          <div className="absolute top-0 right-0 p-12 opacity-[0.02] group-hover/heatmap:opacity-[0.05] transition-opacity">
-             <Calendar size={180} className="text-neutral-100" />
-          </div>
-          <div className="flex items-center justify-between mb-12 relative z-10 px-4">
-             <div className="flex items-center gap-5">
-               <div className="p-3 bg-emerald-500/10 rounded-2xl text-emerald-500">
-                 <Calendar size={28} />
-               </div>
-               <div>
-                  <h3 className="text-2xl font-serif font-bold text-neutral-100 italic leading-none">Hábito de Leitura</h3>
-                  <p className="text-[11px] text-neutral-600 font-black uppercase tracking-[0.2em] mt-3">Constância nos últimos meses</p>
-               </div>
-             </div>
-          </div>
-          <div className="relative z-10 overflow-x-auto custom-scrollbar-hide flex justify-center pb-2">
-            <div className="min-w-max transform transition-transform duration-500">
-               <ReadingHeatmap sessions={sessions} />
-            </div>
-          </div>
+        {/* Heatmap Section - Redesigned globally for the "Pass" */}
+        <div className="bg-neutral-900/5 border border-neutral-800/20 rounded-[4rem] p-16 shadow-3xl relative overflow-hidden group/habit mt-12 mb-24">
+           <div className="absolute top-0 right-0 p-16 opacity-[0.015] group-hover/habit:opacity-[0.04] transition-all duration-1000">
+             <Calendar size={320} className="text-neutral-100 rotate-6" />
+           </div>
+           
+           <div className="grid grid-cols-1 lg:grid-cols-12 gap-20 relative z-10">
+              <div className="lg:col-span-4 space-y-16 py-4">
+                 <div className="space-y-8">
+                    <div className="flex items-center gap-6">
+                       <div className="w-1.5 h-16 bg-blue-500/60 rounded-full" />
+                       <div>
+                          <h3 className="text-5xl font-serif font-black text-neutral-100 tracking-tight italic leading-none">Arquitetura</h3>
+                          <p className="text-[10px] text-neutral-600 font-black uppercase tracking-[0.4em] mt-3 ml-0.5 whitespace-nowrap">Geometria da sua constância</p>
+                       </div>
+                    </div>
+                    <p className="text-sm text-neutral-500 font-serif italic leading-relaxed max-w-sm">
+                      Cada célula é um fragmento de tempo dedicado à expansão do seu mundo interior. A constância é a verdadeira maestria.
+                    </p>
+                 </div>
+                 
+                 <div className="grid grid-cols-2 gap-8 pt-10 border-t border-neutral-800/40">
+                    <div>
+                       <p className="text-[10px] font-black text-neutral-700 uppercase tracking-[0.3em] mb-4">Densidade Ativa</p>
+                       <h4 className="text-5xl font-black text-neutral-100 tracking-tighter italic leading-none">
+                         {stats.sessionsThisMonth || 0}
+                         <span className="text-sm text-neutral-800 not-italic ml-3 uppercase tracking-widest font-black lowercase">sessões</span>
+                       </h4>
+                    </div>
+                    <div>
+                       <p className="text-[10px] font-black text-neutral-700 uppercase tracking-[0.3em] mb-4">Consistência</p>
+                       <h4 className="text-5xl font-black text-blue-500 tracking-tighter italic leading-none">
+                         {stats.readingFrequency}%
+                         <span className="text-sm text-neutral-800 not-italic ml-3 uppercase tracking-widest font-black lowercase">score</span>
+                       </h4>
+                    </div>
+                 </div>
+              </div>
+              
+              <div className="lg:col-span-8 bg-neutral-950/40 p-12 rounded-[3.5rem] border border-neutral-800/40 shadow-inner group-hover/habit:border-blue-500/20 transition-all duration-1000">
+                <div className="overflow-x-auto scrollbar-hide flex justify-center py-4">
+                   <div className="min-w-max">
+                      <ReadingHeatmap sessions={sessions} />
+                   </div>
+                </div>
+                <div className="mt-10 flex justify-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-sm bg-neutral-900 border border-neutral-800" />
+                    <span className="text-[9px] text-neutral-700 uppercase tracking-widest font-black">Sereno</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-sm bg-blue-500/80" />
+                    <span className="text-[9px] text-neutral-700 uppercase tracking-widest font-black">Intenso</span>
+                  </div>
+                </div>
+              </div>
+           </div>
         </div>
-      </section>
 
-      <section className="space-y-12 pt-12">
-        <div className="flex items-center gap-5 px-4">
-           <div className="w-2 h-10 bg-purple-500 rounded-full" />
-           <h2 className="text-3xl font-serif font-black text-neutral-100 tracking-tight italic leading-none">Descoberta & Curadoria</h2>
+        <section className="space-y-24 py-24">
+        <div className="flex items-center justify-between px-8">
+           <div className="flex items-center gap-8">
+             <div className="w-1.5 h-16 bg-purple-500 rounded-full" />
+             <div>
+                <h2 className="text-6xl font-serif font-black text-neutral-100 tracking-tight italic leading-none">Atmosfera</h2>
+                <p className="text-[10px] text-neutral-600 font-black uppercase tracking-[0.4em] mt-3 ml-1">Onde sua alma encontra ressonância</p>
+             </div>
+           </div>
+           <Link to="/livros" className="text-[10px] font-black text-neutral-500 hover:text-purple-500 transition-all uppercase tracking-[0.3em] flex items-center gap-4 group/link bg-neutral-950/40 px-8 py-3 rounded-full border border-neutral-800/40 backdrop-blur-md">
+             Explorar
+             <ChevronRight size={14} className="group-hover/link:translate-x-2 transition-transform" />
+           </Link>
         </div>
 
         {/* Atmosferas Literárias - Editorial Shelves */}
         {stats.moodShelves.length > 0 && (
-          <div className="space-y-12">
-            <div className="flex items-center justify-between px-4">
-              <div className="flex items-center gap-5">
-                <div className="p-3 bg-purple-500/10 rounded-2xl text-purple-500">
-                  <Sparkles size={28} />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 px-2">
+            {stats.moodShelves.slice(0, 4).map((shelf) => (
+              <div 
+                key={shelf.mood} 
+                className="group/shelf bg-neutral-900/5 border border-neutral-800/20 rounded-[3.5rem] p-12 hover:bg-neutral-900/10 hover:border-purple-500/30 transition-all duration-700 shadow-xl flex flex-col gap-10 min-h-[440px] relative overflow-hidden"
+              >
+                <div className="absolute -top-10 -right-20 p-12 opacity-[0.015] group-hover/shelf:opacity-[0.04] transition-opacity duration-1000 rotate-12 pointer-events-none">
+                   <Sparkles size={180} className="text-purple-500" />
                 </div>
-                <div>
-                  <h3 className="text-2xl font-serif font-bold text-neutral-100 italic leading-none">Atmosferas Literárias</h3>
-                  <p className="text-[11px] text-neutral-600 font-black uppercase tracking-[0.2em] mt-3">Curadoria por estado de espírito</p>
+
+                <div className="space-y-6 relative z-10">
+                   <div className="flex items-start justify-between">
+                      <div className="p-4 bg-purple-500/10 rounded-2xl text-purple-500 group-hover/shelf:scale-110 group-hover/shelf:rotate-3 transition-all duration-700">
+                         <Sparkles size={24} />
+                      </div>
+                      <span className="text-[9px] bg-neutral-950 text-neutral-600 font-black uppercase tracking-[0.2em] px-4 py-2 rounded-full border border-neutral-800/40 backdrop-blur-md">
+                        {shelf.books.length} Obras
+                      </span>
+                   </div>
+                   <h4 className="text-4xl font-serif font-black text-neutral-100 capitalize italic leading-tight tracking-tight pt-2">{shelf.mood}</h4>
+                </div>
+
+                <div className="flex-1 space-y-4 pt-6 relative z-10">
+                   <div className="flex -space-x-4 mb-8">
+                     {shelf.books.slice(0, 3).map((book, idx) => (
+                       <Link 
+                         key={book.id} 
+                         to={`/livro/${book.id}`}
+                         className="relative w-20 h-28 rounded-xl overflow-hidden border-2 border-neutral-900 shadow-2xl transition-all hover:z-20 hover:-translate-y-4 group/image"
+                         style={{ zIndex: 10 - idx }}
+                       >
+                         {book.coverUrl ? (
+                           <img src={book.coverUrl} alt={book.titulo} className="w-full h-full object-cover transition-all group-hover/image:scale-110" referrerPolicy="no-referrer" />
+                         ) : (
+                           <div className="w-full h-full bg-neutral-950 flex items-center justify-center">
+                             <BookOpen size={20} className="text-neutral-800" />
+                           </div>
+                         )}
+                         <div className="absolute inset-0 bg-neutral-950/20 group-hover/image:bg-transparent transition-colors" />
+                       </Link>
+                     ))}
+                     {shelf.books.length > 3 && (
+                       <div className="w-20 h-28 rounded-xl border border-dashed border-neutral-800/60 bg-neutral-950/40 flex items-center justify-center text-[11px] font-black text-neutral-700 backdrop-blur-sm">
+                         +{shelf.books.length - 3}
+                       </div>
+                     )}
+                   </div>
+                   <p className="text-xs text-neutral-600 font-serif italic leading-relaxed line-clamp-3">
+                     Uma seleção curada de narrativas que florescem sob a aura {shelf.mood}, preparadas para o seu momento de introspeção.
+                   </p>
                 </div>
               </div>
-              <Link to="/livros" className="text-[11px] font-black text-neutral-500 hover:text-purple-500 transition-all uppercase tracking-[0.15em] flex items-center gap-2 group">
-                Explorar Biblioteca
-                <ChevronRight size={16} className="group-hover:translate-x-2 transition-transform" />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Custom Shelves Insight Section */}
+      <section className="space-y-16 py-12">
+           <div className="flex items-center justify-between px-8">
+              <div className="flex items-center gap-8">
+                <div className="p-4 bg-amber-500/10 rounded-2xl text-amber-500 shadow-inner border border-amber-500/10">
+                  <Folder size={28} />
+                </div>
+                <div>
+                  <h3 className="text-4xl font-serif font-black text-neutral-100 italic leading-none">Estantes</h3>
+                  <p className="text-[10px] text-neutral-600 font-black uppercase tracking-[0.4em] mt-3 ml-0.5">Sua arquitetura intelectual</p>
+                </div>
+              </div>
+              <Link to="/estantes" className="text-[10px] font-black text-neutral-500 hover:text-amber-500 transition-all uppercase tracking-[0.3em] flex items-center gap-4 group/link bg-neutral-950/40 px-8 py-3 rounded-full border border-neutral-800/40 backdrop-blur-md">
+                Gerenciar
+                <ChevronRight size={14} className="group-hover/link:translate-x-2 transition-transform" />
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 px-2">
-              {stats.moodShelves.slice(0, 4).map((shelf) => (
-                <div 
-                  key={shelf.mood} 
-                  className="group/shelf bg-neutral-900/20 border border-neutral-800/30 rounded-[2.5rem] p-8 hover:bg-neutral-900/40 hover:border-purple-500/30 transition-all duration-500 shadow-lg flex flex-col gap-8"
-                >
-                  <div className="flex items-center justify-between">
-                     <h4 className="text-xl font-serif font-bold text-neutral-300 capitalize italic group-hover/shelf:text-purple-400 transition-colors tracking-tight">{shelf.mood}</h4>
-                     <span className="text-[10px] bg-neutral-950 text-neutral-600 font-black uppercase tracking-widest px-3 py-1 rounded-full border border-neutral-800/50">
-                       {shelf.books.length} obras
-                     </span>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-3">
-                    {shelf.books.slice(0, 3).map((book) => (
-                      <Link 
-                        key={book.id} 
-                        to={`/livro/${book.id}`}
-                        className="aspect-[3/4.5] rounded-xl overflow-hidden border border-neutral-800/50 group/book relative transition-all hover:scale-110 hover:z-10 shadow-xl hover:shadow-purple-500/10"
-                        title={book.titulo}
-                      >
-                        {book.coverUrl ? (
-                           <img src={book.coverUrl} alt={book.titulo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                        ) : (
-                          <div className="w-full h-full bg-neutral-950 flex items-center justify-center">
-                             <BookOpen size={18} className="text-neutral-800" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-10 px-2">
+               {shelves.filter(s => s.type === 'custom').slice(0, 3).map(shelf => (
+                 <Link 
+                   key={shelf.id} 
+                   to={`/estante/${shelf.id}`}
+                   className="group/shelfcard bg-neutral-900/5 border border-neutral-800/20 rounded-[3rem] p-10 hover:bg-neutral-900/10 hover:border-amber-500/30 transition-all duration-700 relative overflow-hidden flex flex-col gap-10 min-h-[300px] shadow-xl"
+                 >
+                    <div className="absolute -top-10 -right-10 p-12 opacity-[0.015] group-hover/shelfcard:opacity-[0.05] transition-all duration-1000 rotate-12 pointer-events-none">
+                       <Folder size={240} style={{ color: shelf.accentColor || '#fbbf24' }} />
+                    </div>
+                    <div className="relative z-10 space-y-6 flex-1">
+                       <div className="w-1.5 h-10 rounded-full" style={{ backgroundColor: shelf.accentColor || '#fbbf24' }} />
+                       <div className="space-y-4">
+                          <h4 className="text-3xl font-serif font-black text-neutral-100 italic group-hover/shelfcard:text-amber-500 transition-colors tracking-tight">{shelf.name}</h4>
+                          <div className="inline-flex items-center gap-3 px-4 py-2 bg-neutral-950/60 rounded-full border border-neutral-800/40 backdrop-blur-md">
+                             <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: shelf.accentColor || '#fbbf24' }} />
+                             <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">{shelf.bookIds.length} LIVROS</span>
                           </div>
-                        )}
-                      </Link>
-                    ))}
-                    {shelf.books.length > 3 && (
-                      <div className="aspect-[3/4.5] rounded-xl border border-dashed border-neutral-800/50 bg-neutral-950/20 flex items-center justify-center">
-                        <span className="text-[10px] font-black text-neutral-800">+{shelf.books.length - 3}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+                       </div>
+                       <p className="text-xs text-neutral-500 font-serif italic line-clamp-3 leading-relaxed pt-4 border-t border-neutral-800/20">{shelf.description || "Uma coleção singular de narrativas escolhidas com propósito."}</p>
+                    </div>
+                 </Link>
+               ))}
+               {shelves.filter(s => s.type === 'custom').length < 3 && (
+                 <Link 
+                   to="/estantes"
+                   className="bg-neutral-900/5 border border-dashed border-neutral-800/60 rounded-[3rem] p-12 flex flex-col items-center justify-center gap-6 group/add transition-all hover:bg-neutral-900/10 hover:border-amber-500/30 group-hover/add:scale-[1.02] shadow-inner"
+                 >
+                    <div className="w-20 h-20 bg-neutral-950/40 rounded-full flex items-center justify-center border border-neutral-800/60 group-hover/add:scale-110 group-hover/add:border-amber-500/30 transition-all duration-700">
+                      <Plus className="text-neutral-700 group-hover/add:text-amber-500 transition-colors" size={32} />
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-neutral-700 group-hover/add:text-amber-500 transition-colors">Nova Estante</span>
+                 </Link>
+               )}
             </div>
-          </div>
-        )}
+        </section>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
            {/* Fila de Leitura */}
@@ -704,70 +920,95 @@ export const Dashboard: React.FC = () => {
                </div>
              </div>
            )}
-
-           {/* Timeline Monthly Preview - Editorial Style */}
-           <div className="bg-neutral-900/30 border border-neutral-800/40 rounded-[3rem] p-10 shadow-2xl relative overflow-hidden group/timeline h-full">
-             <div className="absolute top-0 right-0 p-10 opacity-[0.02] group-hover/timeline:opacity-[0.05] transition-opacity">
-               <History size={180} className="text-neutral-100" />
-             </div>
-
-             <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 relative z-10 gap-6">
-               <div className="flex items-center gap-4">
-                 <div className="p-3 bg-amber-500/10 rounded-2xl text-amber-500">
-                    <Award size={24} />
-                 </div>
-                 <div>
-                    <h3 className="text-2xl font-serif font-bold text-neutral-100 italic leading-none">Conquistas de {currentMonthName}</h3>
-                    <p className="text-[11px] text-neutral-600 font-black uppercase tracking-[0.2em] mt-2">Marcos literários do mês</p>
-                 </div>
-               </div>
-               <Link to="/linha-do-tempo" className="text-[11px] font-black text-neutral-500 hover:text-amber-500 transition-colors uppercase tracking-[0.15em] flex items-center gap-2 group/link">
-                  Explorar Histórico
-                  <ChevronRight size={16} className="group-hover/link:translate-x-2 transition-transform" />
-               </Link>
-             </div>
-
-             <div className="flex flex-wrap gap-6 relative z-10">
-                {stats.lidosEsteMes.length > 0 ? (
-                  stats.lidosEsteMes.slice(0, 4).map(book => (
-                    <Link 
-                      key={book.id} 
-                      to={`/livro/${book.id}`}
-                      className="group/titem relative"
-                    >
-                      <div className="w-28 h-40 rounded-2xl overflow-hidden bg-neutral-950 border border-neutral-800/40 shadow-[0_20px_40px_rgba(0,0,0,0.5)] transition-all duration-700 group-hover/titem:-translate-y-4 group-hover/titem:border-amber-500/40 group-hover/titem:shadow-amber-500/20">
-                        {book.coverUrl ? (
-                          <img src={book.coverUrl} alt={book.titulo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <BookOpen size={28} className="text-neutral-800" />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover/titem:opacity-100 transition-opacity flex items-end p-4">
-                           <div className="flex items-center gap-2 text-amber-500">
-                             <Star size={12} fill="currentColor" />
-                             <span className="text-xs font-black">{book.notaGeral.toFixed(1)}</span>
-                           </div>
-                        </div>
-                      </div>
-                    </Link>
-                  ))
-                ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center py-16 border border-dashed border-neutral-800/40 rounded-[2.5rem] bg-neutral-950/10">
-                     <p className="text-sm text-neutral-700 font-serif italic text-center max-w-[200px]">Suas conquistas de {currentMonthName} ainda estão por vir.</p>
-                     <Link to="/livros" className="mt-6 text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] hover:text-amber-500 transition-all bg-neutral-900 px-6 py-2 rounded-xl">Explorar Estante</Link>
-                  </div>
-                )}
-                {stats.lidosEsteMes.length > 4 && (
-                  <Link to="/linha-do-tempo" className="w-28 h-40 rounded-2xl border border-dashed border-neutral-800/60 bg-neutral-950/20 flex flex-col items-center justify-center gap-2 hover:border-amber-500/40 transition-all group/morebox shadow-inner">
-                     <span className="text-3xl font-black text-neutral-700 group-hover/morebox:text-amber-500 transition-colors tracking-tighter">+{stats.lidosEsteMes.length - 4}</span>
-                     <span className="text-[9px] font-black uppercase text-neutral-800 tracking-widest">Obras</span>
-                  </Link>
-                )}
-             </div>
-           </div>
         </div>
       </section>
+
+      <section className="space-y-20 py-24 mb-24 border-y border-neutral-800/20">
+           <div className="flex items-center justify-between px-8">
+              <div className="flex items-center gap-8">
+                <div className="p-4 bg-rose-500/10 rounded-2xl text-rose-500 shadow-inner border border-rose-500/10">
+                  <Award size={28} />
+                </div>
+                <div>
+                  <h2 className="text-5xl font-serif font-black text-neutral-100 tracking-tight italic leading-none">Conquistas</h2>
+                  <p className="text-[10px] text-neutral-600 font-black uppercase tracking-[0.4em] mt-3 ml-1">Vantagem literária em {currentMonthName}</p>
+                </div>
+              </div>
+              <Link to="/linha-do-tempo" className="text-[10px] font-black text-neutral-500 hover:text-amber-500 transition-all uppercase tracking-[0.3em] bg-neutral-950/40 px-8 py-3 rounded-full border border-neutral-800/40 backdrop-blur-md group/link">
+                 Histórico
+                 <ChevronRight size={14} className="group-hover/link:translate-x-2 transition-transform" />
+              </Link>
+           </div>
+
+           <div className="bg-neutral-900/5 border border-neutral-800/20 rounded-[4rem] p-16 shadow-3xl relative overflow-hidden group/achieve">
+             <div className="absolute top-0 right-0 p-16 opacity-[0.015] group-hover/achieve:opacity-[0.05] transition-all duration-1000 rotate-6 pointer-events-none">
+               <Trophy size={320} className="text-amber-500" />
+             </div>
+             
+             <div className="grid grid-cols-1 lg:grid-cols-12 gap-20 relative z-10">
+                <div className="lg:col-span-5 space-y-12">
+                   <div className="space-y-4">
+                      <p className="text-sm text-neutral-400 font-serif italic leading-relaxed">
+                        Seu rastro através do conhecimento em {currentMonthName}. Monumentos que você ergueu através da leitura persistente.
+                      </p>
+                   </div>
+                   <div className="grid grid-cols-2 gap-8">
+                      <div className="p-8 bg-neutral-950/40 rounded-[2.5rem] border border-neutral-800/40 shadow-inner">
+                         <p className="text-[9px] font-black text-neutral-700 uppercase tracking-widest mb-3">Concluídos</p>
+                         <p className="text-4xl font-black text-neutral-100 font-mono tracking-tighter">{stats.lidosEsteMes.length}</p>
+                      </div>
+                      <div className="p-8 bg-neutral-950/40 rounded-[2.5rem] border border-neutral-800/40 shadow-inner">
+                         <p className="text-[9px] font-black text-neutral-700 uppercase tracking-widest mb-3">Expansão</p>
+                         <p className="text-4xl font-black text-amber-500 font-mono tracking-tighter">+{stats.paginasEsteMes}<span className="text-xs uppercase ml-1">P</span></p>
+                      </div>
+                   </div>
+                </div>
+
+                <div className="lg:col-span-7 flex flex-wrap gap-8 items-center justify-end">
+                  {stats.lidosEsteMes.length > 0 ? (
+                    stats.lidosEsteMes.slice(0, 4).map(book => (
+                      <Link 
+                        key={book.id} 
+                        to={`/livro/${book.id}`}
+                        className="group/achitem relative"
+                      >
+                        <div className="w-40 h-56 rounded-2xl overflow-hidden bg-neutral-950 border border-neutral-800/40 shadow-[0_30px_60px_rgba(0,0,0,0.6)] transition-all duration-700 group-hover/achitem:-translate-y-6 group-hover/achitem:border-amber-500/40 group-hover/achitem:shadow-amber-500/20 group-hover/achitem:rotate-2">
+                          {book.coverUrl ? (
+                            <img src={book.coverUrl} alt={book.titulo} className="w-full h-full object-cover grayscale-[20%] group-hover/achitem:grayscale-0 transition-all duration-700" referrerPolicy="no-referrer" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <BookOpen size={32} className="text-neutral-900" />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-0 group-hover/achitem:opacity-100 transition-opacity flex flex-col justify-end p-6">
+                             <div className="flex items-center gap-2 text-amber-500 mb-2">
+                               <Star size={14} fill="currentColor" />
+                               <span className="text-sm font-black">{book.notaGeral.toFixed(1)}</span>
+                             </div>
+                             <p className="text-[10px] text-neutral-300 font-bold uppercase truncate">{book.titulo}</p>
+                          </div>
+                        </div>
+                      </Link>
+                    ))
+                  ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center py-24 px-12 border border-dashed border-neutral-800/40 rounded-[3rem] bg-neutral-950/10 text-center space-y-8 min-h-[300px]">
+                       <div className="w-20 h-20 bg-neutral-900/50 rounded-full flex items-center justify-center border border-neutral-800/60 shadow-inner">
+                          <History size={32} className="text-neutral-800 opacity-50" />
+                       </div>
+                       <p className="text-lg text-neutral-600 font-serif italic leading-relaxed max-w-[280px]">As conquistas deste ciclo aguardam o amadurecimento das suas leituras atuais.</p>
+                       <Link to="/livros" className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.3em] hover:text-amber-500 transition-all bg-neutral-950 px-8 py-3 rounded-full border border-neutral-800/40">Explorar Prateleira</Link>
+                    </div>
+                  )}
+                  {stats.lidosEsteMes.length > 4 && (
+                    <Link to="/linha-do-tempo" className="w-40 h-56 rounded-2xl border border-dashed border-neutral-800/60 bg-neutral-950/20 flex flex-col items-center justify-center gap-4 hover:border-amber-500/40 transition-all group/morebox shadow-inner">
+                       <span className="text-5xl font-black text-neutral-700 group-hover/morebox:text-amber-500 transition-colors tracking-tighter">+{stats.lidosEsteMes.length - 4}</span>
+                       <span className="text-[10px] font-black uppercase text-neutral-800 tracking-widest">Obras Masterizadas</span>
+                    </Link>
+                  )}
+                </div>
+             </div>
+           </div>
+        </section>
 
       <section className="space-y-12 pt-12">
         <div className="flex items-center gap-5 px-4">
@@ -1071,19 +1312,22 @@ export const Dashboard: React.FC = () => {
 };
 
 const StatCard = ({ icon: Icon, label, value, subValue, color, bg }: any) => (
-  <div className="bg-neutral-900/30 border border-neutral-800/40 rounded-[2.5rem] p-8 shadow-xl flex flex-col justify-between hover:border-neutral-700/50 hover:bg-neutral-900/50 transition-all duration-500 group/stats h-full">
-    <div className="flex items-center justify-between mb-8">
-      <p className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] group-hover/stats:text-neutral-400 transition-colors uppercase leading-none">{label}</p>
-      <div className={`p-4 rounded-[1.25rem] ${bg} ${color} shadow-inner group-hover/stats:scale-110 transition-transform duration-500`}>
-        <Icon size={24} />
+  <div className="bg-neutral-900/20 border border-neutral-800/40 rounded-[2.5rem] p-10 shadow-2xl flex flex-col justify-between hover:border-neutral-700/60 hover:bg-neutral-900/40 transition-all duration-700 group/stats h-full relative overflow-hidden">
+    <div className="absolute top-0 right-0 p-12 opacity-[0.015] group-hover/stats:opacity-[0.04] transition-opacity duration-1000 pointer-events-none">
+       <Icon size={120} />
+    </div>
+    <div className="flex items-center justify-between mb-12 relative z-10">
+      <p className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.25em] group-hover/stats:text-neutral-400 transition-colors uppercase leading-none">{label}</p>
+      <div className={`w-14 h-14 rounded-2xl ${bg} ${color} flex items-center justify-center shadow-inner group-hover/stats:scale-110 group-hover/stats:rotate-3 transition-all duration-700`}>
+        <Icon size={24} strokeWidth={2.5} />
       </div>
     </div>
-    <div className="min-w-0">
-      <h3 className="text-4xl font-black text-neutral-100 truncate italic tracking-tighter leading-none mb-3 group-hover/stats:text-amber-500 transition-colors duration-500">{value}</h3>
+    <div className="min-w-0 relative z-10">
+      <h3 className="text-5xl font-black text-neutral-100 truncate italic tracking-tighter leading-none mb-4 group-hover/stats:text-amber-500 transition-colors duration-700">{value}</h3>
       {subValue ? (
-        <p className="text-[11px] text-neutral-600 font-serif italic truncate group-hover/stats:text-neutral-500 transition-colors uppercase tracking-[0.05em]">{subValue}</p>
+        <p className="text-xs text-neutral-600 font-serif italic truncate group-hover/stats:text-neutral-400 transition-colors uppercase tracking-widest">{subValue}</p>
       ) : (
-        <div className="h-[11px] w-12 bg-neutral-800/20 rounded-full" />
+        <div className="h-[12px] w-12 bg-neutral-800/30 rounded-full" />
       )}
     </div>
   </div>

@@ -42,6 +42,7 @@ interface BookContextType {
   deleteShelf: (id: string) => Promise<void>;
   addBookToShelf: (shelfId: string, bookId: string) => Promise<void>;
   removeBookFromShelf: (shelfId: string, bookId: string) => Promise<void>;
+  reorderBooksInShelf: (shelfId: string, bookIds: string[]) => Promise<void>;
 }
 
 const BookContext = createContext<BookContextType | undefined>(undefined);
@@ -54,7 +55,7 @@ const BookContextBridge: React.FC<{ children: React.ReactNode }> = ({ children }
   const { recommendations, saveRecommendations } = useRecommendations();
   const { backupHistory, logBackupAction } = useBackup();
   const { sessions, addSession, getSessionsByBook } = useReadingSessions();
-  const { shelves, loading: shelvesLoading, createShelf, updateShelf, deleteShelf, addBookToShelf, removeBookFromShelf } = useShelves();
+  const { shelves, loading: shelvesLoading, createShelf, updateShelf, deleteShelf, addBookToShelf, removeBookFromShelf, reorderBooksInShelf } = useShelves();
   const { quotes, addQuote, updateQuote, deleteQuote, getQuotesByBook } = useQuotes();
   const { getNarratives, saveNarratives } = useRetrospective();
 
@@ -184,6 +185,7 @@ const BookContextBridge: React.FC<{ children: React.ReactNode }> = ({ children }
     deleteShelf,
     addBookToShelf,
     removeBookFromShelf,
+    reorderBooksInShelf,
     addQuote,
     updateQuote,
     deleteQuote,

@@ -123,15 +123,23 @@ service cloud.firestore {
       return data.userId == request.auth.uid &&
              data.bookId is string &&
              data.pagesRead is number &&
-             data.endPage is number &&
-             data.date is number;
+             data.date is number &&
+             (data.startPage == null || data.startPage is number) &&
+             (data.endPage == null || data.endPage is number) &&
+             (data.durationMinutes == null || data.durationMinutes is number) &&
+             (data.mood == null || (data.mood is string && data.mood.size() <= 100)) &&
+             (data.quickNote == null || (data.quickNote is string && data.quickNote.size() <= 1000)) &&
+             (data.bookTitle == null || (data.bookTitle is string && data.bookTitle.size() <= 500));
     }
 
     match /reading_sessions/{sessionId} {
       allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() && isValidSession(incoming());
-      allow update: if isSignedIn() && resource.data.userId == request.auth.uid && isValidSession(incoming());
+      allow create: if isSignedIn() && isValidSession(incoming()) && isValidId(sessionId);
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid && 
+                    isValidSession(incoming()) &&
+                    incoming().userId == existing().userId &&
+                    incoming().createdAt == existing().createdAt;
       allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
 
@@ -163,12 +171,27 @@ service cloud.firestore {
       allow delete: if isSignedIn() && existing().userId == request.auth.uid;
     }
 
+    function isValidShelf(data) {
+      return data.userId == request.auth.uid &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.type in ['system', 'custom'] &&
+             data.bookIds is list &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 1000)) &&
+             (!('accentColor' in data) || (data.accentColor is string && data.accentColor.size() <= 100)) &&
+             (!('coverImage' in data) || (data.coverImage is string && data.coverImage.size() <= 1000)) &&
+             (!('sortOrder' in data) || (data.sortOrder is int || data.sortOrder is number)) &&
+             (!('createdAt' in data) || (data.createdAt is number)) &&
+             (!('updatedAt' in data) || (data.updatedAt is number));
+    }
+
     match /shelves/{shelfId} {
-      allow get: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
-      allow update: if isSignedIn() && existing().userId == request.auth.uid && incoming().userId == request.auth.uid;
-      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidShelf(incoming());
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid && 
+                    isValidShelf(incoming()) &&
+                    incoming().userId == existing().userId;
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid && existing().type != 'system';
     }
   }
 }

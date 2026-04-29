@@ -103,12 +103,14 @@ export interface ReadingSession {
   id: string;
   userId: string;
   bookId: string;
+  bookTitle?: string;
   date: number;
   startPage?: number;
   endPage: number;
   pagesRead: number;
   durationMinutes?: number;
-  note?: string;
+  mood?: string;
+  quickNote?: string;
   createdAt: any;
 }
 
@@ -183,9 +185,13 @@ export interface Shelf {
   userId: string;
   name: string;
   description?: string;
-  color?: string;
+  accentColor?: string;
+  coverImage?: string;
   bookIds: string[];
+  type: 'system' | 'custom';
+  sortOrder?: number;
   createdAt: number;
+  updatedAt: number;
 }
 
 export interface Quote {

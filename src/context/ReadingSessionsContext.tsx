@@ -49,24 +49,28 @@ export const ReadingSessionsProvider: React.FC<{ children: React.ReactNode }> = 
     if (!user || !db) return;
 
     try {
+      const book = books.find(b => b.id === sessionData.bookId);
+      
       const docRef = await addDoc(collection(db, 'reading_sessions'), {
         ...sessionData,
+        bookTitle: book?.titulo || sessionData.bookTitle,
         userId: user.userId,
         createdAt: serverTimestamp(),
       });
 
-      // Update book progress
-      const book = books.find(b => b.id === sessionData.bookId);
+      // Update book progress if a book is linked
       if (book) {
-        const newCurrentPage = Math.max(book.currentPage || 0, sessionData.endPage);
+        // Ensure we don't regress current page
+        const newCurrentPage = Math.max(book.currentPage || 0, sessionData.endPage || (book.currentPage || 0) + sessionData.pagesRead);
         const total = book.totalPages || book.pageCount || 0;
-        let progressPercentage = 0;
+        let progressPercentage = book.progressPercentage || 0;
         let newStatus = book.status;
 
         if (total > 0) {
           progressPercentage = Math.min(100, Math.round((newCurrentPage / total) * 100));
         }
 
+        // If progress is 100%, consider book as finished
         if (progressPercentage === 100 && book.status === 'lendo') {
           newStatus = 'lido';
         }
@@ -75,7 +79,8 @@ export const ReadingSessionsProvider: React.FC<{ children: React.ReactNode }> = 
           currentPage: newCurrentPage,
           progressPercentage,
           status: newStatus,
-          finishedAt: newStatus === 'lido' && !book.finishedAt ? Date.now() : book.finishedAt
+          finishedAt: newStatus === 'lido' && !book.finishedAt ? Date.now() : book.finishedAt,
+          updatedAt: Date.now()
         });
       }
     } catch (error) {

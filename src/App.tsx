@@ -24,6 +24,8 @@ import { Timeline } from './pages/Timeline';
 import { ExportData } from './pages/ExportData';
 import { YearlyComparison } from './pages/YearlyComparison';
 import { Quotes } from './pages/Quotes';
+import { Shelves } from './pages/Shelves';
+import { ShelfDetail } from './pages/ShelfDetail';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 export default function App() {
@@ -47,6 +49,8 @@ export default function App() {
                   <Route path="retrospectiva" element={<Retrospective />} />
                   <Route path="comparativo-anual" element={<YearlyComparison />} />
                   <Route path="citacoes" element={<Quotes />} />
+                  <Route path="estantes" element={<Shelves />} />
+                  <Route path="estante/:id" element={<ShelfDetail />} />
                   <Route path="linha-do-tempo" element={<Timeline />} />
                   <Route path="recomendacoes" element={<Recommendations />} />
                   <Route path="exportar" element={<ExportData />} />

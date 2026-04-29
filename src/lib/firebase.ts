@@ -25,14 +25,17 @@ try {
   console.warn("Firebase applet config could not be loaded statically:", e);
 }
 
-// Merge configurations: envConfig takes precedence over appletConfig as requested
-const firebaseConfig = {
-  apiKey: envConfig.apiKey || appletConfig.apiKey,
-  authDomain: envConfig.authDomain || appletConfig.authDomain,
-  projectId: envConfig.projectId || appletConfig.projectId,
-  storageBucket: envConfig.storageBucket || appletConfig.storageBucket,
-  messagingSenderId: envConfig.messagingSenderId || appletConfig.messagingSenderId,
-  appId: envConfig.appId || appletConfig.appId,
+// Merge configurations: envConfig takes precedence.
+// If valid ENV config exists, we use ONLY that to avoid cross-project contamination.
+const isEnvConfigComplete = !!(envConfig.apiKey && envConfig.projectId && envConfig.appId);
+
+const firebaseConfig = isEnvConfigComplete ? { ...envConfig } : {
+  apiKey: appletConfig.apiKey || envConfig.apiKey,
+  authDomain: appletConfig.authDomain || envConfig.authDomain,
+  projectId: appletConfig.projectId || envConfig.projectId,
+  storageBucket: appletConfig.storageBucket || envConfig.storageBucket,
+  messagingSenderId: appletConfig.messagingSenderId || envConfig.messagingSenderId,
+  appId: appletConfig.appId || envConfig.appId,
 };
 
 // Validate if we have enough to initialize
@@ -49,31 +52,20 @@ let googleProvider: any = null;
 let initialized = false;
 
 if (isConfigValid) {
-  // Debug log (redacted)
+  // Enhanced Debug Log for AI Studio Stability
   if (import.meta.env.DEV) {
-    console.log("Initializing Firebase with:", {
-      projectId: firebaseConfig.projectId,
-      hasApiKey: !!firebaseConfig.apiKey,
-      apiKeyPrefix: firebaseConfig.apiKey?.substring(0, 6) + "...",
-      authDomain: firebaseConfig.authDomain
-    });
+    console.log(`[Firebase] Config Source: ${isEnvConfigComplete ? 'ENV (VITE_FIREBASE_*)' : 'APPLET_CONFIG'}`);
+    console.log(`[Firebase] Project: ${firebaseConfig.projectId}`);
   }
   try {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
     
-    // Safety: Custom database ID might be in env (priority) or appletConfig
-    // Only use appletConfig.firestoreDatabaseId if we are using the applet's project ID
-    let firestoreDatabaseId = import.meta.env.VITE_FIREBASE_DATABASE_ID;
+    // Initialize Firestore (Default Database)
+    db = getFirestore(app);
     
-    if (!firestoreDatabaseId && firebaseConfig.projectId === appletConfig.projectId) {
-      firestoreDatabaseId = appletConfig.firestoreDatabaseId;
-    }
-    
-    if (firestoreDatabaseId) {
-      db = getFirestore(app, firestoreDatabaseId);
-    } else {
-      db = getFirestore(app);
+    if (import.meta.env.DEV) {
+      console.log(`[Firebase] Database Status: Connected to default`);
     }
     
     googleProvider = new GoogleAuthProvider();

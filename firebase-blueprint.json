@@ -43,9 +43,30 @@
         "startedAt": { "type": "integer" },
         "finishedAt": { "type": "integer" },
         "createdAt": { "type": "object" },
-        "dataCadastro": { "type": "integer" }
+        "dataCadastro": { "type": "integer" },
+        "updatedAt": { "type": "integer" }
       },
       "required": ["userId", "titulo", "autor", "status"]
+    },
+    "ReadingSession": {
+      "title": "Reading Session",
+      "description": "A reading session entry",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "bookId": { "type": "string" },
+        "bookTitle": { "type": "string" },
+        "date": { "type": "integer" },
+        "pagesRead": { "type": "integer" },
+        "startPage": { "type": "integer" },
+        "endPage": { "type": "integer" },
+        "durationMinutes": { "type": "integer" },
+        "mood": { "type": "string" },
+        "quickNote": { "type": "string" },
+        "createdAt": { "type": "object" }
+      },
+      "required": ["userId", "bookId", "date", "pagesRead"]
     },
     "UserGoal": {
       "title": "User Goal",
@@ -61,6 +82,25 @@
         "updatedAt": { "type": "integer" }
       },
       "required": ["userId", "year"]
+    },
+    "Shelf": {
+      "title": "Shelf",
+      "description": "User book shelves",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "accentColor": { "type": "string" },
+        "coverImage": { "type": "string" },
+        "bookIds": { "type": "array", "items": { "type": "string" } },
+        "type": { "type": "string", "enum": ["system", "custom"] },
+        "sortOrder": { "type": "integer" },
+        "createdAt": { "type": "integer" },
+        "updatedAt": { "type": "integer" }
+      },
+      "required": ["userId", "name", "bookIds", "type", "createdAt", "updatedAt"]
     },
     "Quote": {
       "title": "Quote",
