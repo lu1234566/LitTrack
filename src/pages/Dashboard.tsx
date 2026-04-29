@@ -344,52 +344,52 @@ export const Dashboard: React.FC = () => {
           <BookOpen size={450} className="text-neutral-100 rotate-12" />
         </div>
         
-        <div className="relative z-10 flex flex-col xl:flex-row xl:items-start justify-between gap-20">
-          <div className="space-y-12 max-w-3xl">
-             <div className="space-y-6">
+        <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-12">
+          <div className="space-y-8 max-w-2xl">
+             <div className="space-y-4">
                <div className="flex items-center gap-4 animate-in fade-in slide-in-from-left-4 duration-700">
-                  <div className="w-16 h-1 bg-amber-500/60 rounded-full" />
-                  <span className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.5em] leading-none">Arquivos do Espírito</span>
+                  <div className="w-12 h-0.5 bg-amber-500/60 rounded-full" />
+                  <span className="text-[9px] font-black text-neutral-500 uppercase tracking-[0.4em] leading-none">Arquivos do Espírito</span>
                </div>
-               <h1 className="text-8xl md:text-[10rem] font-serif font-black text-neutral-100 tracking-tighter leading-[0.85] animate-in fade-in slide-in-from-left-6 duration-1000 delay-100">Readora</h1>
-               <p className="text-neutral-400 text-xl font-serif italic leading-relaxed max-w-xl animate-in fade-in slide-in-from-left-8 duration-1000 delay-200">
+               <h1 className="text-6xl md:text-7xl xl:text-8xl font-serif font-black text-neutral-100 tracking-tighter leading-[0.85] animate-in fade-in slide-in-from-left-6 duration-1000 delay-100">Readora</h1>
+               <p className="text-neutral-400 text-lg md:text-xl font-serif italic leading-relaxed max-w-lg animate-in fade-in slide-in-from-left-8 duration-1000 delay-200">
                  Sincronia entre o silêncio das páginas e a ressonância da sua própria voz. Onde cada percurso se torna um monumento à sabedoria.
                </p>
              </div>
              
-             <div className="flex flex-wrap gap-6 pt-2 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300">
+             <div className="flex flex-wrap gap-4 pt-4 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300">
                 <button 
                   onClick={() => setShowSessionModal(true)}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white px-14 py-5 rounded-[3rem] font-black uppercase tracking-[0.3em] text-[10px] transition-all flex items-center justify-center gap-3 shadow-3xl shadow-emerald-500/20 active:scale-95 group/btn"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white px-10 py-4 rounded-[3rem] font-black uppercase tracking-[0.2em] text-[9px] transition-all flex items-center justify-center gap-3 shadow-2xl shadow-emerald-500/20 active:scale-95 group/btn"
                 >
-                  <Clock size={16} strokeWidth={3} className="group-hover/btn:rotate-12 transition-transform" />
+                  <Clock size={14} strokeWidth={3} className="group-hover/btn:rotate-12 transition-transform" />
                   Abrir Sessão
                 </button>
                 <Link 
                   to="/adicionar" 
-                  className="bg-neutral-100 hover:bg-amber-400 text-neutral-950 px-14 py-5 rounded-[3rem] font-black uppercase tracking-[0.3em] text-[10px] transition-all flex items-center justify-center gap-3 shadow-3xl shadow-neutral-100/10 active:scale-95"
+                  className="bg-neutral-100 hover:bg-amber-400 text-neutral-950 px-10 py-4 rounded-[3rem] font-black uppercase tracking-[0.2em] text-[9px] transition-all flex items-center justify-center gap-3 shadow-2xl shadow-neutral-100/10 active:scale-95"
                 >
-                  <Plus size={16} strokeWidth={3} />
+                  <Plus size={14} strokeWidth={3} />
                   Nova Jornada
                 </Link>
              </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-8 lg:w-[600px] animate-in fade-in zoom-in-95 duration-1000 delay-500">
+          <div className="grid grid-cols-2 gap-6 lg:w-[540px] animate-in fade-in zoom-in-95 duration-1000 delay-500">
              {[
                { label: 'Obras do Ano', value: stats.totalLidosEsteAno, color: 'text-neutral-100', icon: Book },
                { label: 'Páginas do Ciclo', value: formatPagesShort(stats.paginasLidasEsteAno), color: 'text-neutral-100', icon: FileText },
                { label: 'Média Crítica', value: stats.mediaGeral.toFixed(1), color: 'text-rose-500', icon: Star },
                { label: 'Constância', value: sessions.length > 0 ? analysisService.calculateStreak(sessions) : 0, color: 'text-amber-500', unit: 'dias', icon: TrendingUp }
              ].map((item, i) => (
-               <div key={i} className="bg-neutral-900/40 backdrop-blur-3xl border border-neutral-800/40 rounded-[3rem] p-10 transition-all hover:bg-neutral-900/60 hover:border-neutral-600/60 group/stat relative overflow-hidden">
+               <div key={i} className="bg-neutral-900/40 backdrop-blur-3xl border border-neutral-800/40 rounded-[2.5rem] p-8 transition-all hover:bg-neutral-900/60 hover:border-neutral-600/60 group/stat relative overflow-hidden">
                   <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover/stat:opacity-[0.06] transition-opacity pointer-events-none">
-                     <item.icon size={80} />
+                     <item.icon size={60} />
                   </div>
-                  <p className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.3em] mb-6 group-hover/stat:text-neutral-400 transition-colors relative z-10">{item.label}</p>
-                  <div className="flex items-baseline gap-4 relative z-10">
-                    <span className={`text-5xl font-black tracking-tighter ${item.color}`}>{item.value}</span>
-                    {item.unit && <span className="text-xs text-neutral-700 font-bold italic lowercase">{item.unit}</span>}
+                  <p className="text-[9px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-4 group-hover/stat:text-neutral-400 transition-colors relative z-10">{item.label}</p>
+                  <div className="flex items-baseline gap-3 relative z-10">
+                    <span className={`text-4xl font-black tracking-tighter ${item.color}`}>{item.value}</span>
+                    {item.unit && <span className="text-[10px] text-neutral-600 font-bold italic lowercase">{item.unit}</span>}
                   </div>
                </div>
              ))}
@@ -397,13 +397,13 @@ export const Dashboard: React.FC = () => {
         </div>
       </header>
 
-      <section className="space-y-16">
+      <section className="space-y-12">
         <div className="flex items-center justify-between px-8">
-           <div className="flex items-center gap-8">
-             <div className="w-1.5 h-16 bg-amber-500 rounded-full" />
+           <div className="flex items-center gap-6">
+             <div className="w-1 h-12 bg-amber-500/80 rounded-full" />
              <div>
-                <h2 className="text-6xl font-serif font-black text-neutral-100 tracking-tight italic leading-none">Imersão</h2>
-                <p className="text-[10px] text-neutral-600 font-black uppercase tracking-[0.4em] mt-3 ml-1">Onde a mente repousa e se expande</p>
+                <h2 className="text-5xl font-serif font-black text-neutral-100 tracking-tight italic leading-none">Imersão</h2>
+                <p className="text-[9px] text-neutral-400 font-black uppercase tracking-[0.3em] mt-2 ml-0.5">Onde a mente repousa e se expande</p>
              </div>
            </div>
            <div className="flex bg-neutral-900/50 p-1.5 rounded-2xl border border-neutral-800/40 backdrop-blur-md">
@@ -418,67 +418,67 @@ export const Dashboard: React.FC = () => {
 
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-12">
             {/* Main Current Reading Focus */}
-            <div className="xl:col-span-8 space-y-12">
+            <div className="xl:col-span-8 space-y-10">
                {stats.lendoAgora.length > 0 ? (
-                  <div className="bg-neutral-900/5 border border-neutral-800/40 rounded-[4rem] p-16 shadow-3xl relative overflow-hidden group/readnow min-h-[500px] flex flex-col">
+                  <div className="bg-neutral-900/5 border border-neutral-800/40 rounded-[3.5rem] p-12 shadow-3xl relative overflow-hidden group/readnow min-h-[440px] flex flex-col">
                     <div className="absolute top-0 right-0 p-12 opacity-[0.01] group-hover/readnow:opacity-[0.03] transition-opacity duration-1000">
-                       <RefreshCw size={280} className="text-neutral-100 animate-spin-slow opacity-10" />
+                       <RefreshCw size={240} className="text-neutral-100 animate-spin-slow opacity-10" />
                     </div>
                     
-                    <div className="flex items-center justify-between mb-20 relative z-10">
-                      <div className="flex items-center gap-5">
-                        <div className="w-2 h-10 bg-emerald-500 rounded-full" />
+                    <div className="flex items-center justify-between mb-12 relative z-10">
+                      <div className="flex items-center gap-4">
+                        <div className="w-1.5 h-8 bg-emerald-500 rounded-full" />
                         <div>
-                          <h3 className="text-4xl font-serif font-bold text-neutral-100 italic leading-none">Lendo Agora</h3>
-                          <p className="text-[10px] text-neutral-600 font-black uppercase tracking-[0.3em] mt-3 ml-0.5">Sua consciência expandida</p>
+                          <h3 className="text-3xl font-serif font-bold text-neutral-100 italic leading-none">Lendo Agora</h3>
+                          <p className="text-[9px] text-neutral-400 font-black uppercase tracking-[0.2em] mt-2 ml-0.5">Sua consciência expandida</p>
                         </div>
                       </div>
-                      <Link to="/livros?status=lendo" className="text-[10px] font-black text-neutral-500 hover:text-emerald-500 transition-all uppercase tracking-[0.25em] bg-neutral-950/40 px-8 py-3 rounded-full border border-neutral-800/40 flex items-center gap-3 group/link">
+                      <Link to="/livros?status=lendo" className="text-[9px] font-black text-neutral-500 hover:text-emerald-500 transition-all uppercase tracking-[0.2em] bg-neutral-950/40 px-6 py-2 rounded-full border border-neutral-800/40 flex items-center gap-3 group/link">
                         Biblioteca ({stats.lendoAgora.length})
-                        <ChevronRight size={14} className="group-hover/link:translate-x-1 transition-transform" />
+                        <ChevronRight size={12} className="group-hover/link:translate-x-1 transition-transform" />
                       </Link>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-20 relative z-10 flex-1">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 relative z-10 flex-1">
                       {stats.maisAvancado && (
                         <div className="lg:col-span-12 xl:col-span-12">
                           <Link 
                             to={`/livro/${stats.maisAvancado.id}`}
-                            className="flex flex-col md:flex-row gap-16 group/maincard items-center lg:items-start"
+                            className="flex flex-col md:flex-row gap-12 group/maincard items-center lg:items-start"
                           >
-                            <div className="w-56 h-80 rounded-2xl overflow-hidden bg-neutral-950 shrink-0 shadow-[0_50px_100px_rgba(0,0,0,0.8)] group-hover/maincard:scale-105 transition-all duration-1000 border border-neutral-800/50 relative">
+                            <div className="w-48 h-64 rounded-xl overflow-hidden bg-neutral-950 shrink-0 shadow-[0_40px_80px_rgba(0,0,0,0.7)] group-hover/maincard:scale-105 transition-all duration-1000 border border-neutral-800/50 relative">
                               <div className="absolute inset-0 bg-gradient-to-tr from-amber-400/20 to-transparent opacity-0 group-hover/maincard:opacity-100 transition-opacity" />
                               {stats.maisAvancado.coverUrl ? (
                                 <img src={stats.maisAvancado.coverUrl} alt={stats.maisAvancado.titulo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center">
-                                  <BookOpen size={64} className="text-neutral-800" />
+                                  <BookOpen size={48} className="text-neutral-800" />
                                 </div>
                               )}
                             </div>
-                            <div className="flex-1 flex flex-col justify-center min-w-0 py-6 w-full">
-                              <div className="mb-12">
-                                <h4 className="text-5xl font-bold text-neutral-100 line-clamp-2 leading-[1.1] mb-6 group-hover/maincard:text-amber-500 transition-colors tracking-tighter">
+                            <div className="flex-1 flex flex-col justify-center min-w-0 py-2 w-full">
+                              <div className="mb-8">
+                                <h4 className="text-4xl font-bold text-neutral-100 line-clamp-2 leading-[1.1] mb-4 group-hover/maincard:text-amber-500 transition-colors tracking-tighter">
                                   {stats.maisAvancado.titulo}
                                 </h4>
-                                <p className="text-2xl text-neutral-500 font-serif italic tracking-tight">{stats.maisAvancado.autor}</p>
+                                <p className="text-xl text-neutral-400 font-serif italic tracking-tight">{stats.maisAvancado.autor}</p>
                               </div>
                               
-                              <div className="space-y-8">
-                                <div className="flex justify-between items-end text-[11px] font-black uppercase tracking-[0.3em] text-neutral-600">
+                              <div className="space-y-6">
+                                <div className="flex justify-between items-end text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">
                                   <span className="text-emerald-500 flex items-center gap-2">
                                     <Sparkles size={12} />
                                     {stats.maisAvancado.progressPercentage || 0}% de Evolução
                                   </span>
                                   <span className="italic font-serif">
-                                    Página {stats.maisAvancado.currentPage || 0} de {(stats.maisAvancado.totalPages || stats.maisAvancado.pageCount) || '—'}
+                                    Pág {stats.maisAvancado.currentPage || 0} / {(stats.maisAvancado.totalPages || stats.maisAvancado.pageCount) || '—'}
                                   </span>
                                 </div>
-                                <div className="h-3 bg-neutral-950 rounded-full overflow-hidden border border-neutral-800/40 p-0.5">
+                                <div className="h-2.5 bg-neutral-950 rounded-full overflow-hidden border border-neutral-800/40 p-0.5">
                                   <motion.div 
                                     initial={{ width: 0 }}
                                     animate={{ width: `${stats.maisAvancado.progressPercentage || 0}%` }}
-                                    className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full shadow-[0_0_25px_rgba(16,185,129,0.5)]"
+                                    className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full shadow-[0_0_20px_rgba(16,185,129,0.4)]"
                                   />
                                 </div>
                               </div>
@@ -489,13 +489,13 @@ export const Dashboard: React.FC = () => {
                     </div>
                   </div>
                ) : (
-                  <div className="bg-neutral-900/5 border border-dashed border-neutral-800/60 rounded-[4rem] p-24 text-center h-[500px] flex flex-col items-center justify-center group/empty">
-                     <div className="w-32 h-32 bg-neutral-900/50 rounded-full flex items-center justify-center mb-10 border border-neutral-800/60 group-hover/empty:scale-110 transition-all duration-1000 shadow-inner">
-                        <BookOpen size={56} className="text-neutral-700" />
+                  <div className="bg-neutral-900/5 border border-dashed border-neutral-800/60 rounded-[3.5rem] p-16 text-center h-[440px] flex flex-col items-center justify-center group/empty">
+                     <div className="w-24 h-24 bg-neutral-900/50 rounded-full flex items-center justify-center mb-8 border border-neutral-800/60 group-hover/empty:scale-110 transition-all duration-1000 shadow-inner">
+                        <BookOpen size={40} className="text-neutral-700" />
                      </div>
-                     <h3 className="text-4xl font-serif font-bold text-neutral-400 italic">Espaço do Possível</h3>
-                     <p className="text-lg text-neutral-600 mt-6 font-serif italic max-w-sm leading-relaxed">Suas prateleiras contêm mundos inteiros aguardando a ignição da sua curiosidade.</p>
-                     <Link to="/adicionar" className="mt-14 px-14 py-6 bg-neutral-800 hover:bg-neutral-100 text-neutral-400 hover:text-neutral-950 text-[11px] font-black uppercase tracking-[0.4em] rounded-[3rem] transition-all active:scale-95 shadow-xl">Dar o Primeiro Passo</Link>
+                     <h3 className="text-3xl font-serif font-bold text-neutral-400 italic">Espaço do Possível</h3>
+                     <p className="text-base text-neutral-500 mt-4 font-serif italic max-w-sm leading-relaxed">Suas prateleiras contêm mundos inteiros aguardando a ignição da sua curiosidade.</p>
+                     <Link to="/adicionar" className="mt-10 px-10 py-5 bg-neutral-800 hover:bg-neutral-100 text-neutral-400 hover:text-neutral-950 text-[10px] font-black uppercase tracking-[0.3em] rounded-[3rem] transition-all active:scale-95 shadow-xl">Dar o Primeiro Passo</Link>
                   </div>
                )}
 
@@ -680,66 +680,67 @@ export const Dashboard: React.FC = () => {
             </div>
         </div>
 
-        {/* Heatmap Section - Redesigned globally for the "Pass" */}
-        <div className="bg-neutral-900/5 border border-neutral-800/20 rounded-[4rem] p-16 shadow-3xl relative overflow-hidden group/habit mt-12 mb-24">
+        {/* Heatmap Section - Refined */}
+        <div className="bg-neutral-900/5 border border-neutral-800/20 rounded-[3.5rem] p-12 shadow-3xl relative overflow-hidden group/habit mt-8 mb-20">
            <div className="absolute top-0 right-0 p-16 opacity-[0.015] group-hover/habit:opacity-[0.04] transition-all duration-1000">
-             <Calendar size={320} className="text-neutral-100 rotate-6" />
+             <Calendar size={240} className="text-neutral-100 rotate-6" />
            </div>
            
-           <div className="grid grid-cols-1 lg:grid-cols-12 gap-20 relative z-10">
-              <div className="lg:col-span-4 space-y-16 py-4">
-                 <div className="space-y-8">
-                    <div className="flex items-center gap-6">
-                       <div className="w-1.5 h-16 bg-blue-500/60 rounded-full" />
+           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 relative z-10">
+              <div className="lg:col-span-4 space-y-12 py-2">
+                 <div className="space-y-6">
+                    <div className="flex items-center gap-5">
+                       <div className="w-1 h-12 bg-blue-500/60 rounded-full" />
                        <div>
-                          <h3 className="text-5xl font-serif font-black text-neutral-100 tracking-tight italic leading-none">Arquitetura</h3>
-                          <p className="text-[10px] text-neutral-600 font-black uppercase tracking-[0.4em] mt-3 ml-0.5 whitespace-nowrap">Geometria da sua constância</p>
+                          <h3 className="text-4xl font-serif font-black text-neutral-100 tracking-tight italic leading-none">Arquitetura</h3>
+                          <p className="text-[9px] text-neutral-400 font-black uppercase tracking-[0.3em] mt-2 ml-0.5 whitespace-nowrap">Geometria da sua constância</p>
                        </div>
                     </div>
-                    <p className="text-sm text-neutral-500 font-serif italic leading-relaxed max-w-sm">
+                    <p className="text-sm text-neutral-400 font-serif italic leading-relaxed max-w-sm opacity-80">
                       Cada célula é um fragmento de tempo dedicado à expansão do seu mundo interior. A constância é a verdadeira maestria.
                     </p>
                  </div>
                  
-                 <div className="grid grid-cols-2 gap-8 pt-10 border-t border-neutral-800/40">
+                 <div className="grid grid-cols-2 gap-6 pt-8 border-t border-neutral-800/30">
                     <div>
-                       <p className="text-[10px] font-black text-neutral-700 uppercase tracking-[0.3em] mb-4">Densidade Ativa</p>
-                       <h4 className="text-5xl font-black text-neutral-100 tracking-tighter italic leading-none">
+                       <p className="text-[9px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-2">Densidade Ativa</p>
+                       <h4 className="text-4xl font-black text-neutral-100 tracking-tighter italic leading-none">
                          {stats.sessionsThisMonth || 0}
-                         <span className="text-sm text-neutral-800 not-italic ml-3 uppercase tracking-widest font-black lowercase">sessões</span>
+                         <span className="text-[9px] text-neutral-600 not-italic ml-2 uppercase tracking-widest font-black">sessões</span>
                        </h4>
                     </div>
                     <div>
-                       <p className="text-[10px] font-black text-neutral-700 uppercase tracking-[0.3em] mb-4">Consistência</p>
-                       <h4 className="text-5xl font-black text-blue-500 tracking-tighter italic leading-none">
+                       <p className="text-[9px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-2">Consistência</p>
+                       <h4 className="text-4xl font-black text-blue-500 tracking-tighter italic leading-none">
                          {stats.readingFrequency}%
-                         <span className="text-sm text-neutral-800 not-italic ml-3 uppercase tracking-widest font-black lowercase">score</span>
+                         <span className="text-[9px] text-neutral-600 not-italic ml-2 uppercase tracking-widest font-black">score</span>
                        </h4>
                     </div>
                  </div>
               </div>
               
-              <div className="lg:col-span-8 bg-neutral-950/40 p-12 rounded-[3.5rem] border border-neutral-800/40 shadow-inner group-hover/habit:border-blue-500/20 transition-all duration-1000">
-                <div className="overflow-x-auto scrollbar-hide flex justify-center py-4">
+              <div className="lg:col-span-8 bg-neutral-950/40 p-8 rounded-[3rem] border border-neutral-800/40 shadow-inner group-hover/habit:border-blue-500/20 transition-all duration-1000">
+                <div className="overflow-x-auto scrollbar-hide flex justify-center py-2 no-scrollbar">
                    <div className="min-w-max">
                       <ReadingHeatmap sessions={sessions} />
                    </div>
                 </div>
-                <div className="mt-10 flex justify-center gap-4">
+                <div className="mt-8 flex justify-center gap-6">
                   <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-sm bg-neutral-900 border border-neutral-800" />
-                    <span className="text-[9px] text-neutral-700 uppercase tracking-widest font-black">Sereno</span>
+                    <div className="w-2 h-2 rounded-sm bg-neutral-900 border border-neutral-800" />
+                    <span className="text-[8px] text-neutral-500 uppercase tracking-widest font-black">Sereno</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-sm bg-blue-500/80" />
-                    <span className="text-[9px] text-neutral-700 uppercase tracking-widest font-black">Intenso</span>
+                    <div className="w-2 h-2 rounded-sm bg-blue-500/80 shadow-[0_0_8px_rgba(59,130,246,0.3)]" />
+                    <span className="text-[8px] text-neutral-500 uppercase tracking-widest font-black">Intenso</span>
                   </div>
                 </div>
               </div>
            </div>
         </div>
+      </section>
 
-        <section className="space-y-24 py-24">
+      <section className="space-y-24 py-24">
         <div className="flex items-center justify-between px-8">
            <div className="flex items-center gap-8">
              <div className="w-1.5 h-16 bg-purple-500 rounded-full" />
@@ -809,66 +810,79 @@ export const Dashboard: React.FC = () => {
                 </div>
               </div>
             ))}
-          </div>
-        )}
-      </section>
-
+            </div>
+          )}
+        </section>
       {/* Custom Shelves Insight Section */}
-      <section className="space-y-16 py-12">
-           <div className="flex items-center justify-between px-8">
-              <div className="flex items-center gap-8">
-                <div className="p-4 bg-amber-500/10 rounded-2xl text-amber-500 shadow-inner border border-amber-500/10">
-                  <Folder size={28} />
-                </div>
-                <div>
-                  <h3 className="text-4xl font-serif font-black text-neutral-100 italic leading-none">Estantes</h3>
-                  <p className="text-[10px] text-neutral-600 font-black uppercase tracking-[0.4em] mt-3 ml-0.5">Sua arquitetura intelectual</p>
-                </div>
-              </div>
-              <Link to="/estantes" className="text-[10px] font-black text-neutral-500 hover:text-amber-500 transition-all uppercase tracking-[0.3em] flex items-center gap-4 group/link bg-neutral-950/40 px-8 py-3 rounded-full border border-neutral-800/40 backdrop-blur-md">
-                Gerenciar
-                <ChevronRight size={14} className="group-hover/link:translate-x-2 transition-transform" />
-              </Link>
+       <section className="space-y-12 py-12">
+            <div className="flex items-center justify-between px-8">
+               <div className="flex items-center gap-6">
+                 <div className="p-3 bg-amber-500/10 rounded-2xl text-amber-500 border border-amber-500/10">
+                   <Folder size={24} />
+                 </div>
+                 <div>
+                   <h3 className="text-4xl font-serif font-black text-neutral-100 italic leading-none">Estantes</h3>
+                   <p className="text-[9px] text-neutral-400 font-black uppercase tracking-[0.3em] mt-2 ml-0.5">Sua arquitetura intelectual</p>
+                 </div>
+               </div>
+               <Link to="/estantes" className="text-[10px] font-black text-neutral-500 hover:text-amber-500 transition-all uppercase tracking-[0.3em] flex items-center gap-4 group/link bg-neutral-950/40 px-8 py-3 rounded-full border border-neutral-800/40 backdrop-blur-md">
+                 Gerenciar
+                 <ChevronRight size={14} className="group-hover/link:translate-x-2 transition-transform" />
+               </Link>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-10 px-2">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-2">
                {shelves.filter(s => s.type === 'custom').slice(0, 3).map(shelf => (
                  <Link 
                    key={shelf.id} 
                    to={`/estante/${shelf.id}`}
-                   className="group/shelfcard bg-neutral-900/5 border border-neutral-800/20 rounded-[3rem] p-10 hover:bg-neutral-900/10 hover:border-amber-500/30 transition-all duration-700 relative overflow-hidden flex flex-col gap-10 min-h-[300px] shadow-xl"
+                   className="group/shelfcard bg-neutral-900/5 border border-neutral-800/20 rounded-[2.5rem] p-8 hover:bg-neutral-900/10 hover:border-amber-500/30 transition-all duration-700 relative overflow-hidden flex flex-col gap-8 min-h-[280px] shadow-xl"
                  >
                     <div className="absolute -top-10 -right-10 p-12 opacity-[0.015] group-hover/shelfcard:opacity-[0.05] transition-all duration-1000 rotate-12 pointer-events-none">
-                       <Folder size={240} style={{ color: shelf.accentColor || '#fbbf24' }} />
+                       <Folder size={200} style={{ color: shelf.accentColor || '#fbbf24' }} />
                     </div>
-                    <div className="relative z-10 space-y-6 flex-1">
-                       <div className="w-1.5 h-10 rounded-full" style={{ backgroundColor: shelf.accentColor || '#fbbf24' }} />
-                       <div className="space-y-4">
-                          <h4 className="text-3xl font-serif font-black text-neutral-100 italic group-hover/shelfcard:text-amber-500 transition-colors tracking-tight">{shelf.name}</h4>
-                          <div className="inline-flex items-center gap-3 px-4 py-2 bg-neutral-950/60 rounded-full border border-neutral-800/40 backdrop-blur-md">
-                             <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: shelf.accentColor || '#fbbf24' }} />
-                             <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">{shelf.bookIds.length} LIVROS</span>
+                    <div className="relative z-10 space-y-4 flex-1">
+                       <div className="w-1 h-8 rounded-full" style={{ backgroundColor: shelf.accentColor || '#fbbf24' }} />
+                       <div className="space-y-3">
+                          <h4 className="text-2xl font-serif font-black text-neutral-100 italic group-hover/shelfcard:text-amber-500 transition-colors tracking-tight line-clamp-1">{shelf.name}</h4>
+                          <div className="inline-flex items-center gap-2.5 px-3 py-1.5 bg-neutral-950/60 rounded-full border border-neutral-800/40 backdrop-blur-md">
+                             <div className="w-1 h-1" style={{ backgroundColor: shelf.accentColor || '#fbbf24' }} />
+                             <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest">{shelf.bookIds.length} LIVROS</span>
                           </div>
                        </div>
-                       <p className="text-xs text-neutral-500 font-serif italic line-clamp-3 leading-relaxed pt-4 border-t border-neutral-800/20">{shelf.description || "Uma coleção singular de narrativas escolhidas com propósito."}</p>
+                       <p className="text-[11px] text-neutral-500 font-serif italic line-clamp-3 leading-relaxed pt-4 border-t border-neutral-800/10">{shelf.description || "Uma coleção singular de narrativas escolhidas com propósito."}</p>
                     </div>
                  </Link>
                ))}
+               
+               {shelves.filter(s => s.type === 'custom').length === 0 && (
+                 <div className="md:col-span-2 bg-neutral-900/5 border border-dashed border-neutral-800/40 rounded-[2.5rem] p-10 flex flex-col items-center justify-center text-center space-y-6">
+                    <div className="w-16 h-16 bg-neutral-950/40 rounded-full flex items-center justify-center border border-neutral-800/60">
+                       <Folder className="text-neutral-800" size={24} />
+                    </div>
+                    <div className="space-y-2">
+                       <h4 className="text-xl font-serif font-bold text-neutral-400 italic">Arquitetura de Conhecimento</h4>
+                       <p className="text-xs text-neutral-500 font-serif italic max-w-xs mx-auto">Suas estantes personalizadas são monumentos às suas obsessões literárias.</p>
+                    </div>
+                 </div>
+               )}
+
                {shelves.filter(s => s.type === 'custom').length < 3 && (
                  <Link 
                    to="/estantes"
-                   className="bg-neutral-900/5 border border-dashed border-neutral-800/60 rounded-[3rem] p-12 flex flex-col items-center justify-center gap-6 group/add transition-all hover:bg-neutral-900/10 hover:border-amber-500/30 group-hover/add:scale-[1.02] shadow-inner"
+                   className="bg-neutral-900/5 border border-dashed border-neutral-800/60 rounded-[2.5rem] p-10 flex flex-col items-center justify-center gap-6 group/add transition-all hover:bg-neutral-900/10 hover:border-amber-500/30 shadow-inner min-h-[280px]"
                  >
-                    <div className="w-20 h-20 bg-neutral-950/40 rounded-full flex items-center justify-center border border-neutral-800/60 group-hover/add:scale-110 group-hover/add:border-amber-500/30 transition-all duration-700">
-                      <Plus className="text-neutral-700 group-hover/add:text-amber-500 transition-colors" size={32} />
+                    <div className="w-16 h-16 bg-neutral-950/40 rounded-full flex items-center justify-center border border-neutral-800/60 group-hover/add:scale-110 group-hover/add:border-amber-500/30 transition-all duration-700">
+                       <Plus className="text-neutral-700 group-hover/add:text-amber-500 transition-colors" size={24} />
                     </div>
-                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-neutral-700 group-hover/add:text-amber-500 transition-colors">Nova Estante</span>
+                    <span className="text-[9px] font-black uppercase tracking-[0.3em] text-neutral-700 group-hover/add:text-amber-500 transition-colors">Nova Estante</span>
                  </Link>
                )}
             </div>
-        </section>
+       </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <section className="space-y-24 py-12 px-8">
+           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
            {/* Fila de Leitura */}
            {stats.queroLerCount > 0 && (
              <div className="bg-neutral-900/30 border border-neutral-800/40 rounded-[3rem] p-10 shadow-2xl relative overflow-hidden group/queue h-full">
@@ -1054,7 +1068,7 @@ export const Dashboard: React.FC = () => {
 
            {periodData && (
              <div className="space-y-10 relative z-10">
-               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8">
+               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 lg:gap-8">
                   <div className="space-y-2">
                     <p className="text-[9px] font-black text-neutral-600 uppercase tracking-widest">Livros</p>
                     <h4 className="text-4xl font-black text-neutral-100 italic tracking-tighter">{periodData.current.booksFinished}</h4>
@@ -1312,22 +1326,22 @@ export const Dashboard: React.FC = () => {
 };
 
 const StatCard = ({ icon: Icon, label, value, subValue, color, bg }: any) => (
-  <div className="bg-neutral-900/20 border border-neutral-800/40 rounded-[2.5rem] p-10 shadow-2xl flex flex-col justify-between hover:border-neutral-700/60 hover:bg-neutral-900/40 transition-all duration-700 group/stats h-full relative overflow-hidden">
-    <div className="absolute top-0 right-0 p-12 opacity-[0.015] group-hover/stats:opacity-[0.04] transition-opacity duration-1000 pointer-events-none">
-       <Icon size={120} />
+  <div className="bg-neutral-900/20 border border-neutral-800/40 rounded-[2.5rem] p-8 shadow-2xl flex flex-col justify-between hover:border-neutral-700/60 hover:bg-neutral-900/40 transition-all duration-700 group/stats h-full relative overflow-hidden">
+    <div className="absolute top-0 right-0 p-8 opacity-[0.015] group-hover/stats:opacity-[0.04] transition-opacity duration-1000 pointer-events-none">
+       <Icon size={100} />
     </div>
-    <div className="flex items-center justify-between mb-12 relative z-10">
-      <p className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.25em] group-hover/stats:text-neutral-400 transition-colors uppercase leading-none">{label}</p>
-      <div className={`w-14 h-14 rounded-2xl ${bg} ${color} flex items-center justify-center shadow-inner group-hover/stats:scale-110 group-hover/stats:rotate-3 transition-all duration-700`}>
-        <Icon size={24} strokeWidth={2.5} />
+    <div className="flex items-center justify-between mb-8 relative z-10">
+      <p className="text-[9px] font-black text-neutral-500 uppercase tracking-[0.2em] group-hover/stats:text-neutral-400 transition-colors uppercase leading-none">{label}</p>
+      <div className={`w-12 h-12 rounded-xl ${bg} ${color} flex items-center justify-center shadow-inner group-hover/stats:scale-110 transition-all duration-700`}>
+        <Icon size={20} strokeWidth={2.5} />
       </div>
     </div>
-    <div className="min-w-0 relative z-10">
-      <h3 className="text-5xl font-black text-neutral-100 truncate italic tracking-tighter leading-none mb-4 group-hover/stats:text-amber-500 transition-colors duration-700">{value}</h3>
+    <div className="min-w-0 relative z-10 w-full">
+      <h3 className="text-3xl font-black text-neutral-100 italic tracking-tighter leading-tight mb-3 group-hover/stats:text-amber-500 transition-colors duration-700 break-words line-clamp-2 md:line-clamp-1">{value}</h3>
       {subValue ? (
-        <p className="text-xs text-neutral-600 font-serif italic truncate group-hover/stats:text-neutral-400 transition-colors uppercase tracking-widest">{subValue}</p>
+        <p className="text-[10px] text-neutral-500 font-serif italic truncate group-hover/stats:text-neutral-400 transition-colors uppercase tracking-widest">{subValue}</p>
       ) : (
-        <div className="h-[12px] w-12 bg-neutral-800/30 rounded-full" />
+        <div className="h-[8px] w-12 bg-neutral-800/30 rounded-full" />
       )}
     </div>
   </div>
