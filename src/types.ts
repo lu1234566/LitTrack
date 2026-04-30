@@ -133,8 +133,6 @@ export interface Book {
   ilustracaoUrl?: string;
   coverUrl?: string;
   coverSource?: 'automatic' | 'url' | 'local' | 'placeholder' | 'manual';
-  exportCoverDataUrl?: string;
-  exportCoverResolvedAt?: number;
   pageCount?: number;
   currentPage?: number;
   totalPages?: number;
