@@ -87,17 +87,18 @@ export const InstagramStoryCapsule: React.FC<Props> = ({ data, id = "instagram-s
                 {idx + 1}
               </div>
               
-              <div className="w-24 h-36 bg-neutral-900 rounded-lg overflow-hidden shrink-0 shadow-2xl border border-white/10">
-                {book.coverUrl ? (
+              <div className="w-24 h-36 bg-neutral-900 rounded-lg overflow-hidden shrink-0 shadow-2xl border border-white/10 relative">
+                {data.coverDataUrls?.[book.id] || book.coverUrl ? (
                   <img 
-                    src={book.coverUrl} 
+                    src={data.coverDataUrls?.[book.id] || book.coverUrl} 
                     alt={book.titulo} 
                     className="w-full h-full object-cover" 
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <BookOpen size={40} className="text-neutral-800" />
+                  <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center bg-gradient-to-br from-neutral-800 to-neutral-900">
+                    <BookOpen size={40} className="text-neutral-700 mb-2" />
+                    <span className="text-[10px] text-neutral-600 font-bold uppercase truncate w-full">{book.titulo}</span>
                   </div>
                 )}
               </div>

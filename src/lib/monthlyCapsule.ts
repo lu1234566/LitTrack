@@ -143,6 +143,7 @@ export interface InstagramCapsuleData {
   bestBook: Book | null;
   literaryCopy: string;
   userName?: string;
+  coverDataUrls?: Record<string, string>;
 }
 
 export const getInstagramCapsuleData = (

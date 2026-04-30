@@ -76,12 +76,17 @@ export const InstagramFeedCapsule: React.FC<Props> = ({ data, id = "instagram-fe
             <div className="relative group px-6">
               <div className="absolute -inset-1 bg-gradient-to-r from-amber-500/20 to-transparent blur-xl rounded-[4rem] group-hover:opacity-100 transition duration-1000 opacity-0" />
               <div className="relative bg-neutral-900/60 p-10 rounded-[3rem] border border-amber-500/10 flex gap-8 items-center">
-                <div className="w-24 h-36 bg-neutral-800 rounded-xl overflow-hidden shadow-2xl shrink-0">
-                  {data.bestBook.coverUrl ? (
-                    <img src={data.bestBook.coverUrl} alt={data.bestBook.titulo} className="w-full h-full object-cover" />
+                <div className="w-24 h-36 bg-neutral-800 rounded-xl overflow-hidden shadow-2xl shrink-0 relative">
+                  {data.coverDataUrls?.[data.bestBook.id] || data.bestBook.coverUrl ? (
+                    <img 
+                      src={data.coverDataUrls?.[data.bestBook.id] || data.bestBook.coverUrl} 
+                      alt={data.bestBook.titulo} 
+                      className="w-full h-full object-cover" 
+                    />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <BookOpen size={40} className="text-neutral-700" />
+                    <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center bg-gradient-to-br from-neutral-800 to-neutral-900">
+                      <BookOpen size={32} className="text-neutral-700 mb-1" />
+                      <span className="text-[10px] text-neutral-600 font-bold uppercase truncate w-full">{data.bestBook.titulo}</span>
                     </div>
                   )}
                 </div>
@@ -107,12 +112,18 @@ export const InstagramFeedCapsule: React.FC<Props> = ({ data, id = "instagram-fe
               <div key={book.id} className="flex items-center gap-8 bg-neutral-900/20 p-8 rounded-[2.5rem] border border-white/5 hover:bg-neutral-900/30 transition-all">
                 <span className="text-4xl font-black text-amber-500/40 italic font-serif min-w-[3rem]">{idx + 1}</span>
                 
-                <div className="w-20 h-28 bg-neutral-900 rounded-lg overflow-hidden shrink-0 border border-white/10 shadow-lg">
-                  {book.coverUrl ? (
-                    <img src={book.coverUrl} alt={book.titulo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                <div className="w-20 h-28 bg-neutral-900 rounded-lg overflow-hidden shrink-0 border border-white/10 shadow-lg relative">
+                  {data.coverDataUrls?.[book.id] || book.coverUrl ? (
+                    <img 
+                      src={data.coverDataUrls?.[book.id] || book.coverUrl} 
+                      alt={book.titulo} 
+                      className="w-full h-full object-cover" 
+                      referrerPolicy="no-referrer" 
+                    />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <BookOpen size={30} className="text-neutral-800" />
+                    <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-gradient-to-br from-neutral-800 to-neutral-900">
+                      <BookOpen size={24} className="text-neutral-700 mb-1" />
+                      <span className="text-[8px] text-neutral-600 font-bold uppercase truncate w-full">{book.titulo}</span>
                     </div>
                   )}
                 </div>

@@ -19,6 +19,7 @@ export const MonthlyCapsule: React.FC = () => {
   
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isExporting, setIsExporting] = useState(false);
+  const [resolvedInstagramData, setResolvedInstagramData] = useState<InstagramCapsuleData | null>(null);
   const [exportType, setExportType] = useState<'app' | 'instagram'>('app');
   const [copying, setCopying] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -52,14 +53,48 @@ export const MonthlyCapsule: React.FC = () => {
   };
 
   const exportAsImage = async (nodeId: string, fileName: string) => {
-    const node = document.getElementById(nodeId);
-    if (!node) {
-      alert(`Erro: O elemento ${nodeId} não foi encontrado.`);
-      return;
-    }
-
     setIsExporting(true);
+    
     try {
+      // Pre-process covers for Instagram data if needed
+      if (nodeId.includes('instagram')) {
+        const coverDataUrls: Record<string, string> = {};
+        
+        // Fetch all top 5 book covers and convert to base64
+        await Promise.all(instagramData.top5Books.map(async (book) => {
+          const coverUrl = book.coverUrl;
+          if (!coverUrl) return;
+
+          try {
+            const response = await fetch(coverUrl);
+            const blob = await response.blob();
+            const dataUrl = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(blob);
+            });
+            coverDataUrls[book.id] = dataUrl;
+          } catch (err) {
+            console.warn(`Falha ao converter capa do livro ${book.titulo}:`, err);
+          }
+        }));
+
+        setResolvedInstagramData({
+          ...instagramData,
+          coverDataUrls
+        });
+
+        // Give a moment for the hidden components to re-render with resolved data
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      const node = document.getElementById(nodeId);
+      if (!node) {
+        alert(`Erro: O elemento ${nodeId} não foi encontrado.`);
+        setIsExporting(false);
+        return;
+      }
+      
       await document.fonts.ready;
       await new Promise(resolve => setTimeout(resolve, 1500));
       
@@ -71,10 +106,6 @@ export const MonthlyCapsule: React.FC = () => {
         style: {
           transform: 'scale(1)',
           transformOrigin: 'top left'
-        },
-        filter: (node) => {
-          const shadowRoot = (node as any).shadowRoot;
-          return !shadowRoot;
         }
       });
 
@@ -94,6 +125,8 @@ export const MonthlyCapsule: React.FC = () => {
       alert(`Não foi possível baixar a imagem. Tente novamente ou salve via "captura de tela".\nErro: ${err.message}`);
     } finally {
       setIsExporting(false);
+      // Optional: Clear resolved data after export if desired, 
+      // but keeping it might make the next export faster if we add a cache later.
     }
   };
 
@@ -309,8 +342,8 @@ export const MonthlyCapsule: React.FC = () => {
 
               {/* Hidden containers for export */}
               <div className="fixed left-[-9999px] top-[-9999px] pointer-events-none overflow-hidden">
-                <InstagramStoryCapsule data={instagramData} id="instagram-story-capsule" />
-                <InstagramFeedCapsule data={instagramData} id="instagram-feed-capsule" />
+                <InstagramStoryCapsule data={resolvedInstagramData || instagramData} id="instagram-story-capsule" />
+                <InstagramFeedCapsule data={resolvedInstagramData || instagramData} id="instagram-feed-capsule" />
               </div>
             </motion.div>
           )}
