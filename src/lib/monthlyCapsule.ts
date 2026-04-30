@@ -20,98 +20,89 @@ export interface MonthlyStats {
   literaryCopy: string;
 }
 
-const MONTHS_MAP = [
-  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
-];
-
-const normalizeMonthName = (value?: string | null) =>
-  (value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim()
-    .toLowerCase();
-
-const isBookCompletedInMonth = (book: Book, targetMonthName: string, year: number, monthStart: Date) => {
-  if (book.status !== 'lido') return false;
-
-  const normalizedBookMonth = normalizeMonthName(book.mesLeitura);
-  const normalizedTargetMonth = normalizeMonthName(targetMonthName);
-  const bookYear = safeParseNumber(book.anoLeitura as unknown as number);
-
-  if (normalizedBookMonth === normalizedTargetMonth && bookYear === year) {
-    return true;
-  }
-
-  if (book.finishedAt) {
-    const finishDate = new Date(book.finishedAt);
-    if (isSameMonth(finishDate, monthStart) && finishDate.getFullYear() === year) {
-      return true;
-    }
-  }
-
-  return false;
-};
-
 export const getMonthlyStats = (
   books: Book[],
   sessions: ReadingSession[],
-  month: number,
+  month: number, // 0-11
   year: number
 ): MonthlyStats => {
+  const MONTHS_MAP = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+  ];
   const targetMonthName = MONTHS_MAP[month];
   const startDate = startOfMonth(new Date(year, month));
   const endDate = endOfMonth(new Date(year, month));
   const monthName = format(startDate, 'MMMM', { locale: ptBR });
 
-  const booksFinished = books
-    .filter((book) => isBookCompletedInMonth(book, targetMonthName, year, startDate))
-    .sort((a, b) => {
-      const aTime = a.finishedAt || a.createdAt || a.dataCadastro || 0;
-      const bTime = b.finishedAt || b.createdAt || b.dataCadastro || 0;
-      return bTime - aTime;
-    });
+  // Filter books finished in the month - matching Timeline.tsx logic
+  const booksFinished = books.filter(book => {
+    if (book.status !== 'lido') return false;
+    
+    // Primary: Match manual fields (This is the source of truth for the monthly list in Timeline)
+    if (book.mesLeitura === targetMonthName && book.anoLeitura === year) {
+      return true;
+    }
+    
+    // Secondary: Match via timestamp if manual fields don't match but status is 'lido'
+    if (book.finishedAt) {
+      const finishDate = new Date(book.finishedAt);
+      return isSameMonth(finishDate, startDate) && finishDate.getFullYear() === year;
+    }
+    
+    return false;
+  });
 
-  const monthlySessions = sessions.filter((session) => {
+  // Filter sessions in the month
+  const monthlySessions = sessions.filter(session => {
     const sessionDate = new Date(session.date);
     return isWithinInterval(sessionDate, { start: startDate, end: endDate });
   });
 
-  const sessionPages = monthlySessions.reduce((acc, s) => acc + safeParseNumber(s.pagesRead), 0);
-  const totalMinutes = monthlySessions.reduce((acc, s) => acc + safeParseNumber(s.durationMinutes), 0);
-  const booksPages = booksFinished.reduce((acc, b) => acc + safeParseNumber(b.pageCount), 0);
+  // Pages from sessions
+  const sessionPages = monthlySessions.reduce((acc, s) => acc + (s.pagesRead || 0), 0);
+  const totalMinutes = monthlySessions.reduce((acc, s) => acc + (s.durationMinutes || 0), 0);
 
-  const totalPages = sessionPages > 0 ? sessionPages : booksPages;
+  // Fallback: Pages from books finished this month if no sessions exist for those books
+  // (Simplified: if sessionPages is 0, we can use the sum of pages of finished books as a heuristic)
+  let totalPages = sessionPages;
+  if (sessionPages === 0 && booksFinished.length > 0) {
+    totalPages = booksFinished.reduce((acc, b) => acc + safeParseNumber(b.pageCount), 0);
+  }
+  
+  const totalRating = booksFinished.reduce((acc, b) => acc + (b.notaGeral || 0), 0);
+  const averageRating = booksFinished.length > 0 ? totalRating / booksFinished.length : 0;
 
-  const ratedBooks = booksFinished.filter((b) => safeParseNumber(b.notaGeral) > 0);
-  const totalRating = ratedBooks.reduce((acc, b) => acc + safeParseNumber(b.notaGeral), 0);
-  const averageRating = ratedBooks.length > 0 ? totalRating / ratedBooks.length : 0;
-
+  // Top Genre
   const genresCount: Record<string, number> = {};
-  booksFinished.forEach((b) => {
+  booksFinished.forEach(b => {
     if (b.genero) genresCount[b.genero] = (genresCount[b.genero] || 0) + 1;
   });
   const topGenre = Object.entries(genresCount).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Diverso';
 
+  // Top Author
   const authorsCount: Record<string, number> = {};
-  booksFinished.forEach((b) => {
+  booksFinished.forEach(b => {
     if (b.autor) authorsCount[b.autor] = (authorsCount[b.autor] || 0) + 1;
   });
   const topAuthor = Object.entries(authorsCount).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Vários';
 
+  // Dominant Mood
   const moodsCount: Record<string, number> = {};
-  monthlySessions.forEach((s) => {
+  monthlySessions.forEach(s => {
     if (s.mood) moodsCount[s.mood] = (moodsCount[s.mood] || 0) + 1;
   });
   const dominantMood = Object.entries(moodsCount).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Sereno';
 
+  // Achievements
   const achievements: string[] = [];
-  if (totalPages >= 1000) achievements.push('Titã das Páginas');
-  if (booksFinished.length >= 5) achievements.push('Maratona Literária');
+  if (totalPages >= 1000) achievements.push('Titã das Páginas (1000+ pgs)');
+  if (booksFinished.length >= 5) achievements.push('Maratona Literária (5+ livros)');
   if (averageRating >= 4.5 && booksFinished.length >= 2) achievements.push('Mês de Ouro');
-  if (totalMinutes >= 600) achievements.push('Foco Absoluto');
-  if (new Set(booksFinished.map((b) => b.genero).filter(Boolean)).size >= 3) achievements.push('Explorador de Horizontes');
+  if (totalMinutes >= 600) achievements.push('Foco Absoluto (10h leitura)');
+  if (new Set(booksFinished.map(b => b.genero)).size >= 3) achievements.push('Explorador de Horizontes');
 
+  // Literary Copy
   let literaryCopy = '';
   if (booksFinished.length === 0) {
     literaryCopy = `${monthName} foi um período de pausa e reflexão silenciosa entre as páginas.`;
@@ -137,6 +128,6 @@ export const getMonthlyStats = (
     topAuthor,
     dominantMood,
     achievements,
-    literaryCopy,
+    literaryCopy
   };
 };
