@@ -71,16 +71,20 @@ export const MonthlyCapsule: React.FC = () => {
           if (!coverUrl) return;
 
           try {
-            const response = await fetch(coverUrl);
-            const blob = await response.blob();
-            const dataUrl = await new Promise<string>((resolve) => {
-              const reader = new FileReader();
-              reader.onloadend = () => resolve(reader.result as string);
-              reader.readAsDataURL(blob);
-            });
-            coverDataUrls[book.id] = dataUrl;
+            // Using a simple fetch - if this fails due to CORS, we just skip and use the URL directly in the img tag
+            const response = await fetch(coverUrl, { cache: 'no-cache' });
+            if (response.ok) {
+              const blob = await response.blob();
+              const dataUrl = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+              });
+              coverDataUrls[book.id] = dataUrl;
+            }
           } catch (err) {
-            console.warn(`Falha ao converter capa do livro ${book.titulo}:`, err);
+            console.warn(`CORS/Fetch error for cover of ${book.titulo}:`, err);
           }
         }));
 
@@ -89,53 +93,65 @@ export const MonthlyCapsule: React.FC = () => {
           coverDataUrls
         });
 
-        // Give a moment for the hidden components to re-render with resolved base64 images
-        await new Promise(resolve => setTimeout(resolve, 800));
+        // Give enough time for the hidden components to re-render with resolved base64 images
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
       const node = document.getElementById(nodeId);
       if (!node) {
-        alert(`Erro: O elemento ${nodeId} não foi encontrado.`);
-        setIsExporting(false);
-        return;
+        throw new Error(`Elemento de captura "${nodeId}" não encontrado.`);
       }
       
       // Ensure all assets (fonts/images) are fully ready
       await document.fonts.ready;
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1200));
       
-      // Capture the node. Since we defined fixed w/h in the components, 
-      // html-to-image should respect those dimensions.
+      // Fixed dimensions based on the capsule type to avoid cropping
+      const isStory = nodeId.includes('story');
+      const targetWidth = isStory ? 1080 : 1080;
+      const targetHeight = isStory ? 1920 : 1350;
+
+      // Capture the node
       const dataUrl = await toPng(node, {
         quality: 1,
-        pixelRatio: 2, // High resolution but balanced for performance
+        pixelRatio: 2,
         backgroundColor: '#0a0a0a',
         cacheBust: true,
-        // Ensure we capture the full dimensions of the element
-        width: node.offsetWidth,
-        height: node.offsetHeight,
+        width: targetWidth,
+        height: targetHeight,
         style: {
           transform: 'scale(1)',
           transformOrigin: 'top left',
           margin: '0',
           padding: '0',
+          width: `${targetWidth}px`,
+          height: `${targetHeight}px`,
         }
       });
 
-      if (!dataUrl || dataUrl.length < 1000) {
-        throw new Error('Falha ao gerar imagem de alta resolução.');
+      if (!dataUrl || dataUrl.length < 2000) {
+        throw new Error('A imagem gerada parece estar vazia ou corrompida.');
       }
 
+      // Download trigger
       const link = document.createElement('a');
       link.download = fileName;
       link.href = dataUrl;
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      
+      // Small delay before cleanup to ensure trigger works on mobile
+      setTimeout(() => {
+        if (document.body.contains(link)) {
+          document.body.removeChild(link);
+        }
+      }, 500);
       
     } catch (err: any) {
-      console.error('Erro ao exportar:', err);
-      alert(`Não foi possível baixar a imagem. Tente novamente.\nErro: ${err.message}`);
+      console.error('Erro detalhado ao exportar:', err);
+      // Ensure we always have a string message to avoid "Erro: undefined"
+      const errorMsg = err?.message || (typeof err === 'string' ? err : 'Ocorreu um erro desconhecido na geração da imagem.');
+      alert(`Não foi possível baixar a imagem. Tente novamente.\n\nDetalhes: ${errorMsg}`);
     } finally {
       setIsExporting(false);
     }
