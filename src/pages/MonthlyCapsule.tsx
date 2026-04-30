@@ -112,17 +112,37 @@ export const MonthlyCapsule: React.FC = () => {
         ].filter((book, index, arr) => arr.findIndex((b) => b.id === book.id) === index);
 
         await Promise.all(uniqueBooks.map(async (book) => {
-          const coverUrl = book.exportCoverDataUrl || book.coverUrl || book.ilustracaoUrl;
+          const rawCoverUrl = book.exportCoverDataUrl || book.coverUrl || book.ilustracaoUrl;
+          const coverUrl = rawCoverUrl?.trim();
           if (!coverUrl) return;
 
-          try {
-            if (coverUrl.startsWith('data:image')) {
-              coverDataUrls[book.id] = coverUrl;
-              return;
-            }
-            const response = await fetch(coverUrl, { cache: 'no-cache', mode: 'cors', credentials: 'omit' });
-            if (response.ok) {
+          const coverCandidates: string[] = [];
+          if (coverUrl.startsWith('data:image')) {
+            coverCandidates.push(coverUrl);
+          } else {
+            const normalizedCoverUrl = coverUrl.startsWith('//')
+              ? `https:${coverUrl}`
+              : coverUrl.replace(/^http:\/\//, 'https://');
+            coverCandidates.push(normalizedCoverUrl);
+            const urlForProxy = normalizedCoverUrl.replace(/^https?:\/\//, '');
+            coverCandidates.push(`https://images.weserv.nl/?url=${encodeURIComponent(urlForProxy)}&w=260&h=390&fit=inside&output=jpg`);
+          }
+          if (book.isbn) {
+            const isbn = encodeURIComponent(String(book.isbn).trim());
+            coverCandidates.push(`https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false`);
+            coverCandidates.push(`https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg?default=false`);
+          }
+
+          for (const candidate of [...new Set(coverCandidates)]) {
+            try {
+              if (candidate.startsWith('data:image')) {
+                coverDataUrls[book.id] = candidate;
+                return;
+              }
+              const response = await fetch(candidate, { cache: 'no-cache', mode: 'cors', credentials: 'omit' });
+              if (!response.ok) continue;
               const blob = await response.blob();
+              if (!blob.type.startsWith('image/')) continue;
               const dataUrl = await new Promise<string>((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onloadend = () => resolve(reader.result as string);
@@ -130,9 +150,10 @@ export const MonthlyCapsule: React.FC = () => {
                 reader.readAsDataURL(blob);
               });
               coverDataUrls[book.id] = dataUrl;
+              return;
+            } catch {
+              continue;
             }
-          } catch {
-            return;
           }
         }));
 
