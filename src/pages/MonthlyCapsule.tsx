@@ -1,24 +1,27 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { useBooksState } from '../context/BooksContext';
 import { useReadingSessions } from '../context/ReadingSessionsContext';
 import { useAuth } from '../context/AuthContext';
 import { MonthlyCapsuleCard } from '../components/monthly/MonthlyCapsuleCard';
-import { getMonthlyStats } from '../lib/monthlyCapsule';
+import { getMonthlyStats, getInstagramCapsuleData, InstagramCapsuleData } from '../lib/monthlyCapsule';
 import { toPng } from 'html-to-image';
-import { Download, ChevronLeft, ChevronRight, Sparkles, Filter, BookOpen, Star } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Download, ChevronLeft, ChevronRight, Share2, Sparkles, Filter, BookOpen, Star, Instagram, Copy, Check, Camera } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { format, subMonths, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+import { InstagramStoryCapsule } from '../components/monthly/InstagramStoryCapsule';
+import { InstagramFeedCapsule } from '../components/monthly/InstagramFeedCapsule';
 
 export const MonthlyCapsule: React.FC = () => {
   const { books } = useBooksState();
   const { sessions } = useReadingSessions();
   const { user } = useAuth();
-
+  
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isExporting, setIsExporting] = useState(false);
+  const [exportType, setExportType] = useState<'app' | 'instagram'>('app');
+  const [copying, setCopying] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const stats = useMemo(() => {
     return getMonthlyStats(
@@ -29,7 +32,11 @@ export const MonthlyCapsule: React.FC = () => {
     );
   }, [books, sessions, currentDate]);
 
-  const handlePrevMonth = () => setCurrentDate((prev) => subMonths(prev, 1));
+  const instagramData = useMemo(() => {
+    return getInstagramCapsuleData(stats, user?.name);
+  }, [stats, user]);
+
+  const handlePrevMonth = () => setCurrentDate(prev => subMonths(prev, 1));
   const handleNextMonth = () => {
     const next = addMonths(currentDate, 1);
     if (next <= new Date()) {
@@ -37,68 +44,54 @@ export const MonthlyCapsule: React.FC = () => {
     }
   };
 
-  const triggerDownload = (dataUrl: string) => {
-    const link = document.createElement('a');
-    link.download = `readora-capsula-${format(currentDate, 'yyyy-MM', { locale: ptBR })}.png`;
-    link.href = dataUrl;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const copyCaption = () => {
+    const caption = `Minha cápsula literária de ${stats.monthName} no Readora 📚✨\n\n📖 Livros concluídos: ${stats.totalBooks}\n📄 Páginas lidas: ${stats.totalPages}\n⭐ Média do mês: ${stats.averageRating.toFixed(1)}\n🎭 Vibe: ${stats.dominantMood}\n\nGerado automaticamente pelo @readora.app 📱\n#Readora #CapsulaLiteraria #Leitura #Books #MonthlyWrapUp`;
+    navigator.clipboard.writeText(caption);
+    setCopying(true);
+    setTimeout(() => setCopying(false), 2000);
   };
 
-  const exportAsImage = async () => {
-    const node = document.getElementById('monthly-capsule-card');
+  const exportAsImage = async (nodeId: string, fileName: string) => {
+    const node = document.getElementById(nodeId);
     if (!node) {
-      alert('Erro: o card da cápsula não foi encontrado na página.');
+      alert(`Erro: O elemento ${nodeId} não foi encontrado.`);
       return;
     }
 
     setIsExporting(true);
     try {
-      if ('fonts' in document) {
-        await (document as any).fonts.ready;
-      }
-      await wait(500);
-
-      const externalImages = Array.from(node.querySelectorAll('img')).filter((img) => {
-        try {
-          const src = img.getAttribute('src') || '';
-          return src.startsWith('http');
-        } catch {
-          return false;
+      await document.fonts.ready;
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const dataUrl = await toPng(node, {
+        quality: 1,
+        pixelRatio: 3,
+        backgroundColor: '#0a0a0a',
+        cacheBust: true,
+        style: {
+          transform: 'scale(1)',
+          transformOrigin: 'top left'
+        },
+        filter: (node) => {
+          const shadowRoot = (node as any).shadowRoot;
+          return !shadowRoot;
         }
       });
 
-      const previousVisibility = externalImages.map((img) => img.style.visibility);
-      externalImages.forEach((img) => {
-        img.style.visibility = 'hidden';
-      });
-
-      try {
-        const dataUrl = await toPng(node as HTMLElement, {
-          quality: 1,
-          pixelRatio: 2,
-          backgroundColor: '#0a0a0a',
-          cacheBust: false,
-          imagePlaceholder:
-            'data:image/svg+xml;charset=utf-8,' +
-            encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="80" height="120"><rect width="100%" height="100%" fill="#111111"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#444" font-size="12">Readora</text></svg>'),
-          skipAutoScale: true,
-        });
-
-        if (!dataUrl || dataUrl.length < 500) {
-          throw new Error('Falha ao gerar imagem.');
-        }
-
-        triggerDownload(dataUrl);
-      } finally {
-        externalImages.forEach((img, index) => {
-          img.style.visibility = previousVisibility[index] || '';
-        });
+      if (!dataUrl || dataUrl.length < 500) {
+        throw new Error('Falha ao gerar imagem.');
       }
+
+      const link = document.createElement('a');
+      link.download = fileName;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
     } catch (err: any) {
-      console.error('Erro ao exportar imagem:', err);
-      alert('Não foi possível baixar a imagem automaticamente. Tente novamente em alguns segundos. Se o erro persistir, algumas capas externas podem estar bloqueando a exportação.');
+      console.error('Erro ao exportar:', err);
+      alert(`Não foi possível baixar a imagem. Tente novamente ou salve via "captura de tela".\nErro: ${err.message}`);
     } finally {
       setIsExporting(false);
     }
@@ -106,6 +99,7 @@ export const MonthlyCapsule: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-20">
+      {/* Header Section */}
       <section className="space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1">
@@ -120,15 +114,20 @@ export const MonthlyCapsule: React.FC = () => {
           </div>
 
           <div className="flex items-center bg-neutral-900/50 border border-neutral-800 rounded-2xl p-1 shrink-0">
-            <button onClick={handlePrevMonth} className="p-3 text-neutral-400 hover:text-neutral-100 transition-colors">
+            <button 
+              onClick={handlePrevMonth}
+              className="p-3 text-neutral-400 hover:text-neutral-100 transition-colors"
+            >
               <ChevronLeft size={20} />
             </button>
             <div className="px-6 py-2 text-center min-w-[160px]">
               <span className="text-xs uppercase tracking-widest text-neutral-500 block">Período</span>
-              <span className="text-sm font-medium capitalize">{format(currentDate, 'MMMM yyyy', { locale: ptBR })}</span>
+              <span className="text-sm font-medium capitalize">
+                {format(currentDate, 'MMMM yyyy', { locale: ptBR })}
+              </span>
             </div>
-            <button
-              onClick={handleNextMonth}
+            <button 
+              onClick={handleNextMonth} 
               disabled={addMonths(currentDate, 1) > new Date()}
               className="p-3 text-neutral-400 hover:text-neutral-100 transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
             >
@@ -138,129 +137,184 @@ export const MonthlyCapsule: React.FC = () => {
         </div>
       </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-        <div className="flex justify-center bg-neutral-900/30 rounded-[3rem] p-12 border border-neutral-800/40 shadow-inner overflow-hidden relative group">
-          <div className="absolute inset-0 bg-gradient-to-b from-amber-500/5 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            key={currentDate.toISOString()}
-            className="shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)] rounded-sm overflow-hidden"
+      {/* Main Content Area */}
+      <div className="space-y-8">
+        {/* Tab Selector */}
+        <div className="flex p-1 bg-neutral-900/50 border border-neutral-800 rounded-2xl w-fit mx-auto">
+          <button 
+            onClick={() => setExportType('app')}
+            className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all ${exportType === 'app' ? 'bg-amber-500 text-neutral-950 shadow-lg' : 'text-neutral-400 hover:text-neutral-100'}`}
           >
-            <MonthlyCapsuleCard stats={stats} userName={user?.name} />
-          </motion.div>
+            <Camera size={18} />
+            <span>App Capsule</span>
+          </button>
+          <button 
+            onClick={() => setExportType('instagram')}
+            className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all ${exportType === 'instagram' ? 'bg-gradient-to-tr from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/20' : 'text-neutral-400 hover:text-neutral-100'}`}
+          >
+            <Instagram size={18} />
+            <span>Instagram</span>
+          </button>
         </div>
 
-        <div className="space-y-12 py-6">
-          <div className="space-y-6">
-            <h2 className="text-2xl font-serif italic text-amber-50">Sua Essência de {stats.monthName}</h2>
-
-            <div className="grid grid-cols-1 gap-6">
-              <InfoBlock title="Páginas percorridas" value={stats.totalPages} description="A distância mística que seus olhos atravessaram este mês." />
-              <InfoBlock title="Histórias concluídas" value={stats.totalBooks} description="O número de universos que agora fazem parte da sua história." />
-              <InfoBlock title="Atmosfera Dominante" value={stats.dominantMood} description="O sentimento que guiou suas escolhas e momentos de leitura." />
-            </div>
-
-            {stats.booksCompleted.length > 0 && (
-              <div className="pt-10 border-t border-neutral-800/50 space-y-8">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-[0.2em] flex items-center gap-2">
-                    <BookOpen size={16} className="text-amber-500" />
-                    Livros e Avaliações de {stats.monthName}
-                  </h3>
-                  <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">{stats.booksCompleted.length} obras concluídas</span>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4">
-                  {stats.booksCompleted.map((book) => (
-                    <div key={book.id} className="flex flex-col sm:flex-row sm:items-center justify-between bg-neutral-900/60 p-5 rounded-2xl border border-neutral-800/60 group hover:border-amber-500/20 transition-all">
-                      <div className="flex gap-4 items-center">
-                        <div className="w-10 h-14 bg-neutral-800 rounded-lg overflow-hidden shrink-0 shadow-lg border border-neutral-700/50">
-                          {book.coverUrl || book.ilustracaoUrl ? (
-                            <img src={book.coverUrl || book.ilustracaoUrl} alt={book.titulo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <BookOpen size={14} className="text-neutral-700" />
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-bold text-neutral-100 group-hover:text-amber-500 transition-colors">{book.titulo}</h4>
-                          <p className="text-xs text-neutral-500 italic font-serif">{book.autor}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between sm:justify-end gap-6 mt-4 sm:mt-0 pt-4 sm:pt-0 border-t sm:border-t-0 border-neutral-800/50">
-                        <div className="flex flex-col items-end sm:items-center">
-                          <span className="text-[9px] text-neutral-600 font-black uppercase tracking-widest mb-1">Páginas</span>
-                          <span className="text-xs font-mono text-neutral-300">{book.pageCount || '—'}</span>
-                        </div>
-                        <div className="flex flex-col items-end">
-                          <span className="text-[9px] text-neutral-600 font-black uppercase tracking-widest mb-1">Nota</span>
-                          <span className="text-sm font-bold text-amber-400">{(book.notaGeral || 0).toFixed(1)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="bg-amber-500/5 border border-amber-500/10 p-6 rounded-2xl flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-amber-500/10 rounded-xl">
-                      <Star className="text-amber-500" size={20} />
-                    </div>
-                    <div>
-                      <p className="text-xs text-neutral-400 font-medium">Média Literária do Mês</p>
-                      <h4 className="text-2xl font-serif font-bold text-amber-50 italic">{stats.averageRating.toFixed(1)} / 10.0</h4>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs text-neutral-400 font-medium">Foco do Período</p>
-                    <h4 className="text-sm font-bold text-neutral-200">{stats.topGenre}</h4>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-4 pt-6 border-t border-neutral-800/50">
-            <button
-              onClick={exportAsImage}
-              disabled={isExporting}
-              className="w-full flex items-center justify-center gap-3 bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold py-5 rounded-2xl transition-all shadow-xl shadow-amber-500/10 active:scale-[0.98] disabled:opacity-50"
+        <AnimatePresence mode="wait">
+          {exportType === 'app' ? (
+            <motion.div 
+              key="app-export"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start"
             >
-              {isExporting ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-neutral-950 border-t-transparent rounded-full animate-spin" />
-                  <span>Preparando sua cápsula...</span>
-                </>
-              ) : (
-                <>
-                  <Download size={20} />
-                  <span>Baixar Cápsula Literária (PNG)</span>
-                </>
-              )}
-            </button>
-            <p className="text-[10px] text-neutral-600 text-center uppercase tracking-widest leading-relaxed">
-              Se alguma capa externa bloquear a exportação, a cápsula será gerada com placeholders visuais.
-            </p>
-          </div>
-
-          {stats.totalBooks === 0 && stats.totalSessions === 0 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-6 bg-neutral-900/80 border border-neutral-800 rounded-2xl flex items-start gap-4">
-              <div className="p-2 bg-amber-500/10 rounded-lg shrink-0">
-                <Filter className="w-5 h-5 text-amber-500" />
+              {/* Preview Container */}
+              <div className="flex justify-center bg-neutral-900/30 rounded-[3rem] p-12 border border-neutral-800/40 shadow-inner overflow-hidden relative group">
+                <div className="absolute inset-0 bg-gradient-to-b from-amber-500/5 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  key={currentDate.toISOString()}
+                  className="shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)] rounded-sm overflow-hidden"
+                >
+                  <MonthlyCapsuleCard stats={stats} userName={user?.name} />
+                </motion.div>
               </div>
-              <div className="space-y-2">
-                <h4 className="text-sm font-bold text-amber-100">Silêncio nas Prateleiras</h4>
-                <p className="text-xs text-neutral-400 leading-relaxed">
-                  Não encontramos registros de leitura para este mês. Que tal começar uma nova história hoje para preencher sua próxima cápsula?
-                </p>
+
+              {/* Actions & Information */}
+              <div className="space-y-12 py-6">
+                <div className="space-y-6">
+                  <h2 className="text-2xl font-serif italic text-amber-50">Sua Essência de {stats.monthName}</h2>
+                  
+                  <div className="grid grid-cols-1 gap-6">
+                    <InfoBlock 
+                      title="Páginas percorridas"
+                      value={stats.totalPages}
+                      description="A distância mística que seus olhos atravessaram este mês."
+                    />
+                    <InfoBlock 
+                      title="Histórias concluídas"
+                      value={stats.totalBooks}
+                      description="O número de universos que agora fazem parte da sua história."
+                    />
+                    <InfoBlock 
+                      title="Atmosfera Dominante"
+                      value={stats.dominantMood}
+                      description="O sentimento que guiou suas escolhas e momentos de leitura."
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4 pt-6 border-t border-neutral-800/50">
+                  <button
+                    onClick={() => exportAsImage('monthly-capsule-card', `readora-capsula-${format(currentDate, 'yyyy-MM')}.png`)}
+                    disabled={isExporting}
+                    className="w-full flex items-center justify-center gap-3 bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold py-5 rounded-2xl transition-all shadow-xl shadow-amber-500/10 active:scale-[0.98] disabled:opacity-50"
+                  >
+                    {isExporting ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-neutral-950 border-t-transparent rounded-full animate-spin" />
+                        <span>Preparando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download size={20} />
+                        <span>Baixar para Galeria (PNG)</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div 
+              key="instagram-export"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="space-y-12"
+            >
+              {/* Instagram Previews Grid */}
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
+                {/* Stories Preview */}
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-serif italic text-amber-50">Instagram Stories (9:16)</h3>
+                    <button 
+                      onClick={() => exportAsImage('instagram-story-capsule', `readora_capsula_${format(currentDate, 'yyyy_MM')}_stories.png`)}
+                      disabled={isExporting}
+                      className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+                    >
+                      <Download size={14} />
+                      Baixar Stories
+                    </button>
+                  </div>
+                  <div className="bg-neutral-900/50 rounded-[2rem] p-8 border border-neutral-800/50 flex justify-center overflow-hidden">
+                    <div className="scale-[0.3] origin-top shadow-2xl">
+                      <InstagramStoryCapsule data={instagramData} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Feed Preview */}
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-serif italic text-amber-50">Instagram Feed (4:5)</h3>
+                    <button 
+                      onClick={() => exportAsImage('instagram-feed-capsule', `readora_capsula_${format(currentDate, 'yyyy_MM')}_feed.png`)}
+                      disabled={isExporting}
+                      className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+                    >
+                      <Download size={14} />
+                      Baixar Feed
+                    </button>
+                  </div>
+                  <div className="bg-neutral-900/50 rounded-[2rem] p-8 border border-neutral-800/50 flex justify-center overflow-hidden">
+                    <div className="scale-[0.3] origin-top shadow-2xl">
+                      <InstagramFeedCapsule data={instagramData} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Caption Section */}
+              <div className="bg-gradient-to-br from-neutral-900 to-neutral-950 border border-neutral-800 p-8 rounded-[2.5rem] space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                      <Copy size={18} className="text-amber-500" />
+                      Legenda Sugerida
+                    </h3>
+                    <p className="text-xs text-neutral-500">Pronta para copiar e colar no seu post.</p>
+                  </div>
+                  <button 
+                    onClick={copyCaption}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-black transition-all ${copying ? 'bg-green-500 text-white' : 'bg-amber-500 text-neutral-950'}`}
+                  >
+                    {copying ? <Check size={18} /> : <Copy size={18} />}
+                    {copying ? 'Copiada!' : 'Copiar Legenda'}
+                  </button>
+                </div>
+                <div className="bg-neutral-950/50 border border-neutral-800 p-6 rounded-2xl">
+                  <p className="text-sm text-neutral-400 font-mono leading-relaxed whitespace-pre-wrap">
+                    Minha cápsula literária de {stats.monthName} no Readora 📚✨{"\n\n"}
+                    📖 Livros concluídos: {stats.totalBooks}{"\n"}
+                    📄 Páginas lidas: {stats.totalPages}{"\n"}
+                    ⭐ Média do mês: {stats.averageRating.toFixed(1)}{"\n"}
+                    🎭 Vibe: {stats.dominantMood}{"\n\n"}
+                    Gerado automaticamente pelo @readora.app 📱{"\n"}
+                    #Readora #CapsulaLiteraria #Leitura #Books #MonthlyWrapUp
+                  </p>
+                </div>
+              </div>
+
+              {/* Hidden containers for export */}
+              <div className="fixed left-[-9999px] top-[-9999px] pointer-events-none overflow-hidden">
+                <InstagramStoryCapsule data={instagramData} id="instagram-story-capsule" />
+                <InstagramFeedCapsule data={instagramData} id="instagram-feed-capsule" />
               </div>
             </motion.div>
           )}
-        </div>
+        </AnimatePresence>
       </div>
     </div>
   );
@@ -272,6 +326,8 @@ const InfoBlock = ({ title, value, description }: { title: string; value: string
       <span className="text-3xl font-serif text-amber-100 tabular-nums">{value}</span>
       <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-[0.1em]">{title}</h3>
     </div>
-    <p className="text-xs text-neutral-600 italic group-hover:text-neutral-500 transition-colors">{description}</p>
+    <p className="text-xs text-neutral-600 italic group-hover:text-neutral-500 transition-colors">
+      {description}
+    </p>
   </div>
 );
