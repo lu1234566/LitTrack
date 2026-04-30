@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useBooksState } from '../context/BooksContext';
 import { useReadingSessions } from '../context/ReadingSessionsContext';
 import { useAuth } from '../context/AuthContext';
@@ -65,6 +65,7 @@ export const MonthlyCapsule: React.FC = () => {
   const [exportType, setExportType] = useState<'app' | 'instagram'>('app');
   const [copying, setCopying] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const monthKey = format(currentDate, 'yyyy-MM');
 
   const stats = useMemo(() => {
     return getMonthlyStats(
@@ -78,6 +79,10 @@ export const MonthlyCapsule: React.FC = () => {
   const instagramData = useMemo(() => {
     return getInstagramCapsuleData(stats, user?.name);
   }, [stats, user]);
+
+  useEffect(() => {
+    setResolvedInstagramData(null);
+  }, [monthKey]);
 
   const handlePrevMonth = () => setCurrentDate(prev => subMonths(prev, 1));
   const handleNextMonth = () => {
@@ -99,6 +104,7 @@ export const MonthlyCapsule: React.FC = () => {
     
     try {
       if (nodeId.includes('instagram')) {
+        setResolvedInstagramData(null);
         const coverDataUrls: Record<string, string> = {};
         const uniqueBooks = [
           ...(instagramData.bestBook ? [instagramData.bestBook] : []),
@@ -135,7 +141,7 @@ export const MonthlyCapsule: React.FC = () => {
           coverDataUrls
         });
 
-        await wait(300);
+        await wait(700);
       }
 
       const node = document.getElementById(nodeId);
@@ -224,6 +230,8 @@ export const MonthlyCapsule: React.FC = () => {
       setIsExporting(false);
     }
   };
+
+  const currentInstagramData = resolvedInstagramData || instagramData;
 
   return (
     <div className="space-y-12 pb-20">
@@ -371,7 +379,7 @@ export const MonthlyCapsule: React.FC = () => {
                   </div>
                   <div className="bg-neutral-900/50 rounded-[2rem] p-8 border border-neutral-800/50 flex justify-center overflow-hidden">
                     <div className="scale-[0.3] origin-top shadow-2xl">
-                      <InstagramStoryCapsule data={resolvedInstagramData || instagramData} />
+                      <InstagramStoryCapsule key={`story-preview-${monthKey}`} data={currentInstagramData} />
                     </div>
                   </div>
                 </div>
@@ -390,7 +398,7 @@ export const MonthlyCapsule: React.FC = () => {
                   </div>
                   <div className="bg-neutral-900/50 rounded-[2rem] p-8 border border-neutral-800/50 flex justify-center overflow-hidden">
                     <div className="scale-[0.3] origin-top shadow-2xl">
-                      <InstagramFeedCapsule data={resolvedInstagramData || instagramData} />
+                      <InstagramFeedCapsule key={`feed-preview-${monthKey}`} data={currentInstagramData} />
                     </div>
                   </div>
                 </div>
@@ -436,7 +444,7 @@ export const MonthlyCapsule: React.FC = () => {
                   opacity: 1,
                 }}
               >
-                <InstagramStoryCapsule data={resolvedInstagramData || instagramData} id="instagram-story-capsule" />
+                <InstagramStoryCapsule key={`story-export-${monthKey}`} data={currentInstagramData} id="instagram-story-capsule" />
               </div>
 
               <div
@@ -449,7 +457,7 @@ export const MonthlyCapsule: React.FC = () => {
                   opacity: 1,
                 }}
               >
-                <InstagramFeedCapsule data={resolvedInstagramData || instagramData} id="instagram-feed-capsule" />
+                <InstagramFeedCapsule key={`feed-export-${monthKey}`} data={currentInstagramData} id="instagram-feed-capsule" />
               </div>
             </motion.div>
           )}
