@@ -48,11 +48,16 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (!user || !db) return;
 
     try {
-      await addDoc(collection(db, 'quotes'), {
+      const cleanedData = {
         ...quoteData,
+        page: quoteData.page ?? null,
+        personalNote: quoteData.personalNote ?? '',
+        moodLabel: quoteData.moodLabel ?? '',
         userId: user.userId,
         createdAt: Date.now(),
-      });
+      };
+
+      await addDoc(collection(db, 'quotes'), cleanedData);
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'quotes');
     }
@@ -61,7 +66,15 @@ export const QuotesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const updateQuote = useCallback(async (id: string, quoteUpdate: Partial<Quote>) => {
     if (!user || !db) return;
     try {
-      await updateDoc(doc(db, 'quotes', id), quoteUpdate);
+      // Avoid sending undefined fields to Firestore
+      const cleanedUpdate = Object.entries(quoteUpdate).reduce((acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key as string] = value;
+        }
+        return acc;
+      }, {} as any);
+
+      await updateDoc(doc(db, 'quotes', id), cleanedUpdate);
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'quotes');
     }

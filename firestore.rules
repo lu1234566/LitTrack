@@ -163,12 +163,30 @@ service cloud.firestore {
       allow create: if isSignedIn() && incoming().userId == request.auth.uid;
     }
 
+    // ===============================================================
+    // QUOTES
+    // ===============================================================
+
+    function isValidQuote(data) {
+      return data.userId == request.auth.uid &&
+             data.bookId is string &&
+             data.bookTitle is string && data.bookTitle.size() <= 600 &&
+             data.text is string && data.text.size() > 0 && data.text.size() <= 10000 &&
+             (data.page == null || data.page is number) &&
+             (data.personalNote == null || (data.personalNote is string && data.personalNote.size() <= 2000)) &&
+             (data.moodLabel == null || (data.moodLabel is string && data.moodLabel.size() <= 200)) &&
+             data.isFavorite is bool;
+    }
+
     match /quotes/{quoteId} {
-      allow get: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
-      allow update: if isSignedIn() && existing().userId == request.auth.uid && incoming().userId == request.auth.uid;
-      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(quoteId) && isValidQuote(incoming());
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid && 
+                    isValidQuote(incoming()) &&
+                    incoming().userId == existing().userId &&
+                    incoming().createdAt == existing().createdAt;
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
 
     function isValidShelf(data) {

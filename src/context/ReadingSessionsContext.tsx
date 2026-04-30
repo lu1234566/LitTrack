@@ -51,12 +51,17 @@ export const ReadingSessionsProvider: React.FC<{ children: React.ReactNode }> = 
     try {
       const book = books.find(b => b.id === sessionData.bookId);
       
-      const docRef = await addDoc(collection(db, 'reading_sessions'), {
+      // Clean undefined values
+      const cleanedData = {
         ...sessionData,
-        bookTitle: book?.titulo || sessionData.bookTitle,
+        durationMinutes: sessionData.durationMinutes ?? 0,
+        startPage: sessionData.startPage ?? null,
+        bookTitle: book?.titulo || sessionData.bookTitle || 'Desconhecido',
         userId: user.userId,
         createdAt: serverTimestamp(),
-      });
+      };
+
+      const docRef = await addDoc(collection(db, 'reading_sessions'), cleanedData);
 
       // Update book progress if a book is linked
       if (book) {

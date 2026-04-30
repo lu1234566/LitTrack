@@ -40,7 +40,7 @@ export const InstagramFeedCapsule: React.FC<Props> = ({ data, id = "instagram-fe
         {/* Left Column: Stats and Best Book */}
         <div className="col-span-5 space-y-8">
           {/* Main Month Summary */}
-          <div className="bg-neutral-900/40 border border-white/5 p-10 rounded-[3rem] backdrop-blur-md space-y-10">
+          <div className="bg-neutral-900/90 border border-white/5 p-10 rounded-[3rem] space-y-10">
             <div className="flex items-center gap-6">
               <div className="p-4 bg-amber-500/10 rounded-2xl">
                 <Trophy size={36} className="text-amber-500" />
@@ -74,7 +74,7 @@ export const InstagramFeedCapsule: React.FC<Props> = ({ data, id = "instagram-fe
           {/* Featured Book */}
           {data.bestBook && (
             <div className="relative px-2">
-              <div className="bg-neutral-900/60 p-8 rounded-[2.5rem] border border-amber-500/10 flex gap-6 items-center">
+              <div className="bg-neutral-900/80 p-8 rounded-[2.5rem] border border-amber-500/10 flex gap-6 items-center">
                 <div className="w-20 h-28 bg-neutral-800 rounded-xl overflow-hidden shadow-2xl shrink-0 relative border border-white/5">
                   {data.coverDataUrls?.[data.bestBook.id] || data.bestBook.coverUrl ? (
                     <img 

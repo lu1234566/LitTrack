@@ -4,7 +4,7 @@ import { useReadingSessions } from '../context/ReadingSessionsContext';
 import { useAuth } from '../context/AuthContext';
 import { MonthlyCapsuleCard } from '../components/monthly/MonthlyCapsuleCard';
 import { getMonthlyStats, getInstagramCapsuleData, InstagramCapsuleData } from '../lib/monthlyCapsule';
-import { toPng } from 'html-to-image';
+import { toPng, toBlob } from 'html-to-image';
 import { Download, ChevronLeft, ChevronRight, Share2, Sparkles, Filter, BookOpen, Star, Instagram, Copy, Check, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, subMonths, addMonths } from 'date-fns';
@@ -62,90 +62,105 @@ export const MonthlyCapsule: React.FC = () => {
     
     try {
       // Pre-process covers for Instagram data if needed
-      if (nodeId.includes('instagram')) {
-        const coverDataUrls: Record<string, string> = {};
-        
-        // Fetch all top 5 book covers and convert to base64 to avoid CORS/loading issues during export
-        await Promise.all(instagramData.top5Books.map(async (book) => {
-          const coverUrl = book.coverUrl;
-          if (!coverUrl) return;
+      try {
+        if (nodeId.includes('instagram')) {
+          const coverDataUrls: Record<string, string> = {};
+          
+          await Promise.all(instagramData.top5Books.map(async (book) => {
+            const coverUrl = book.coverUrl;
+            if (!coverUrl) return;
 
-          try {
-            // Using a simple fetch - if this fails due to CORS, we just skip and use the URL directly in the img tag
-            const response = await fetch(coverUrl, { cache: 'no-cache' });
-            if (response.ok) {
-              const blob = await response.blob();
-              const dataUrl = await new Promise<string>((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result as string);
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-              });
-              coverDataUrls[book.id] = dataUrl;
+            try {
+              const response = await fetch(coverUrl, { cache: 'no-cache', mode: 'cors' });
+              if (response.ok) {
+                const blob = await response.blob();
+                const dataUrl = await new Promise<string>((resolve, reject) => {
+                  const reader = new FileReader();
+                  reader.onloadend = () => resolve(reader.result as string);
+                  reader.onerror = () => reject(new Error('Thumbnail conversion failed'));
+                  reader.readAsDataURL(blob);
+                });
+                coverDataUrls[book.id] = dataUrl;
+              }
+            } catch (err) {
+              console.warn(`Cover fetch skipped for ${book.titulo}:`, err);
             }
-          } catch (err) {
-            console.warn(`CORS/Fetch error for cover of ${book.titulo}:`, err);
-          }
-        }));
+          }));
 
-        setResolvedInstagramData({
-          ...instagramData,
-          coverDataUrls
-        });
+          setResolvedInstagramData({
+            ...instagramData,
+            coverDataUrls
+          });
 
-        // Give enough time for the hidden components to re-render with resolved base64 images
-        await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 800));
+        }
+      } catch (preErr: any) {
+        throw new Error(`Erro ao preparar as capas: ${preErr.message}`);
       }
 
       const node = document.getElementById(nodeId);
       if (!node) {
-        throw new Error(`Elemento de captura "${nodeId}" não encontrado.`);
+        throw new Error(`O elemento "${nodeId}" não foi encontrado no DOM.`);
       }
       
-      // Ensure all assets (fonts/images) are fully ready
-      await document.fonts.ready;
-      await new Promise(resolve => setTimeout(resolve, 1200));
+      // Ensure assets are ready with timeout
+      try {
+        await Promise.race([
+          document.fonts.ready,
+          new Promise(resolve => setTimeout(resolve, 2500))
+        ]);
+      } catch (e) { console.warn("Font loading timeout"); }
       
-      // Fixed dimensions based on the capsule type to avoid cropping
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
       const isStory = nodeId.includes('story');
-      const targetWidth = isStory ? 1080 : 1080;
+      const targetWidth = 1080;
       const targetHeight = isStory ? 1920 : 1350;
 
-      // Capture the node
-      const dataUrl = await toPng(node, {
-        quality: 1,
-        pixelRatio: 2,
-        backgroundColor: '#0a0a0a',
-        cacheBust: true,
-        width: targetWidth,
-        height: targetHeight,
-        style: {
-          transform: 'scale(1)',
-          transformOrigin: 'top left',
-          margin: '0',
-          padding: '0',
-          width: `${targetWidth}px`,
-          height: `${targetHeight}px`,
-        }
-      });
-
-      if (!dataUrl || dataUrl.length < 2000) {
-        throw new Error('A imagem gerada parece estar vazia ou corrompida.');
+      // Capture using toBlob (lower memory footprint than toPng)
+      let blob: Blob | null = null;
+      try {
+        blob = await toBlob(node, {
+          quality: 0.9,
+          pixelRatio: 1.2, 
+          backgroundColor: '#030303',
+          cacheBust: false,
+          width: targetWidth,
+          height: targetHeight,
+          style: {
+            transform: 'scale(1)',
+            transformOrigin: 'top left',
+            margin: '0',
+            padding: '0',
+            width: `${targetWidth}px`,
+            height: `${targetHeight}px`,
+            visibility: 'visible',
+            opacity: '1',
+            borderRadius: '0'
+          }
+        });
+      } catch (captureErr: any) {
+        console.error("Capture Error:", captureErr);
+        throw new Error(`O navegador falhou ao capturar a imagem. Verifique se há memória disponível.\nErro: ${captureErr.message || 'Render Error'}`);
       }
 
-      // Download trigger
+      if (!blob || blob.size < 2000) {
+        throw new Error('A imagem gerada parece estar corrompida. Tente novamente.');
+      }
+
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.download = fileName;
-      link.href = dataUrl;
+      link.href = url;
       document.body.appendChild(link);
       link.click();
       
-      // Small delay before cleanup to ensure trigger works on mobile
       setTimeout(() => {
+        URL.revokeObjectURL(url);
         if (document.body.contains(link)) {
           document.body.removeChild(link);
         }
-      }, 500);
+      }, 1500);
       
     } catch (err: any) {
       console.error('Erro detalhado ao exportar:', err);
@@ -367,10 +382,12 @@ export const MonthlyCapsule: React.FC = () => {
                 </div>
               </div>
 
-              {/* Hidden containers for export */}
-              <div className="fixed left-[-9999px] top-[-9999px] pointer-events-none overflow-hidden">
+              {/* Hidden containers for export - Moved to a safer positioning for mobile capture */}
+              <div className="absolute top-0 left-0 opacity-0 pointer-events-none overflow-hidden" style={{ width: '1080px', height: '1920px' }}>
                 <InstagramStoryCapsule data={resolvedInstagramData || instagramData} id="instagram-story-capsule" />
-                <InstagramFeedCapsule data={resolvedInstagramData || instagramData} id="instagram-feed-capsule" />
+                <div style={{ height: '1350px' }}>
+                  <InstagramFeedCapsule data={resolvedInstagramData || instagramData} id="instagram-feed-capsule" />
+                </div>
               </div>
             </motion.div>
           )}

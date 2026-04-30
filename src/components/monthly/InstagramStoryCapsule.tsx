@@ -64,7 +64,7 @@ export const InstagramStoryCapsule: React.FC<Props> = ({ data, id = "instagram-s
       {/* Favorite of the Month - NEW SECTION */}
       {data.bestBook && (
         <div className="relative z-10 mt-16 px-4">
-          <div className="bg-amber-500/5 border border-amber-500/10 p-10 rounded-[3rem] backdrop-blur-sm flex items-center gap-10">
+          <div className="bg-neutral-900/80 border border-amber-500/10 p-10 rounded-[3rem] flex items-center gap-10">
             <div className="w-32 h-48 bg-neutral-900 rounded-2xl overflow-hidden shrink-0 shadow-2xl border border-white/10 relative">
               {data.coverDataUrls?.[data.bestBook.id] || data.bestBook.coverUrl ? (
                 <img 
