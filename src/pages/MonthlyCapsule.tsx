@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { MonthlyCapsuleCard } from '../components/monthly/MonthlyCapsuleCard';
 import { getMonthlyStats, getInstagramCapsuleData, InstagramCapsuleData } from '../lib/monthlyCapsule';
 import { toPng } from 'html-to-image';
-import { Download, ChevronLeft, ChevronRight, Sparkles, Filter, Instagram, Copy, Check, Camera } from 'lucide-react';
+import { Download, ChevronLeft, ChevronRight, Sparkles, Instagram, Copy, Check, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, subMonths, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -17,20 +17,96 @@ const COVER_PLACEHOLDER =
   'data:image/svg+xml;charset=utf-8,' +
   encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="180"><rect width="100%" height="100%" rx="16" fill="#111111"/><text x="50%" y="48%" dominant-baseline="middle" text-anchor="middle" fill="#666666" font-size="16" font-family="Arial">Readora</text><text x="50%" y="62%" dominant-baseline="middle" text-anchor="middle" fill="#444444" font-size="10" font-family="Arial">sem capa</text></svg>');
 
+const normalizeCoverUrl = (url: string) => {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (trimmed.startsWith('//')) return `https:${trimmed}`;
+  if (trimmed.startsWith('http://')) return `https://${trimmed.slice(7)}`;
+  return trimmed;
+};
+
+async function blobToDataUrl(blob: Blob): Promise<string> {
+  return await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error('Falha ao converter imagem.'));
+    reader.readAsDataURL(blob);
+  });
+}
+
 async function fetchAsDataUrl(url: string): Promise<string | null> {
   try {
-    const response = await fetch(url, { mode: 'cors', credentials: 'omit' });
+    const response = await fetch(url, {
+      mode: 'cors',
+      credentials: 'omit',
+      headers: {
+        Accept: 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+      },
+    });
     if (!response.ok) return null;
     const blob = await response.blob();
-    return await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = () => reject(new Error('Falha ao converter imagem.'));
-      reader.readAsDataURL(blob);
-    });
+    return await blobToDataUrl(blob);
   } catch {
     return null;
   }
+}
+
+async function imageToCanvasDataUrl(url: string): Promise<string | null> {
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const element = new Image();
+      element.crossOrigin = 'anonymous';
+      element.referrerPolicy = 'no-referrer';
+      element.onload = () => resolve(element);
+      element.onerror = () => reject(new Error('Falha ao carregar imagem em canvas.'));
+      element.src = url;
+    });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth || 120;
+    canvas.height = img.naturalHeight || 180;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.drawImage(img, 0, 0);
+    return canvas.toDataURL('image/png');
+  } catch {
+    return null;
+  }
+}
+
+const buildCoverCandidates = (rawUrl: string) => {
+  const url = normalizeCoverUrl(rawUrl);
+  if (!url) return [];
+
+  const withoutProtocol = url.replace(/^https?:\/\//, '');
+  const candidates = [url];
+
+  if (url.includes('books.google.com') || url.includes('googleusercontent.com')) {
+    candidates.push(url.replace(/&zoom=\d+/g, '&zoom=3'));
+    candidates.push(url.replace(/&zoom=\d+/g, '&zoom=2'));
+    if (!url.includes('&img=1')) candidates.push(`${url}${url.includes('?') ? '&' : '?'}img=1`);
+  }
+
+  candidates.push(`https://images.weserv.nl/?url=${encodeURIComponent(withoutProtocol)}&w=240&h=360&fit=inside&output=jpg`);
+  candidates.push(`https://wsrv.nl/?url=${encodeURIComponent(withoutProtocol)}&w=240&h=360&fit=inside&output=jpg`);
+
+  return [...new Set(candidates)];
+};
+
+async function resolveCoverDataUrl(rawUrl: string): Promise<string> {
+  const candidates = buildCoverCandidates(rawUrl);
+
+  for (const candidate of candidates) {
+    const fetched = await fetchAsDataUrl(candidate);
+    if (fetched) return fetched;
+  }
+
+  for (const candidate of candidates) {
+    const canvasUrl = await imageToCanvasDataUrl(candidate);
+    if (canvasUrl) return canvasUrl;
+  }
+
+  return COVER_PLACEHOLDER;
 }
 
 export const MonthlyCapsule: React.FC = () => {
@@ -75,18 +151,13 @@ export const MonthlyCapsule: React.FC = () => {
     await Promise.all(
       uniqueBooks.map(async (book) => {
         const coverUrl = book.coverUrl || book.ilustracaoUrl || '';
-        if (!coverUrl) {
-          coverDataUrls[book.id] = COVER_PLACEHOLDER;
-          return;
-        }
-        const dataUrl = await fetchAsDataUrl(coverUrl);
-        coverDataUrls[book.id] = dataUrl || COVER_PLACEHOLDER;
+        coverDataUrls[book.id] = coverUrl ? await resolveCoverDataUrl(coverUrl) : COVER_PLACEHOLDER;
       })
     );
 
     const prepared = { ...instagramData, coverDataUrls };
     setResolvedInstagramData(prepared);
-    await wait(250);
+    await wait(300);
     return prepared;
   };
 
@@ -113,7 +184,7 @@ export const MonthlyCapsule: React.FC = () => {
       if ('fonts' in document) {
         await (document as any).fonts.ready;
       }
-      await wait(400);
+      await wait(450);
 
       const dataUrl = await toPng(node as HTMLElement, {
         quality: 1,
@@ -122,9 +193,7 @@ export const MonthlyCapsule: React.FC = () => {
         cacheBust: false,
         skipAutoScale: true,
         imagePlaceholder: COVER_PLACEHOLDER,
-        style: {
-          transform: 'none',
-        },
+        style: { transform: 'none' },
       });
 
       if (!dataUrl || dataUrl.length < 500) {
