@@ -1,16 +1,18 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useBooksState } from '../context/BooksContext';
 import { useReadingSessions } from '../context/ReadingSessionsContext';
 import { useAuth } from '../context/AuthContext';
 import { MonthlyCapsuleCard } from '../components/monthly/MonthlyCapsuleCard';
-import { getMonthlyStats, getInstagramCapsuleData, InstagramCapsuleData } from '../lib/monthlyCapsule';
+import { getMonthlyStats, getInstagramCapsuleData } from '../lib/monthlyCapsule';
 import { toPng } from 'html-to-image';
-import { Download, ChevronLeft, ChevronRight, Share2, Sparkles, Filter, BookOpen, Star, Instagram, Copy, Check, Camera } from 'lucide-react';
+import { Download, ChevronLeft, ChevronRight, Sparkles, Filter, BookOpen, Star, Instagram, Copy, Check, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, subMonths, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { InstagramStoryCapsule } from '../components/monthly/InstagramStoryCapsule';
 import { InstagramFeedCapsule } from '../components/monthly/InstagramFeedCapsule';
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const MonthlyCapsule: React.FC = () => {
   const { books } = useBooksState();
@@ -21,7 +23,6 @@ export const MonthlyCapsule: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [exportType, setExportType] = useState<'app' | 'instagram'>('app');
   const [copying, setCopying] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
 
   const stats = useMemo(() => {
     return getMonthlyStats(
@@ -51,6 +52,15 @@ export const MonthlyCapsule: React.FC = () => {
     setTimeout(() => setCopying(false), 2000);
   };
 
+  const triggerDownload = (dataUrl: string, fileName: string) => {
+    const link = document.createElement('a');
+    link.download = fileName;
+    link.href = dataUrl;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const exportAsImage = async (nodeId: string, fileName: string) => {
     const node = document.getElementById(nodeId);
     if (!node) {
@@ -60,38 +70,51 @@ export const MonthlyCapsule: React.FC = () => {
 
     setIsExporting(true);
     try {
-      await document.fonts.ready;
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      const dataUrl = await toPng(node, {
-        quality: 1,
-        pixelRatio: 3,
-        backgroundColor: '#0a0a0a',
-        cacheBust: true,
-        style: {
-          transform: 'scale(1)',
-          transformOrigin: 'top left'
-        },
-        filter: (node) => {
-          const shadowRoot = (node as any).shadowRoot;
-          return !shadowRoot;
-        }
+      if ('fonts' in document) {
+        await (document as any).fonts.ready;
+      }
+      await wait(400);
+
+      const allImages = Array.from(node.querySelectorAll('img')) as HTMLImageElement[];
+      const externalImages = allImages.filter((img) => {
+        const src = img.getAttribute('src') || '';
+        return src.startsWith('http');
+      });
+      const previousVisibility = externalImages.map((img) => img.style.visibility);
+
+      externalImages.forEach((img) => {
+        img.style.visibility = 'hidden';
       });
 
-      if (!dataUrl || dataUrl.length < 500) {
-        throw new Error('Falha ao gerar imagem.');
-      }
+      try {
+        const dataUrl = await toPng(node as HTMLElement, {
+          quality: 1,
+          pixelRatio: 1,
+          backgroundColor: '#050505',
+          cacheBust: false,
+          skipAutoScale: true,
+          imagePlaceholder:
+            'data:image/svg+xml;charset=utf-8,' +
+            encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="180"><rect width="100%" height="100%" rx="12" fill="#111111"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#666666" font-size="16">Readora</text></svg>'),
+          style: {
+            transform: 'none',
+          },
+        });
 
-      const link = document.createElement('a');
-      link.download = fileName;
-      link.href = dataUrl;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
+        if (!dataUrl || dataUrl.length < 500) {
+          throw new Error('Falha ao gerar imagem.');
+        }
+
+        triggerDownload(dataUrl, fileName);
+      } finally {
+        externalImages.forEach((img, index) => {
+          img.style.visibility = previousVisibility[index] || '';
+        });
+      }
     } catch (err: any) {
       console.error('Erro ao exportar:', err);
-      alert(`Não foi possível baixar a imagem. Tente novamente ou salve via "captura de tela".\nErro: ${err.message}`);
+      const details = err?.message ? `\nErro: ${err.message}` : '';
+      alert(`Não foi possível baixar a imagem. Tente novamente em alguns segundos ou salve via "captura de tela".${details}`);
     } finally {
       setIsExporting(false);
     }
@@ -99,7 +122,6 @@ export const MonthlyCapsule: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-20">
-      {/* Header Section */}
       <section className="space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1">
@@ -137,9 +159,7 @@ export const MonthlyCapsule: React.FC = () => {
         </div>
       </section>
 
-      {/* Main Content Area */}
       <div className="space-y-8">
-        {/* Tab Selector */}
         <div className="flex p-1 bg-neutral-900/50 border border-neutral-800 rounded-2xl w-fit mx-auto">
           <button 
             onClick={() => setExportType('app')}
@@ -166,7 +186,6 @@ export const MonthlyCapsule: React.FC = () => {
               exit={{ opacity: 0, x: 20 }}
               className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start"
             >
-              {/* Preview Container */}
               <div className="flex justify-center bg-neutral-900/30 rounded-[3rem] p-12 border border-neutral-800/40 shadow-inner overflow-hidden relative group">
                 <div className="absolute inset-0 bg-gradient-to-b from-amber-500/5 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                 
@@ -180,7 +199,6 @@ export const MonthlyCapsule: React.FC = () => {
                 </motion.div>
               </div>
 
-              {/* Actions & Information */}
               <div className="space-y-12 py-6">
                 <div className="space-y-6">
                   <h2 className="text-2xl font-serif italic text-amber-50">Sua Essência de {stats.monthName}</h2>
@@ -233,9 +251,7 @@ export const MonthlyCapsule: React.FC = () => {
               exit={{ opacity: 0, x: 20 }}
               className="space-y-12"
             >
-              {/* Instagram Previews Grid */}
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
-                {/* Stories Preview */}
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-serif italic text-amber-50">Instagram Stories (9:16)</h3>
@@ -255,7 +271,6 @@ export const MonthlyCapsule: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Feed Preview */}
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-serif italic text-amber-50">Instagram Feed (4:5)</h3>
@@ -276,7 +291,6 @@ export const MonthlyCapsule: React.FC = () => {
                 </div>
               </div>
 
-              {/* Caption Section */}
               <div className="bg-gradient-to-br from-neutral-900 to-neutral-950 border border-neutral-800 p-8 rounded-[2.5rem] space-y-6">
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
@@ -307,8 +321,7 @@ export const MonthlyCapsule: React.FC = () => {
                 </div>
               </div>
 
-              {/* Hidden containers for export */}
-              <div className="fixed left-[-9999px] top-[-9999px] pointer-events-none overflow-hidden">
+              <div className="fixed left-[-99999px] top-0 pointer-events-none opacity-100 overflow-hidden">
                 <InstagramStoryCapsule data={instagramData} id="instagram-story-capsule" />
                 <InstagramFeedCapsule data={instagramData} id="instagram-feed-capsule" />
               </div>
