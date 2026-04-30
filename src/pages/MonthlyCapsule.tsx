@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useBooksState } from '../context/BooksContext';
 import { useReadingSessions } from '../context/ReadingSessionsContext';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +11,9 @@ import { format, subMonths, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { InstagramStoryCapsule } from '../components/monthly/InstagramStoryCapsule';
 import { InstagramFeedCapsule } from '../components/monthly/InstagramFeedCapsule';
+import { Book } from '../types';
+import { db } from '../lib/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const COVER_PLACEHOLDER =
@@ -20,6 +23,7 @@ const COVER_PLACEHOLDER =
 const normalizeCoverUrl = (url: string) => {
   if (!url) return '';
   const trimmed = url.trim();
+  if (trimmed.startsWith('data:image')) return trimmed;
   if (trimmed.startsWith('//')) return `https:${trimmed}`;
   if (trimmed.startsWith('http://')) return `https://${trimmed.slice(7)}`;
   return trimmed;
@@ -36,6 +40,7 @@ async function blobToDataUrl(blob: Blob): Promise<string> {
 
 async function fetchAsDataUrl(url: string): Promise<string | null> {
   try {
+    if (url.startsWith('data:image')) return url;
     const response = await fetch(url, {
       mode: 'cors',
       credentials: 'omit',
@@ -53,6 +58,7 @@ async function fetchAsDataUrl(url: string): Promise<string | null> {
 
 async function imageToCanvasDataUrl(url: string): Promise<string | null> {
   try {
+    if (url.startsWith('data:image')) return url;
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
       const element = new Image();
       element.crossOrigin = 'anonymous';
@@ -74,27 +80,68 @@ async function imageToCanvasDataUrl(url: string): Promise<string | null> {
   }
 }
 
-const buildCoverCandidates = (rawUrl: string) => {
-  const url = normalizeCoverUrl(rawUrl);
-  if (!url) return [];
+const buildCoverCandidates = (book: Book) => {
+  const direct = [book.exportCoverDataUrl, book.coverUrl, book.ilustracaoUrl]
+    .filter(Boolean)
+    .map((value) => normalizeCoverUrl(value as string));
 
-  const withoutProtocol = url.replace(/^https?:\/\//, '');
-  const candidates = [url];
+  const candidates = [...direct];
 
-  if (url.includes('books.google.com') || url.includes('googleusercontent.com')) {
-    candidates.push(url.replace(/&zoom=\d+/g, '&zoom=3'));
-    candidates.push(url.replace(/&zoom=\d+/g, '&zoom=2'));
-    if (!url.includes('&img=1')) candidates.push(`${url}${url.includes('?') ? '&' : '?'}img=1`);
+  direct.forEach((url) => {
+    if (url.startsWith('data:image')) return;
+    const withoutProtocol = url.replace(/^https?:\/\//, '');
+
+    if (url.includes('books.google.com') || url.includes('googleusercontent.com')) {
+      candidates.push(url.replace(/&zoom=\d+/g, '&zoom=3'));
+      candidates.push(url.replace(/&zoom=\d+/g, '&zoom=2'));
+      if (!url.includes('&img=1')) candidates.push(`${url}${url.includes('?') ? '&' : '?'}img=1`);
+    }
+
+    candidates.push(`https://images.weserv.nl/?url=${encodeURIComponent(withoutProtocol)}&w=240&h=360&fit=inside&output=jpg`);
+    candidates.push(`https://wsrv.nl/?url=${encodeURIComponent(withoutProtocol)}&w=240&h=360&fit=inside&output=jpg`);
+  });
+
+  if (book.isbn) {
+    const isbn = encodeURIComponent(book.isbn.trim());
+    candidates.push(`https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false`);
+    candidates.push(`https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg?default=false`);
   }
 
-  candidates.push(`https://images.weserv.nl/?url=${encodeURIComponent(withoutProtocol)}&w=240&h=360&fit=inside&output=jpg`);
-  candidates.push(`https://wsrv.nl/?url=${encodeURIComponent(withoutProtocol)}&w=240&h=360&fit=inside&output=jpg`);
-
-  return [...new Set(candidates)];
+  return [...new Set(candidates.filter(Boolean))];
 };
 
-async function resolveCoverDataUrl(rawUrl: string): Promise<string> {
-  const candidates = buildCoverCandidates(rawUrl);
+async function searchGoogleBooksCover(book: Book): Promise<string | null> {
+  try {
+    const queries: string[] = [];
+    if (book.isbn) queries.push(`isbn:${book.isbn}`);
+    queries.push(`intitle:${book.titulo}${book.autor ? `+inauthor:${book.autor}` : ''}`);
+
+    for (const q of queries) {
+      const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=3&printType=books`;
+      const response = await fetch(url, { mode: 'cors', credentials: 'omit' });
+      if (!response.ok) continue;
+      const data = await response.json();
+      const items = Array.isArray(data?.items) ? data.items : [];
+      for (const item of items) {
+        const links = item?.volumeInfo?.imageLinks || {};
+        const candidate = normalizeCoverUrl(links.thumbnail || links.smallThumbnail || links.small || '');
+        if (!candidate) continue;
+        const resolved = (await fetchAsDataUrl(candidate)) || (await imageToCanvasDataUrl(candidate));
+        if (resolved) return resolved;
+      }
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+async function resolveCoverDataUrl(book: Book): Promise<string> {
+  if (book.exportCoverDataUrl?.startsWith('data:image')) {
+    return book.exportCoverDataUrl;
+  }
+
+  const candidates = buildCoverCandidates(book);
 
   for (const candidate of candidates) {
     const fetched = await fetchAsDataUrl(candidate);
@@ -106,7 +153,24 @@ async function resolveCoverDataUrl(rawUrl: string): Promise<string> {
     if (canvasUrl) return canvasUrl;
   }
 
+  const googleBooksCover = await searchGoogleBooksCover(book);
+  if (googleBooksCover) return googleBooksCover;
+
   return COVER_PLACEHOLDER;
+}
+
+async function persistResolvedCover(book: Book, dataUrl: string) {
+  try {
+    if (!db) return;
+    if (!dataUrl || dataUrl === COVER_PLACEHOLDER) return;
+    if (book.exportCoverDataUrl === dataUrl) return;
+    await updateDoc(doc(db, 'books', book.id), {
+      exportCoverDataUrl: dataUrl,
+      exportCoverResolvedAt: Date.now(),
+    });
+  } catch {
+    // non-fatal background persistence
+  }
 }
 
 export const MonthlyCapsule: React.FC = () => {
@@ -150,16 +214,32 @@ export const MonthlyCapsule: React.FC = () => {
 
     await Promise.all(
       uniqueBooks.map(async (book) => {
-        const coverUrl = book.coverUrl || book.ilustracaoUrl || '';
-        coverDataUrls[book.id] = coverUrl ? await resolveCoverDataUrl(coverUrl) : COVER_PLACEHOLDER;
+        const resolved = await resolveCoverDataUrl(book);
+        coverDataUrls[book.id] = resolved;
+        void persistResolvedCover(book, resolved);
       })
     );
 
     const prepared = { ...instagramData, coverDataUrls };
     setResolvedInstagramData(prepared);
-    await wait(300);
+    await wait(250);
     return prepared;
   };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (exportType !== 'instagram') return;
+
+    (async () => {
+      const prepared = await prepareInstagramData();
+      if (!cancelled) setResolvedInstagramData(prepared);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [exportType, currentDate, books.length, sessions.length]);
 
   const triggerDownload = (dataUrl: string, fileName: string) => {
     const link = document.createElement('a');
@@ -209,6 +289,8 @@ export const MonthlyCapsule: React.FC = () => {
       setIsExporting(false);
     }
   };
+
+  const previewInstagramData = resolvedInstagramData || instagramData;
 
   return (
     <div className="space-y-12 pb-20">
@@ -332,7 +414,7 @@ export const MonthlyCapsule: React.FC = () => {
                   </div>
                   <div className="bg-neutral-900/50 rounded-[2rem] p-8 border border-neutral-800/50 flex justify-center overflow-hidden">
                     <div className="scale-[0.3] origin-top shadow-2xl">
-                      <InstagramStoryCapsule data={instagramData} />
+                      <InstagramStoryCapsule data={previewInstagramData} />
                     </div>
                   </div>
                 </div>
@@ -351,7 +433,7 @@ export const MonthlyCapsule: React.FC = () => {
                   </div>
                   <div className="bg-neutral-900/50 rounded-[2rem] p-8 border border-neutral-800/50 flex justify-center overflow-hidden">
                     <div className="scale-[0.3] origin-top shadow-2xl">
-                      <InstagramFeedCapsule data={instagramData} />
+                      <InstagramFeedCapsule data={previewInstagramData} />
                     </div>
                   </div>
                 </div>
@@ -388,8 +470,8 @@ export const MonthlyCapsule: React.FC = () => {
               </div>
 
               <div className="fixed left-[-99999px] top-0 pointer-events-none opacity-100 overflow-hidden">
-                <InstagramStoryCapsule data={resolvedInstagramData || instagramData} id="instagram-story-capsule" exportSafe />
-                <InstagramFeedCapsule data={resolvedInstagramData || instagramData} id="instagram-feed-capsule" exportSafe />
+                <InstagramStoryCapsule data={previewInstagramData} id="instagram-story-capsule" exportSafe />
+                <InstagramFeedCapsule data={previewInstagramData} id="instagram-feed-capsule" exportSafe />
               </div>
             </motion.div>
           )}
