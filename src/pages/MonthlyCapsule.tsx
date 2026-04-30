@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { MonthlyCapsuleCard } from '../components/monthly/MonthlyCapsuleCard';
 import { getMonthlyStats } from '../lib/monthlyCapsule';
 import { toPng } from 'html-to-image';
-import { Download, ChevronLeft, ChevronRight, Share2, Sparkles, Filter } from 'lucide-react';
+import { Download, ChevronLeft, ChevronRight, Share2, Sparkles, Filter, BookOpen, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, subMonths, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -38,39 +38,90 @@ export const MonthlyCapsule: React.FC = () => {
 
   const exportAsImage = async () => {
     const node = document.getElementById('monthly-capsule-card');
-    if (!node) return;
+    if (!node) {
+      alert('Erro: O card da cápsula não foi encontrado na página.');
+      return;
+    }
 
     setIsExporting(true);
     try {
-      // Small delay to ensure any animations finish
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Ensure the node is visible and images/fonts have a chance to load
+      await document.fonts.ready;
+      await new Promise(resolve => setTimeout(resolve, 1500)); // Slightly longer delay for stability
       
       const dataUrl = await toPng(node, {
-        quality: 0.95,
-        pixelRatio: 2, // High resolution for sharing
-        backgroundColor: '#0a0a0a'
+        quality: 1,
+        pixelRatio: 3, // Higher resolution for better quality
+        backgroundColor: '#0a0a0a',
+        cacheBust: true,
+        style: {
+          transform: 'scale(1)',
+          transformOrigin: 'top left'
+        },
+        // Filter out problematic elements if any
+        filter: (node) => {
+          const shadowRoot = (node as any).shadowRoot;
+          return !shadowRoot;
+        }
       });
-      
+
+      if (!dataUrl || dataUrl.length < 500) {
+        throw new Error('Falha ao gerar imagem de alta resolução.');
+      }
+
       const link = document.createElement('a');
       link.download = `readora-capsula-${format(currentDate, 'yyyy-MM', { locale: ptBR })}.png`;
       link.href = dataUrl;
+      document.body.appendChild(link);
       link.click();
-    } catch (err) {
+      document.body.removeChild(link);
+      
+    } catch (err: any) {
       console.error('Erro ao exportar imagem:', err);
+      
+      // Fallback 1: Try with lower resolution
+      try {
+        console.log("Tentando exportação em baixa resolução...");
+        const dataUrl = await toPng(node, { quality: 0.8, pixelRatio: 1 });
+        const link = document.createElement('a');
+        link.download = `readora-capsula-${format(currentDate, 'yyyy-MM', { locale: ptBR })}.png`;
+        link.href = dataUrl;
+        link.click();
+      } catch (fallbackErr) {
+        alert(`Não foi possível baixar a imagem automaticamente. Erro: ${err.message || 'Erro de processamento'}`);
+        
+        // Fallback 2: Open in new window
+        try {
+          const dataUrl = await toPng(node);
+          const win = window.open();
+          if (win) {
+            win.document.write(`
+              <html>
+                <body style="margin:0; background: #0a0a0a; display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+                  <img src="${dataUrl}" style="max-width: 90%; box-shadow: 0 20px 50px rgba(0,0,0,0.5); border-radius: 8px;" />
+                  <p style="color: white; font-family: sans-serif; position: fixed; bottom: 20px; font-size: 14px;">Clique com o botão direito para salvar</p>
+                </body>
+              </html>
+            `);
+          }
+        } catch (finalErr) {
+          console.error("Todos os métodos de exportação falharam:", finalErr);
+        }
+      }
     } finally {
       setIsExporting(false);
     }
   };
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-12 pb-20">
       {/* Header Section */}
       <section className="space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-amber-500 mb-1">
               <Sparkles size={16} />
-              <span className="text-[10px] uppercase tracking-[0.2em] font-bold">Premium Feature</span>
+              <span className="text-[10px] uppercase tracking-[0.2em] font-bold">Resumo Mensal v1.2</span>
             </div>
             <h1 className="text-4xl md:text-5xl font-serif leading-tight">Cápsula Literária</h1>
             <p className="text-neutral-500 text-sm max-w-xl">
@@ -140,6 +191,77 @@ export const MonthlyCapsule: React.FC = () => {
                 description="O sentimento que guiou suas escolhas e momentos de leitura."
               />
             </div>
+
+            {stats.booksCompleted.length > 0 && (
+              <div className="pt-10 border-t border-neutral-800/50 space-y-8">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-[0.2em] flex items-center gap-2">
+                    <BookOpen size={16} className="text-amber-500" />
+                    Livros e Avaliações de {stats.monthName}
+                  </h3>
+                  <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">
+                    {stats.booksCompleted.length} obras concluídas
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-4">
+                  {stats.booksCompleted.map((book) => (
+                    <div key={book.id} className="flex flex-col sm:flex-row sm:items-center justify-between bg-neutral-900/60 p-5 rounded-2xl border border-neutral-800/60 group hover:border-amber-500/20 transition-all">
+                      <div className="flex gap-4 items-center">
+                        <div className="w-10 h-14 bg-neutral-800 rounded-lg overflow-hidden shrink-0 shadow-lg border border-neutral-700/50">
+                          {book.coverUrl ? (
+                            <img src={book.coverUrl} alt={book.titulo} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <BookOpen size={14} className="text-neutral-700" />
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-neutral-100 group-hover:text-amber-500 transition-colors">{book.titulo}</h4>
+                          <p className="text-xs text-neutral-500 italic font-serif">{book.autor}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between sm:justify-end gap-6 mt-4 sm:mt-0 pt-4 sm:pt-0 border-t sm:border-t-0 border-neutral-800/50">
+                        <div className="flex flex-col items-end sm:items-center">
+                          <span className="text-[9px] text-neutral-600 font-black uppercase tracking-widest mb-1">Páginas</span>
+                          <span className="text-xs font-mono text-neutral-300">{book.pageCount || '—'}</span>
+                        </div>
+                        <div className="flex flex-col items-end">
+                          <span className="text-[9px] text-neutral-600 font-black uppercase tracking-widest mb-1">Nota</span>
+                          <div className="flex gap-0.5">
+                            {[...Array(5)].map((_, i) => (
+                              <Star 
+                                key={i} 
+                                size={12} 
+                                className={`${i < (book.notaGeral || 0) ? 'text-amber-500 fill-amber-500' : 'text-neutral-800'}`} 
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="bg-amber-500/5 border border-amber-500/10 p-6 rounded-2xl flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-amber-500/10 rounded-xl">
+                      <Star className="text-amber-500" size={20} />
+                    </div>
+                    <div>
+                      <p className="text-xs text-neutral-400 font-medium">Média Literária do Mês</p>
+                      <h4 className="text-2xl font-serif font-bold text-amber-50 italic">{stats.averageRating.toFixed(1)} / 5.0</h4>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-neutral-400 font-medium">Foco do Período</p>
+                    <h4 className="text-sm font-bold text-neutral-200">{stats.topGenre}</h4>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-4 pt-6 border-t border-neutral-800/50">

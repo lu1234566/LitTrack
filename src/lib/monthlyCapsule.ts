@@ -1,6 +1,7 @@
 import { Book, ReadingSession } from '../types';
 import { format, isSameMonth, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { safeParseNumber } from './statsUtils';
 
 export interface MonthlyStats {
   month: number;
@@ -25,15 +26,31 @@ export const getMonthlyStats = (
   month: number, // 0-11
   year: number
 ): MonthlyStats => {
+  const MONTHS_MAP = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+  ];
+  const targetMonthName = MONTHS_MAP[month];
   const startDate = startOfMonth(new Date(year, month));
   const endDate = endOfMonth(new Date(year, month));
   const monthName = format(startDate, 'MMMM', { locale: ptBR });
 
-  // Filter books finished in the month
+  // Filter books finished in the month - matching Timeline.tsx logic
   const booksFinished = books.filter(book => {
-    if (!book.finishedAt || book.status !== 'lido') return false;
-    const finishDate = new Date(book.finishedAt);
-    return isSameMonth(finishDate, startDate) && finishDate.getFullYear() === year;
+    if (book.status !== 'lido') return false;
+    
+    // Primary: Match manual fields (This is the source of truth for the monthly list in Timeline)
+    if (book.mesLeitura === targetMonthName && book.anoLeitura === year) {
+      return true;
+    }
+    
+    // Secondary: Match via timestamp if manual fields don't match but status is 'lido'
+    if (book.finishedAt) {
+      const finishDate = new Date(book.finishedAt);
+      return isSameMonth(finishDate, startDate) && finishDate.getFullYear() === year;
+    }
+    
+    return false;
   });
 
   // Filter sessions in the month
@@ -42,8 +59,16 @@ export const getMonthlyStats = (
     return isWithinInterval(sessionDate, { start: startDate, end: endDate });
   });
 
-  const totalPages = monthlySessions.reduce((acc, s) => acc + (s.pagesRead || 0), 0);
+  // Pages from sessions
+  const sessionPages = monthlySessions.reduce((acc, s) => acc + (s.pagesRead || 0), 0);
   const totalMinutes = monthlySessions.reduce((acc, s) => acc + (s.durationMinutes || 0), 0);
+
+  // Fallback: Pages from books finished this month if no sessions exist for those books
+  // (Simplified: if sessionPages is 0, we can use the sum of pages of finished books as a heuristic)
+  let totalPages = sessionPages;
+  if (sessionPages === 0 && booksFinished.length > 0) {
+    totalPages = booksFinished.reduce((acc, b) => acc + safeParseNumber(b.pageCount), 0);
+  }
   
   const totalRating = booksFinished.reduce((acc, b) => acc + (b.notaGeral || 0), 0);
   const averageRating = booksFinished.length > 0 ? totalRating / booksFinished.length : 0;

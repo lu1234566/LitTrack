@@ -31,7 +31,7 @@ export const MonthlyCapsuleCard: React.FC<MonthlyCapsuleCardProps> = ({ stats, u
   return (
     <div 
       id="monthly-capsule-card"
-      className="w-[400px] min-h-[700px] bg-neutral-950 text-neutral-100 p-8 flex flex-col space-y-8 relative overflow-hidden border border-neutral-800 shadow-2xl"
+      className="w-[400px] min-h-[700px] h-fit bg-neutral-950 text-neutral-100 p-8 flex flex-col space-y-8 relative overflow-hidden border border-neutral-800 shadow-2xl"
       style={{
         background: 'radial-gradient(circle at 50% -20%, #262626 0%, #0a0a0a 100%)'
       }}
@@ -76,33 +76,33 @@ export const MonthlyCapsuleCard: React.FC<MonthlyCapsuleCardProps> = ({ stats, u
         />
         <StatItem 
           icon={<Layers className="w-4 h-4 text-neutral-500" />}
-          label="Páginas"
+          label="Páginas Vencidas"
           value={totalPages}
         />
         <StatItem 
           icon={<Clock className="w-4 h-4 text-neutral-500" />}
-          label="Tempo"
+          label="Tempo de Foco"
           value={`${hours}h ${minutes}m`}
         />
         <StatItem 
           icon={<Star className="w-4 h-4 text-amber-500/70" />}
-          label="Média"
+          label="Média do Mês"
           value={averageRating.toFixed(1)}
         />
       </div>
 
-      {/* Highlights Section */}
-      <div className="relative z-10 space-y-4 flex-grow">
-        <h3 className="text-[10px] uppercase tracking-[0.2em] text-neutral-500 font-bold flex items-center gap-2">
+      {/* Highlights Section - List of all completed books */}
+      <div className="relative z-10 space-y-4 flex-grow pr-1">
+        <h3 className="text-[10px] uppercase tracking-[0.2em] text-neutral-500 font-bold flex items-center gap-2 sticky top-0 bg-neutral-950/80 backdrop-blur-sm py-1">
           <span className="h-[1px] w-4 bg-neutral-800" />
-          Destaques do Mês
+          Acervo Concluído ({booksCompleted.length})
         </h3>
         
         {booksCompleted.length > 0 ? (
-          <div className="space-y-4">
-            {booksCompleted.slice(0, 3).map((book, idx) => (
-              <div key={idx} className="flex gap-4 items-center group">
-                <div className="w-12 h-16 bg-neutral-900 border border-neutral-800 flex-shrink-0 relative overflow-hidden rounded-sm shadow-lg">
+          <div className="space-y-3">
+            {booksCompleted.map((book, idx) => (
+              <div key={idx} className="flex gap-4 items-center group bg-neutral-900/30 p-2 rounded-lg border border-neutral-800/10 hover:border-neutral-800/50 transition-all">
+                <div className="w-10 h-14 bg-neutral-900 border border-neutral-800 flex-shrink-0 relative overflow-hidden rounded-sm shadow-lg">
                   {book.ilustracaoUrl || book.coverUrl ? (
                     <img 
                       src={book.ilustracaoUrl || book.coverUrl} 
@@ -112,20 +112,27 @@ export const MonthlyCapsuleCard: React.FC<MonthlyCapsuleCardProps> = ({ stats, u
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <BookOpen className="w-4 h-4 text-neutral-700" />
+                      <BookOpen className="w-3 h-3 text-neutral-700" />
                     </div>
                   )}
                 </div>
-                <div className="min-w-0">
-                  <h4 className="text-sm font-medium text-neutral-200 truncate">{book.titulo}</h4>
-                  <p className="text-[10px] text-neutral-500 truncate">{book.autor}</p>
-                  <div className="flex gap-0.5 mt-1">
-                    {[...Array(5)].map((_, i) => (
-                      <Star 
-                        key={i} 
-                        className={`w-2 h-2 ${i < (book.notaGeral || 0) ? 'text-amber-500 fill-amber-500' : 'text-neutral-800'}`} 
-                      />
-                    ))}
+                <div className="min-w-0 flex-grow">
+                  <div className="flex justify-between items-start gap-2">
+                    <h4 className="text-[11px] font-bold text-neutral-200 truncate leading-tight group-hover:text-amber-200 transition-colors">{book.titulo}</h4>
+                    <div className="flex gap-0.5 shrink-0 pt-0.5">
+                      {[...Array(5)].map((_, i) => (
+                        <Star 
+                          key={i} 
+                          className={`w-[10px] h-[10px] ${i < (book.notaGeral || 0) ? 'text-amber-500 fill-amber-500' : 'text-neutral-800'}`} 
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-end mt-1">
+                    <p className="text-[9px] text-neutral-500 truncate italic font-serif">by {book.autor}</p>
+                    {book.pageCount && (
+                      <span className="text-[8px] text-neutral-600 font-mono">{book.pageCount} pgs</span>
+                    )}
                   </div>
                 </div>
               </div>
