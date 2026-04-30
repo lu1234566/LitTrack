@@ -26,6 +26,7 @@ import { YearlyComparison } from './pages/YearlyComparison';
 import { Quotes } from './pages/Quotes';
 import { Shelves } from './pages/Shelves';
 import { ShelfDetail } from './pages/ShelfDetail';
+import { MonthlyCapsule } from './pages/MonthlyCapsule';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 export default function App() {
@@ -51,6 +52,7 @@ export default function App() {
                   <Route path="citacoes" element={<Quotes />} />
                   <Route path="estantes" element={<Shelves />} />
                   <Route path="estante/:id" element={<ShelfDetail />} />
+                  <Route path="capsula" element={<MonthlyCapsule />} />
                   <Route path="linha-do-tempo" element={<Timeline />} />
                   <Route path="recomendacoes" element={<Recommendations />} />
                   <Route path="exportar" element={<ExportData />} />

@@ -739,6 +739,36 @@ export const Dashboard: React.FC = () => {
            </div>
         </div>
       </section>
+      
+      {/* Monthly Capsule Promotion Section */}
+      <section className="px-2">
+        <div className="bg-neutral-900/40 border border-neutral-800/40 rounded-[3.5rem] p-4 relative overflow-hidden group/capsula shadow-3xl">
+          <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-transparent pointer-events-none" />
+          <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16 p-8 md:p-12 relative z-10">
+            <div className="w-24 h-24 md:w-32 md:h-32 bg-neutral-950 rounded-[2.5rem] flex items-center justify-center border border-neutral-800 shadow-2xl group-hover/capsula:scale-110 transition-transform duration-700">
+              <Sparkles className="text-amber-500" size={48} />
+            </div>
+            
+            <div className="flex-1 text-center md:text-left space-y-4">
+              <div className="flex flex-col md:flex-row items-center gap-4">
+                <h2 className="text-4xl md:text-5xl font-serif font-black text-neutral-100 italic leading-none tracking-tight">Cápsula de {currentMonthName}</h2>
+                <span className="text-[10px] bg-amber-500/10 text-amber-500 font-bold uppercase tracking-[0.3em] px-4 py-2 rounded-full border border-amber-500/20">Novo</span>
+              </div>
+              <p className="text-base text-neutral-400 font-serif italic max-w-2xl leading-relaxed">
+                Sua jornada literária do mês condensada em uma arte única. Visualize suas conquistas, páginas voadas e atmosfera literária predominante.
+              </p>
+            </div>
+            
+            <Link 
+              to="/capsula" 
+              className="px-10 py-6 bg-amber-500 hover:bg-amber-400 text-neutral-950 text-[10px] font-black uppercase tracking-[0.3em] rounded-[3rem] transition-all active:scale-95 shadow-[0_20px_40px_rgba(245,158,11,0.15)] flex items-center gap-3 shrink-0"
+            >
+              Gerar Cápsula
+              <ArrowUpRight size={14} />
+            </Link>
+          </div>
+        </div>
+      </section>
 
       <section className="space-y-24 py-24">
         <div className="flex items-center justify-between px-8">

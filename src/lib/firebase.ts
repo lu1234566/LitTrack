@@ -61,11 +61,12 @@ if (isConfigValid) {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
     
-    // Initialize Firestore (Default Database)
-    db = getFirestore(app);
+    // Initialize Firestore
+    // For the default database, the ID is "(default)". Using projectId here causes connection errors.
+    db = appletConfig.firestoreDatabaseId ? getFirestore(app, appletConfig.firestoreDatabaseId) : getFirestore(app);
     
     if (import.meta.env.DEV) {
-      console.log(`[Firebase] Database Status: Connected to default`);
+      console.log(`[Firebase] Database Status: Connected to ${appletConfig.firestoreDatabaseId || '(default)'}`);
     }
     
     googleProvider = new GoogleAuthProvider();

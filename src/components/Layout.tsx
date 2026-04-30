@@ -19,6 +19,7 @@ const navItems = [
   { icon: Search, label: 'Pesquisar Livros', path: '/pesquisar' },
   { icon: Quote, label: 'Citações', path: '/citacoes' },
   { icon: UserCircle, label: 'Perfil Literário', path: '/perfil-literario' },
+  { icon: Sparkles, label: 'Cápsula Mensal', path: '/capsula' },
   { icon: History, label: 'Linha do Tempo', path: '/linha-do-tempo' },
   { icon: Calendar, label: 'Retrospectiva', path: '/retrospectiva' },
   { icon: Sparkles, label: 'Recomendações', path: '/recomendacoes' },

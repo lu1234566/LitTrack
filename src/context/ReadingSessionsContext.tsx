@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { db } from '../lib/firebase';
-import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { useAuth, handleFirestoreError, OperationType } from './AuthContext';
-import { ReadingSession } from '../types';
+import { ReadingSession, Book } from '../types';
 import { useBooksState } from './BooksContext';
 
 interface ReadingSessionsContextType {
@@ -28,24 +28,19 @@ export const ReadingSessionsProvider: React.FC<{ children: React.ReactNode }> = 
       return;
     }
 
-    setLoading(true);
     const q = query(collection(db, 'reading_sessions'), where('userId', '==', user.userId));
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const sessionsData: ReadingSession[] = [];
-        snapshot.forEach((docSnap) => {
-          sessionsData.push({ id: docSnap.id, ...docSnap.data() } as ReadingSession);
-        });
-        sessionsData.sort((a, b) => b.date - a.date);
-        setSessions(sessionsData);
-        setLoading(false);
-      },
-      (error) => {
-        handleFirestoreError(error, OperationType.GET, 'reading_sessions');
-        setLoading(false);
-      }
-    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const sessionsData: ReadingSession[] = [];
+      snapshot.forEach((doc) => {
+        sessionsData.push({ id: doc.id, ...doc.data() } as ReadingSession);
+      });
+      sessionsData.sort((a, b) => b.date - a.date);
+      setSessions(sessionsData);
+      setLoading(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'reading_sessions');
+      setLoading(false);
+    });
 
     return unsubscribe;
   }, [user]);
@@ -54,30 +49,38 @@ export const ReadingSessionsProvider: React.FC<{ children: React.ReactNode }> = 
     if (!user || !db) return;
 
     try {
-      const book = books.find((b) => b.id === sessionData.bookId);
-
-      await addDoc(collection(db, 'reading_sessions'), {
+      const book = books.find(b => b.id === sessionData.bookId);
+      
+      const docRef = await addDoc(collection(db, 'reading_sessions'), {
         ...sessionData,
         bookTitle: book?.titulo || sessionData.bookTitle,
         userId: user.userId,
         createdAt: serverTimestamp(),
       });
 
+      // Update book progress if a book is linked
       if (book) {
-        const currentPage = book.currentPage || 0;
-        const inferredEndPage = sessionData.endPage || currentPage + Math.max(0, sessionData.pagesRead || 0);
+        // Ensure we don't regress current page
+        const newCurrentPage = Math.max(book.currentPage || 0, sessionData.endPage || (book.currentPage || 0) + sessionData.pagesRead);
         const total = book.totalPages || book.pageCount || 0;
+        let progressPercentage = book.progressPercentage || 0;
+        let newStatus = book.status;
 
-        const newCurrentPage = total > 0 ? Math.min(total, Math.max(currentPage, inferredEndPage)) : Math.max(currentPage, inferredEndPage);
-        const progressPercentage = total > 0 ? Math.min(100, Math.round((newCurrentPage / total) * 100)) : book.progressPercentage || 0;
-        const newStatus = progressPercentage === 100 && book.status === 'lendo' ? 'lido' : book.status;
+        if (total > 0) {
+          progressPercentage = Math.min(100, Math.round((newCurrentPage / total) * 100));
+        }
+
+        // If progress is 100%, consider book as finished
+        if (progressPercentage === 100 && book.status === 'lendo') {
+          newStatus = 'lido';
+        }
 
         await updateBook(book.id, {
           currentPage: newCurrentPage,
           progressPercentage,
           status: newStatus,
           finishedAt: newStatus === 'lido' && !book.finishedAt ? Date.now() : book.finishedAt,
-          updatedAt: Date.now(),
+          updatedAt: Date.now()
         });
       }
     } catch (error) {
@@ -95,7 +98,7 @@ export const ReadingSessionsProvider: React.FC<{ children: React.ReactNode }> = 
   }, [user]);
 
   const getSessionsByBook = useCallback((bookId: string) => {
-    return sessions.filter((s) => s.bookId === bookId);
+    return sessions.filter(s => s.bookId === bookId);
   }, [sessions]);
 
   const value = useMemo(() => ({
@@ -103,7 +106,7 @@ export const ReadingSessionsProvider: React.FC<{ children: React.ReactNode }> = 
     loading,
     addSession,
     deleteSession,
-    getSessionsByBook,
+    getSessionsByBook
   }), [sessions, loading, addSession, deleteSession, getSessionsByBook]);
 
   return <ReadingSessionsContext.Provider value={value}>{children}</ReadingSessionsContext.Provider>;
