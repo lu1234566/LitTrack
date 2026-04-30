@@ -2,7 +2,7 @@ import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-// Try to get config from environment variables as a fallback
+// Configuration from environment variables
 const envConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -10,23 +10,24 @@ const envConfig = {
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  databaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID,
 };
 
-// Attempt to load the applet config using a pattern that won't break if missing
-// We use import.meta.glob which is a Vite feature to safely check for file existence
+// Attempt to load the applet config from the project root
 let appletConfig: any = {};
 try {
+  // Use import.meta.glob to find the config file in the root
   const configs = import.meta.glob('../../firebase-applet-config.json', { eager: true });
-  const configPath = '../../firebase-applet-config.json';
-  if (configs[configPath]) {
-    appletConfig = (configs[configPath] as any).default || configs[configPath];
+  const configKey = Object.keys(configs).find(k => k.endsWith('firebase-applet-config.json'));
+  
+  if (configKey && configs[configKey]) {
+    appletConfig = (configs[configKey] as any).default || configs[configKey];
   }
 } catch (e) {
-  console.warn("Firebase applet config could not be loaded statically:", e);
+  console.warn("Firebase applet config loading failed:", e);
 }
 
-// Merge configurations: envConfig takes precedence.
-// If valid ENV config exists, we use ONLY that to avoid cross-project contamination.
+// Merge configurations: if valid ENV config exists, we use ONLY that.
 const isEnvConfigComplete = !!(envConfig.apiKey && envConfig.projectId && envConfig.appId);
 
 const firebaseConfig = isEnvConfigComplete ? { ...envConfig } : {
@@ -38,7 +39,11 @@ const firebaseConfig = isEnvConfigComplete ? { ...envConfig } : {
   appId: appletConfig.appId || envConfig.appId,
 };
 
-// Validate if we have enough to initialize
+// If ENV is complete, we use ONLY envConfig.databaseId (ignoring appletConfig)
+// This ensures we connect to the default database of the ENV project unless explicitly specified.
+const activeDatabaseId = isEnvConfigComplete ? envConfig.databaseId : (envConfig.databaseId || appletConfig.firestoreDatabaseId);
+
+// Validation for initialization
 export const isConfigValid = !!(
   firebaseConfig.apiKey && 
   firebaseConfig.projectId && 
@@ -52,21 +57,28 @@ let googleProvider: any = null;
 let initialized = false;
 
 if (isConfigValid) {
-  // Enhanced Debug Log for AI Studio Stability
   if (import.meta.env.DEV) {
     console.log(`[Firebase] Config Source: ${isEnvConfigComplete ? 'ENV (VITE_FIREBASE_*)' : 'APPLET_CONFIG'}`);
     console.log(`[Firebase] Project: ${firebaseConfig.projectId}`);
+    console.log(`[Firebase] Auth Domain: ${firebaseConfig.authDomain}`);
   }
+  
   try {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
     
     // Initialize Firestore
-    // For the default database, the ID is "(default)". Using projectId here causes connection errors.
-    db = appletConfig.firestoreDatabaseId ? getFirestore(app, appletConfig.firestoreDatabaseId) : getFirestore(app);
+    // Use getFirestore(app) (default database) unless activeDatabaseId is explicitly set and non-empty
+    db = (activeDatabaseId && activeDatabaseId.trim() !== "") ? getFirestore(app, activeDatabaseId) : getFirestore(app);
     
     if (import.meta.env.DEV) {
-      console.log(`[Firebase] Database Status: Connected to ${appletConfig.firestoreDatabaseId || '(default)'}`);
+      console.log(`[Firebase] Initialization SUCCESS`);
+      console.log(`[Firebase] Configured Project: ${firebaseConfig.projectId}`);
+      console.log(`[Firebase] Active Firestore Database: ${activeDatabaseId || '(default)'}`);
+      
+      if (!isEnvConfigComplete && !appletConfig.projectId) {
+        console.warn("[Firebase] WARNING: No project ID found in applet config or ENV.");
+      }
     }
     
     googleProvider = new GoogleAuthProvider();
