@@ -46,16 +46,13 @@ const isBookCompletedInMonth = (book: Book, targetMonthName: string, year: numbe
   const normalizedTargetMonth = normalizeMonthName(targetMonthName);
   const bookYear = safeParseNumber(book.anoLeitura as unknown as number);
 
-  if (normalizedBookMonth === normalizedTargetMonth && bookYear === year) {
-    return true;
+  // Same source of truth used by Timeline: mesLeitura + anoLeitura.
+  if (normalizedBookMonth && bookYear) {
+    return normalizedBookMonth === normalizedTargetMonth && bookYear === year;
   }
 
-  if (isTimestampInTargetMonth(book.finishedAt, monthStart, year)) return true;
-  if (isTimestampInTargetMonth((book as any).updatedAt, monthStart, year)) return true;
-  if (isTimestampInTargetMonth((book as any).createdAt, monthStart, year)) return true;
-  if (isTimestampInTargetMonth(book.dataCadastro, monthStart, year)) return true;
-
-  return false;
+  // Fallback only for legacy/incomplete records that don't have month/year filled.
+  return isTimestampInTargetMonth(book.finishedAt, monthStart, year);
 };
 
 export const getMonthlyStats = (
@@ -72,8 +69,8 @@ export const getMonthlyStats = (
   const booksFinished = books
     .filter((book) => isBookCompletedInMonth(book, targetMonthName, year, startDate))
     .sort((a, b) => {
-      const aTime = safeParseNumber(a.finishedAt || (a as any).updatedAt || (a as any).createdAt || a.dataCadastro);
-      const bTime = safeParseNumber(b.finishedAt || (b as any).updatedAt || (b as any).createdAt || b.dataCadastro);
+      const aTime = safeParseNumber(a.finishedAt || a.dataCadastro);
+      const bTime = safeParseNumber(b.finishedAt || b.dataCadastro);
       return bTime - aTime;
     });
 
