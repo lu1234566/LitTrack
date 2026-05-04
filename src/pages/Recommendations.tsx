@@ -146,9 +146,53 @@ function normalizeText(value: string) {
     .trim();
 }
 
+function recommendationKey(titulo: string, autor: string) {
+  return `${normalizeText(titulo)}::${normalizeText(autor)}`;
+}
+
+function toValidGenre(genero: string): BookGenre {
+  return (['Ficção', 'Não Ficção', 'Fantasia', 'Ficção Científica', 'Romance', 'Suspense', 'Terror', 'Biografia', 'História', 'Autoajuda', 'Outro'].includes(genero)
+    ? genero
+    : 'Outro') as BookGenre;
+}
+
+function getBaseBookData(rec: Recommendation): Omit<Book, 'id' | 'userId' | 'dataCadastro'> {
+  return {
+    titulo: rec.titulo,
+    autor: rec.autor,
+    mesLeitura: new Date().toLocaleString('pt-BR', { month: 'long' }).replace(/^./, c => c.toUpperCase()),
+    anoLeitura: new Date().getFullYear(),
+    genero: toValidGenre(rec.genero),
+    status: 'quero ler',
+    notaGeral: 0,
+    resenha: '',
+    pontosFortes: '',
+    pontosFracos: '',
+    citacaoFavorita: '',
+    favorito: false,
+    notasDetalhadas: initialRatings,
+    coverUrl: '',
+    coverSource: 'placeholder',
+    pageCount: 0,
+    currentPage: 0,
+    totalPages: 0,
+    progressPercentage: 0,
+    priority: rec.compatibilidade >= 90 ? 'high' : 'medium',
+    reasonToRead: rec.motivo,
+    discoveredFrom: 'Recomendações Readora',
+    queueOrder: Date.now(),
+    addedAt: Date.now(),
+    description: `Recomendação Readora: ${rec.motivo}`,
+    isbn: '',
+    publisher: '',
+    publishedDate: '',
+    moods: [rec.clima],
+  };
+}
+
 function generateActionableRecommendations(books: Book[]): Recommendation[] {
   const consumed = new Set(
-    books.map((book) => `${normalizeText(book.titulo)}::${normalizeText(book.autor)}`)
+    books.map((book) => recommendationKey(book.titulo, book.autor))
   );
 
   const finishedOrReading = books.filter((book) => book.status === 'lido' || book.status === 'lendo');
@@ -169,7 +213,7 @@ function generateActionableRecommendations(books: Book[]): Recommendation[] {
   const favoriteMoods = Object.entries(moodCounts).sort((a, b) => b[1] - a[1]).map(([mood]) => mood);
 
   const scored = RECOMMENDATION_CATALOG
-    .filter((rec) => !consumed.has(`${normalizeText(rec.titulo)}::${normalizeText(rec.autor)}`))
+    .filter((rec) => !consumed.has(recommendationKey(rec.titulo, rec.autor)))
     .map((rec) => {
       let score = rec.compatibilidade;
       if (favoriteGenres.includes(rec.genero)) score += 10;
@@ -183,14 +227,19 @@ function generateActionableRecommendations(books: Book[]): Recommendation[] {
 }
 
 export const Recommendations: React.FC = () => {
-  const { books, recommendations, saveRecommendations, addBook, loading } = useBooks();
+  const { books, recommendations, saveRecommendations, addBook, updateBook, loading } = useBooks();
   const [isGenerating, setIsGenerating] = useState(false);
   const [filterGenre, setFilterGenre] = useState('todos');
   const [addedTitles, setAddedTitles] = useState<Set<string>>(new Set());
+  const [readTitles, setReadTitles] = useState<Set<string>>(new Set());
 
-  const booksInLibrary = useMemo(() => {
-    return new Set(books.map((book) => `${normalizeText(book.titulo)}::${normalizeText(book.autor)}`));
+  const booksByKey = useMemo(() => {
+    const map = new Map<string, Book>();
+    books.forEach((book) => map.set(recommendationKey(book.titulo, book.autor), book));
+    return map;
   }, [books]);
+
+  const booksInLibrary = useMemo(() => new Set(booksByKey.keys()), [booksByKey]);
 
   const handleGenerateRecommendations = async () => {
     if (books.length < 3) {
@@ -212,47 +261,45 @@ export const Recommendations: React.FC = () => {
   };
 
   const handleAddToQueue = async (rec: Recommendation) => {
-    const key = `${normalizeText(rec.titulo)}::${normalizeText(rec.autor)}`;
+    const key = recommendationKey(rec.titulo, rec.autor);
     if (booksInLibrary.has(key) || addedTitles.has(key)) return;
 
     try {
-      await addBook({
-        titulo: rec.titulo,
-        autor: rec.autor,
-        mesLeitura: new Date().toLocaleString('pt-BR', { month: 'long' }).replace(/^./, c => c.toUpperCase()),
-        anoLeitura: new Date().getFullYear(),
-        genero: (['Ficção', 'Não Ficção', 'Fantasia', 'Ficção Científica', 'Romance', 'Suspense', 'Terror', 'Biografia', 'História', 'Autoajuda', 'Outro'].includes(rec.genero)
-          ? rec.genero
-          : 'Outro') as BookGenre,
-        status: 'quero ler',
-        notaGeral: 0,
-        resenha: '',
-        pontosFortes: '',
-        pontosFracos: '',
-        citacaoFavorita: '',
-        favorito: false,
-        notasDetalhadas: initialRatings,
-        coverUrl: '',
-        coverSource: 'placeholder',
-        pageCount: 0,
-        currentPage: 0,
-        totalPages: 0,
-        progressPercentage: 0,
-        priority: rec.compatibilidade >= 90 ? 'high' : 'medium',
-        reasonToRead: rec.motivo,
-        discoveredFrom: 'Recomendações Readora',
-        queueOrder: Date.now(),
-        addedAt: Date.now(),
-        description: `Recomendação Readora: ${rec.motivo}`,
-        isbn: '',
-        publisher: '',
-        publishedDate: '',
-        moods: [rec.clima],
-      });
+      await addBook(getBaseBookData(rec));
       setAddedTitles((previous) => new Set(previous).add(key));
     } catch (error) {
       console.error('Error adding recommendation to queue:', error);
       alert('Não foi possível adicionar esta recomendação à sua fila.');
+    }
+  };
+
+  const handleMarkAsRead = async (rec: Recommendation) => {
+    const key = recommendationKey(rec.titulo, rec.autor);
+    const existingBook = booksByKey.get(key);
+    if (existingBook?.status === 'lido' || readTitles.has(key)) return;
+
+    try {
+      if (existingBook) {
+        await updateBook(existingBook.id, {
+          status: 'lido',
+          progressPercentage: 100,
+          currentPage: existingBook.totalPages || existingBook.pageCount || existingBook.currentPage || 0,
+          finishedAt: Date.now(),
+        });
+      } else {
+        await addBook({
+          ...getBaseBookData(rec),
+          status: 'lido',
+          progressPercentage: 100,
+          finishedAt: Date.now(),
+          priority: undefined,
+          queueOrder: undefined,
+        });
+      }
+      setReadTitles((previous) => new Set(previous).add(key));
+    } catch (error) {
+      console.error('Error marking recommendation as read:', error);
+      alert('Não foi possível marcar esta recomendação como lida.');
     }
   };
 
@@ -320,7 +367,7 @@ export const Recommendations: React.FC = () => {
             </select>
           </div>
           <p className="text-xs text-neutral-500 font-medium">
-            Clique em “Adicionar à fila” para salvar a sugestão como “Quero ler”.
+            Use “Adicionar à fila” para salvar como “Quero ler” ou “Lido” para registrar como leitura concluída.
           </p>
         </div>
       )}
@@ -346,8 +393,10 @@ export const Recommendations: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <AnimatePresence mode="popLayout">
             {filteredRecs.map((rec, index) => {
-              const key = `${normalizeText(rec.titulo)}::${normalizeText(rec.autor)}`;
-              const alreadyAdded = booksInLibrary.has(key) || addedTitles.has(key);
+              const key = recommendationKey(rec.titulo, rec.autor);
+              const existingBook = booksByKey.get(key);
+              const alreadyAdded = Boolean(existingBook) || addedTitles.has(key);
+              const alreadyRead = existingBook?.status === 'lido' || readTitles.has(key);
 
               return (
                 <motion.div
@@ -389,18 +438,29 @@ export const Recommendations: React.FC = () => {
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => handleAddToQueue(rec)}
-                    disabled={alreadyAdded}
-                    className="mt-6 w-full rounded-xl bg-amber-500 hover:bg-amber-600 disabled:bg-neutral-800 disabled:text-neutral-500 text-neutral-950 px-4 py-3 font-bold transition-all flex items-center justify-center gap-2"
-                  >
-                    {alreadyAdded ? (
-                      <><CheckCircle2 size={18} /> Já está na biblioteca</>
-                    ) : (
-                      <><Plus size={18} /> Adicionar à fila</>
-                    )}
-                  </button>
+                  <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => handleAddToQueue(rec)}
+                      disabled={alreadyAdded}
+                      className="w-full rounded-xl bg-amber-500 hover:bg-amber-600 disabled:bg-neutral-800 disabled:text-neutral-500 text-neutral-950 px-4 py-3 font-bold transition-all flex items-center justify-center gap-2"
+                    >
+                      {alreadyAdded ? (
+                        <><CheckCircle2 size={18} /> Na biblioteca</>
+                      ) : (
+                        <><Plus size={18} /> Adicionar à fila</>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleMarkAsRead(rec)}
+                      disabled={alreadyRead}
+                      className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:bg-neutral-800 disabled:text-neutral-500 text-neutral-950 px-4 py-3 font-bold transition-all flex items-center justify-center gap-2"
+                    >
+                      <CheckCircle2 size={18} /> {alreadyRead ? 'Lido' : 'Marcar lido'}
+                    </button>
+                  </div>
                 </motion.div>
               );
             })}
