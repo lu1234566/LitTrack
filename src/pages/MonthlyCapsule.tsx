@@ -1,58 +1,16 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { useBooksState } from '../context/BooksContext';
 import { useReadingSessions } from '../context/ReadingSessionsContext';
 import { useAuth } from '../context/AuthContext';
 import { MonthlyCapsuleCard } from '../components/monthly/MonthlyCapsuleCard';
 import { getMonthlyStats, getInstagramCapsuleData, InstagramCapsuleData } from '../lib/monthlyCapsule';
-import { toBlob } from 'html-to-image';
-import { Download, ChevronLeft, ChevronRight, Sparkles, Instagram, Copy, Check, Camera } from 'lucide-react';
+import { toPng, toBlob } from 'html-to-image';
+import { Download, ChevronLeft, ChevronRight, Share2, Sparkles, Filter, BookOpen, Star, Instagram, Copy, Check, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, subMonths, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { InstagramStoryCapsule } from '../components/monthly/InstagramStoryCapsule';
 import { InstagramFeedCapsule } from '../components/monthly/InstagramFeedCapsule';
-
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-const waitForImages = async (node: HTMLElement) => {
-  const images = Array.from(node.querySelectorAll('img'));
-  await Promise.all(
-    images.map(async (img) => {
-      try {
-        if (img.complete && img.naturalWidth > 0) return;
-        if ('decode' in img) {
-          await Promise.race([img.decode().catch(() => undefined), wait(1200)]);
-        } else {
-          await Promise.race([
-            new Promise<void>((resolve) => {
-              img.onload = () => resolve();
-              img.onerror = () => resolve();
-            }),
-            wait(1200),
-          ]);
-        }
-      } catch {
-        return;
-      }
-    })
-  );
-};
-
-const downloadBlob = (blob: Blob, fileName: string) => {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.download = fileName;
-  link.href = url;
-  document.body.appendChild(link);
-  link.click();
-
-  window.setTimeout(() => {
-    URL.revokeObjectURL(url);
-    if (document.body.contains(link)) {
-      document.body.removeChild(link);
-    }
-  }, 1500);
-};
 
 export const MonthlyCapsule: React.FC = () => {
   const { books } = useBooksState();
@@ -65,7 +23,6 @@ export const MonthlyCapsule: React.FC = () => {
   const [exportType, setExportType] = useState<'app' | 'instagram'>('app');
   const [copying, setCopying] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
-  const monthKey = format(currentDate, 'yyyy-MM');
 
   const stats = useMemo(() => {
     return getMonthlyStats(
@@ -79,10 +36,6 @@ export const MonthlyCapsule: React.FC = () => {
   const instagramData = useMemo(() => {
     return getInstagramCapsuleData(stats, user?.name);
   }, [stats, user]);
-
-  useEffect(() => {
-    setResolvedInstagramData(null);
-  }, [monthKey]);
 
   const handlePrevMonth = () => setCurrentDate(prev => subMonths(prev, 1));
   const handleNextMonth = () => {
@@ -99,70 +52,50 @@ export const MonthlyCapsule: React.FC = () => {
     setTimeout(() => setCopying(false), 2000);
   };
 
+  // The export logic was previously cutting off content because:
+  // 1. Fixed heights were used on containers without accounting for the actual height of content (Top 5 list exceeded space).
+  // 2. Responsive Tailwind classes (lg:) were used but capture happens at a fixed virtual width of 1080px, 
+  //    which might not trigger the desktop layout if the browser window is small.
+  // 3. We now use dedicated offscreen containers with explicit fixed dimensions and optimized internal spacing.
   const exportAsImage = async (nodeId: string, fileName: string) => {
     setIsExporting(true);
     
     try {
-      if (nodeId.includes('instagram')) {
-        setResolvedInstagramData(null);
-        const coverDataUrls: Record<string, string> = {};
-        const uniqueBooks = [
-          ...(instagramData.bestBook ? [instagramData.bestBook] : []),
-          ...instagramData.top5Books,
-        ].filter((book, index, arr) => arr.findIndex((b) => b.id === book.id) === index);
+      // Pre-process covers for Instagram data if needed
+      try {
+        if (nodeId.includes('instagram')) {
+          const coverDataUrls: Record<string, string> = {};
+          
+          await Promise.all(instagramData.top5Books.map(async (book) => {
+            const coverUrl = book.coverUrl;
+            if (!coverUrl) return;
 
-        await Promise.all(uniqueBooks.map(async (book) => {
-          const rawCoverUrl = book.exportCoverDataUrl || book.coverUrl || book.ilustracaoUrl;
-          const coverUrl = rawCoverUrl?.trim();
-          if (!coverUrl) return;
-
-          const coverCandidates: string[] = [];
-          if (coverUrl.startsWith('data:image')) {
-            coverCandidates.push(coverUrl);
-          } else {
-            const normalizedCoverUrl = coverUrl.startsWith('//')
-              ? `https:${coverUrl}`
-              : coverUrl.replace(/^http:\/\//, 'https://');
-            coverCandidates.push(normalizedCoverUrl);
-            const urlForProxy = normalizedCoverUrl.replace(/^https?:\/\//, '');
-            coverCandidates.push(`https://images.weserv.nl/?url=${encodeURIComponent(urlForProxy)}&w=260&h=390&fit=inside&output=jpg`);
-          }
-          if (book.isbn) {
-            const isbn = encodeURIComponent(String(book.isbn).trim());
-            coverCandidates.push(`https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false`);
-            coverCandidates.push(`https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg?default=false`);
-          }
-
-          for (const candidate of [...new Set(coverCandidates)]) {
             try {
-              if (candidate.startsWith('data:image')) {
-                coverDataUrls[book.id] = candidate;
-                return;
+              const response = await fetch(coverUrl, { cache: 'no-cache', mode: 'cors' });
+              if (response.ok) {
+                const blob = await response.blob();
+                const dataUrl = await new Promise<string>((resolve, reject) => {
+                  const reader = new FileReader();
+                  reader.onloadend = () => resolve(reader.result as string);
+                  reader.onerror = () => reject(new Error('Thumbnail conversion failed'));
+                  reader.readAsDataURL(blob);
+                });
+                coverDataUrls[book.id] = dataUrl;
               }
-              const response = await fetch(candidate, { cache: 'no-cache', mode: 'cors', credentials: 'omit' });
-              if (!response.ok) continue;
-              const blob = await response.blob();
-              if (!blob.type.startsWith('image/')) continue;
-              const dataUrl = await new Promise<string>((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result as string);
-                reader.onerror = () => reject(new Error('Thumbnail conversion failed'));
-                reader.readAsDataURL(blob);
-              });
-              coverDataUrls[book.id] = dataUrl;
-              return;
-            } catch {
-              continue;
+            } catch (err) {
+              console.warn(`Cover fetch skipped for ${book.titulo}:`, err);
             }
-          }
-        }));
+          }));
 
-        setResolvedInstagramData({
-          ...instagramData,
-          coverDataUrls
-        });
+          setResolvedInstagramData({
+            ...instagramData,
+            coverDataUrls
+          });
 
-        await wait(700);
+          await new Promise(resolve => setTimeout(resolve, 800));
+        }
+      } catch (preErr: any) {
+        throw new Error(`Erro ao preparar as capas: ${preErr.message}`);
       }
 
       const node = document.getElementById(nodeId);
@@ -170,81 +103,68 @@ export const MonthlyCapsule: React.FC = () => {
         throw new Error(`O elemento "${nodeId}" não foi encontrado no DOM.`);
       }
       
+      // Ensure assets are ready with timeout
       try {
         await Promise.race([
           document.fonts.ready,
-          wait(1800),
+          new Promise(resolve => setTimeout(resolve, 2500))
         ]);
-      } catch {
-        // non-fatal
-      }
-
-      await waitForImages(node);
-      await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
-      await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+      } catch (e) { console.warn("Font loading timeout"); }
+      
+      await new Promise(resolve => setTimeout(resolve, 800));
       
       const isStory = nodeId.includes('story');
-      const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
-      const baseWidth = isStory ? 1080 : 1080;
-      const baseHeight = isStory ? 1920 : 1350;
+      const targetWidth = 1080;
+      const targetHeight = isStory ? 1920 : 1350;
 
-      const attempts = isMobile
-        ? [
-            { pixelRatio: 0.55, scale: 0.72 },
-            { pixelRatio: 0.45, scale: 0.62 },
-            { pixelRatio: 0.38, scale: 0.55 },
-          ]
-        : [
-            { pixelRatio: 1, scale: 1 },
-            { pixelRatio: 0.85, scale: 0.9 },
-            { pixelRatio: 0.7, scale: 0.8 },
-          ];
-
+      // Capture using toBlob (lower memory footprint than toPng)
       let blob: Blob | null = null;
-      let lastError: any = null;
-
-      for (const attempt of attempts) {
-        const width = Math.round(baseWidth * attempt.scale);
-        const height = Math.round(baseHeight * attempt.scale);
-
-        try {
-          blob = await toBlob(node, {
-            quality: 0.9,
-            pixelRatio: attempt.pixelRatio,
-            canvasWidth: width,
-            canvasHeight: height,
-            backgroundColor: '#030303',
-            cacheBust: false,
-            width: baseWidth,
-            height: baseHeight,
-            style: {
-              transform: 'none',
-              transformOrigin: 'top left',
-              margin: '0',
-              padding: '0',
-              width: `${baseWidth}px`,
-              height: `${baseHeight}px`,
-              visibility: 'visible',
-              opacity: '1',
-              borderRadius: '0',
-              overflow: 'hidden',
-            }
-          });
-
-          if (blob && blob.size > 2000) break;
-        } catch (captureErr: any) {
-          lastError = captureErr;
-        }
+      try {
+        blob = await toBlob(node, {
+          quality: 0.9,
+          pixelRatio: 1.2, 
+          backgroundColor: '#030303',
+          cacheBust: false,
+          width: targetWidth,
+          height: targetHeight,
+          style: {
+            transform: 'scale(1)',
+            transformOrigin: 'top left',
+            margin: '0',
+            padding: '0',
+            width: `${targetWidth}px`,
+            height: `${targetHeight}px`,
+            visibility: 'visible',
+            opacity: '1',
+            borderRadius: '0'
+          }
+        });
+      } catch (captureErr: any) {
+        console.error("Capture Error:", captureErr);
+        throw new Error(`O navegador falhou ao capturar a imagem. Verifique se há memória disponível.\nErro: ${captureErr.message || 'Render Error'}`);
       }
 
       if (!blob || blob.size < 2000) {
-        throw new Error(`O navegador falhou ao capturar a imagem. Verifique se há memória disponível.\nErro: ${lastError?.message || 'Render Error'}`);
+        throw new Error('A imagem gerada parece estar corrompida. Tente novamente.');
       }
 
-      downloadBlob(blob, fileName);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = fileName;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+        if (document.body.contains(link)) {
+          document.body.removeChild(link);
+        }
+      }, 1500);
       
     } catch (err: any) {
       console.error('Erro detalhado ao exportar:', err);
+      // Ensure we always have a string message to avoid "Erro: undefined"
       const errorMsg = err?.message || (typeof err === 'string' ? err : 'Ocorreu um erro desconhecido na geração da imagem.');
       alert(`Não foi possível baixar a imagem. Tente novamente.\n\nDetalhes: ${errorMsg}`);
     } finally {
@@ -252,10 +172,9 @@ export const MonthlyCapsule: React.FC = () => {
     }
   };
 
-  const currentInstagramData = resolvedInstagramData || instagramData;
-
   return (
     <div className="space-y-12 pb-20">
+      {/* Header Section */}
       <section className="space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1">
@@ -293,7 +212,9 @@ export const MonthlyCapsule: React.FC = () => {
         </div>
       </section>
 
+      {/* Main Content Area */}
       <div className="space-y-8">
+        {/* Tab Selector */}
         <div className="flex p-1 bg-neutral-900/50 border border-neutral-800 rounded-2xl w-fit mx-auto">
           <button 
             onClick={() => setExportType('app')}
@@ -320,6 +241,7 @@ export const MonthlyCapsule: React.FC = () => {
               exit={{ opacity: 0, x: 20 }}
               className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start"
             >
+              {/* Preview Container */}
               <div className="flex justify-center bg-neutral-900/30 rounded-[3rem] p-12 border border-neutral-800/40 shadow-inner overflow-hidden relative group">
                 <div className="absolute inset-0 bg-gradient-to-b from-amber-500/5 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                 
@@ -333,6 +255,7 @@ export const MonthlyCapsule: React.FC = () => {
                 </motion.div>
               </div>
 
+              {/* Actions & Information */}
               <div className="space-y-12 py-6">
                 <div className="space-y-6">
                   <h2 className="text-2xl font-serif italic text-amber-50">Sua Essência de {stats.monthName}</h2>
@@ -385,7 +308,9 @@ export const MonthlyCapsule: React.FC = () => {
               exit={{ opacity: 0, x: 20 }}
               className="space-y-12"
             >
+              {/* Instagram Previews Grid */}
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
+                {/* Stories Preview */}
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-serif italic text-amber-50">Instagram Stories (9:16)</h3>
@@ -400,11 +325,12 @@ export const MonthlyCapsule: React.FC = () => {
                   </div>
                   <div className="bg-neutral-900/50 rounded-[2rem] p-8 border border-neutral-800/50 flex justify-center overflow-hidden">
                     <div className="scale-[0.3] origin-top shadow-2xl">
-                      <InstagramStoryCapsule key={`story-preview-${monthKey}`} data={currentInstagramData} />
+                      <InstagramStoryCapsule data={instagramData} />
                     </div>
                   </div>
                 </div>
 
+                {/* Feed Preview */}
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-serif italic text-amber-50">Instagram Feed (4:5)</h3>
@@ -419,12 +345,13 @@ export const MonthlyCapsule: React.FC = () => {
                   </div>
                   <div className="bg-neutral-900/50 rounded-[2rem] p-8 border border-neutral-800/50 flex justify-center overflow-hidden">
                     <div className="scale-[0.3] origin-top shadow-2xl">
-                      <InstagramFeedCapsule key={`feed-preview-${monthKey}`} data={currentInstagramData} />
+                      <InstagramFeedCapsule data={instagramData} />
                     </div>
                   </div>
                 </div>
               </div>
 
+              {/* Caption Section */}
               <div className="bg-gradient-to-br from-neutral-900 to-neutral-950 border border-neutral-800 p-8 rounded-[2.5rem] space-y-6">
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
@@ -455,30 +382,12 @@ export const MonthlyCapsule: React.FC = () => {
                 </div>
               </div>
 
-              <div
-                className="fixed pointer-events-none overflow-hidden"
-                style={{
-                  left: '-20000px',
-                  top: '0',
-                  width: '1080px',
-                  height: '1920px',
-                  opacity: 1,
-                }}
-              >
-                <InstagramStoryCapsule key={`story-export-${monthKey}`} data={currentInstagramData} id="instagram-story-capsule" />
-              </div>
-
-              <div
-                className="fixed pointer-events-none overflow-hidden"
-                style={{
-                  left: '-20000px',
-                  top: '0',
-                  width: '1080px',
-                  height: '1350px',
-                  opacity: 1,
-                }}
-              >
-                <InstagramFeedCapsule key={`feed-export-${monthKey}`} data={currentInstagramData} id="instagram-feed-capsule" />
+              {/* Hidden containers for export - Moved to a safer positioning for mobile capture */}
+              <div className="absolute top-0 left-0 opacity-0 pointer-events-none overflow-hidden" style={{ width: '1080px', height: '1920px' }}>
+                <InstagramStoryCapsule data={resolvedInstagramData || instagramData} id="instagram-story-capsule" />
+                <div style={{ height: '1350px' }}>
+                  <InstagramFeedCapsule data={resolvedInstagramData || instagramData} id="instagram-feed-capsule" />
+                </div>
               </div>
             </motion.div>
           )}

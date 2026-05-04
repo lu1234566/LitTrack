@@ -1,6 +1,6 @@
 import React from 'react';
 import { InstagramCapsuleData } from '../../lib/monthlyCapsule';
-import { BookOpen, Star, Sparkles } from 'lucide-react';
+import { BookOpen, Star, Sparkles, Trophy } from 'lucide-react';
 
 interface Props {
   data: InstagramCapsuleData;
@@ -8,10 +8,6 @@ interface Props {
 }
 
 export const InstagramStoryCapsule: React.FC<Props> = ({ data, id = "instagram-story-capsule" }) => {
-  const getSafeCover = (book: { id: string; exportCoverDataUrl?: string }) => {
-    return data.coverDataUrls?.[book.id] || (book.exportCoverDataUrl?.startsWith('data:image') ? book.exportCoverDataUrl : '');
-  };
-
   return (
     <div 
       id={id}
@@ -20,9 +16,11 @@ export const InstagramStoryCapsule: React.FC<Props> = ({ data, id = "instagram-s
         background: 'radial-gradient(circle at 50% 0%, #1a1a1a 0%, #030303 100%)'
       }}
     >
+      {/* Decorative patterns */}
       <div className="absolute top-0 right-0 w-[1000px] h-[1000px] bg-amber-500/5 rounded-full blur-[150px] -mr-40 -mt-40" />
       <div className="absolute bottom-0 left-0 w-[800px] h-[800px] bg-amber-500/5 rounded-full blur-[120px] -ml-20 -mb-20" />
       
+      {/* Header - More compact */}
       <div className="relative z-10 flex flex-col items-center text-center space-y-4 pt-4">
         <div className="flex items-center gap-3 text-amber-500">
           <Sparkles size={36} className="fill-amber-500/20" />
@@ -39,19 +37,41 @@ export const InstagramStoryCapsule: React.FC<Props> = ({ data, id = "instagram-s
         </div>
       </div>
 
+      {/* Main Stats Grid - More compact gap */}
       <div className="relative z-10 grid grid-cols-2 gap-8 mt-16">
-        <StatCard label="Livros Lidos" value={data.totalBooks} subtext="concluídos" />
-        <StatCard label="Páginas" value={data.totalPages.toLocaleString()} subtext="percorridas" />
-        <StatCard label="Média" value={data.averageRating.toFixed(1)} subtext="nota mensal" />
-        <StatCard label="Atmosfera" value={data.dominantMood} subtext="vibe do mês" />
+        <StatCard 
+          label="Livros Lidos"
+          value={data.totalBooks}
+          subtext="concluídos"
+        />
+        <StatCard 
+          label="Páginas"
+          value={data.totalPages.toLocaleString()}
+          subtext="percorridas"
+        />
+        <StatCard 
+          label="Média"
+          value={data.averageRating.toFixed(1)}
+          subtext="nota mensal"
+        />
+        <StatCard 
+          label="Atmosfera"
+          value={data.dominantMood}
+          subtext="vibe do mês"
+        />
       </div>
 
+      {/* Favorite of the Month - NEW SECTION */}
       {data.bestBook && (
         <div className="relative z-10 mt-16 px-4">
           <div className="bg-neutral-900/80 border border-amber-500/10 p-10 rounded-[3rem] flex items-center gap-10">
             <div className="w-32 h-48 bg-neutral-900 rounded-2xl overflow-hidden shrink-0 shadow-2xl border border-white/10 relative">
-              {getSafeCover(data.bestBook) ? (
-                <img src={getSafeCover(data.bestBook)} alt={data.bestBook.titulo} className="w-full h-full object-cover" />
+              {data.coverDataUrls?.[data.bestBook.id] || data.bestBook.coverUrl ? (
+                <img 
+                  src={data.coverDataUrls?.[data.bestBook.id] || data.bestBook.coverUrl} 
+                  alt={data.bestBook.titulo} 
+                  className="w-full h-full object-cover" 
+                />
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center">
                   <BookOpen size={48} className="text-neutral-800 mb-2" />
@@ -68,6 +88,7 @@ export const InstagramStoryCapsule: React.FC<Props> = ({ data, id = "instagram-s
         </div>
       )}
 
+      {/* Top 5 Section - Adjusted heights to fit */}
       <div className="relative z-10 mt-16 flex-grow flex flex-col min-h-0">
         <div className="flex items-center gap-6 mb-10">
           <div className="h-[2px] bg-amber-500/20 flex-grow" />
@@ -85,8 +106,12 @@ export const InstagramStoryCapsule: React.FC<Props> = ({ data, id = "instagram-s
               </div>
               
               <div className="w-20 h-28 bg-neutral-900 rounded-lg overflow-hidden shrink-0 shadow-xl border border-white/10 relative">
-                {getSafeCover(book) ? (
-                  <img src={getSafeCover(book)} alt={book.titulo} className="w-full h-full object-cover" />
+                {data.coverDataUrls?.[book.id] || book.coverUrl ? (
+                  <img 
+                    src={data.coverDataUrls?.[book.id] || book.coverUrl} 
+                    alt={book.titulo} 
+                    className="w-full h-full object-cover" 
+                  />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center">
                     <BookOpen size={30} className="text-neutral-800 mb-1" />
@@ -100,7 +125,11 @@ export const InstagramStoryCapsule: React.FC<Props> = ({ data, id = "instagram-s
                   <h3 className="text-3xl font-bold text-neutral-100 truncate mb-1">{book.titulo}</h3>
                   <div className="flex gap-1 shrink-0 pt-2">
                     {[...Array(5)].map((_, i) => (
-                      <Star key={i} size={18} className={`${i < (book.notaGeral || 0) ? 'text-amber-500 fill-amber-500' : 'text-neutral-800'}`} />
+                      <Star 
+                        key={i} 
+                        size={18} 
+                        className={`${i < (book.notaGeral || 0) ? 'text-amber-500 fill-amber-500' : 'text-neutral-800'}`} 
+                      />
                     ))}
                   </div>
                 </div>
@@ -116,6 +145,7 @@ export const InstagramStoryCapsule: React.FC<Props> = ({ data, id = "instagram-s
         </div>
       </div>
 
+      {/* Footer - Minimal to save space */}
       <div className="relative z-10 text-center pt-8 pb-4">
         <div className="flex items-center justify-center gap-4 opacity-30">
           <div className="w-10 h-[1px] bg-white" />

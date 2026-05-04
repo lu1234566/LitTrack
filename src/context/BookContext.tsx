@@ -49,7 +49,7 @@ const BookContext = createContext<BookContextType | undefined>(undefined);
 
 const BookContextBridge: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
-  const { books, loading, addBook, updateBook, deleteBook, deleteMultipleBooks, getBook, updateUserStats } = useBooksState();
+  const { books, loading: booksLoading, addBook, updateBook, deleteBook, deleteMultipleBooks, getBook, updateUserStats } = useBooksState();
   const { userGoal, saveUserGoal } = useGoals();
   const { literaryProfile, saveLiteraryProfile } = useLiteraryProfile();
   const { recommendations, saveRecommendations } = useRecommendations();
@@ -58,6 +58,8 @@ const BookContextBridge: React.FC<{ children: React.ReactNode }> = ({ children }
   const { shelves, loading: shelvesLoading, createShelf, updateShelf, deleteShelf, addBookToShelf, removeBookFromShelf, reorderBooksInShelf } = useShelves();
   const { quotes, addQuote, updateQuote, deleteQuote, getQuotesByBook } = useQuotes();
   const { getNarratives, saveNarratives } = useRetrospective();
+
+  const loading = booksLoading || shelvesLoading;
 
   const importData = useCallback(async (data: any, mode: 'merge' | 'replace') => {
     if (!user || !db) throw new Error("Usuário não autenticado");
