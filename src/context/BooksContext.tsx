@@ -18,6 +18,21 @@ interface BooksContextType {
 
 const BooksContext = createContext<BooksContextType | undefined>(undefined);
 
+const FORCE_READING_STORAGE_KEY = 'readora_force_status_lendo_at';
+const FORCE_READING_WINDOW_MS = 20000;
+
+function shouldPreserveSelectedReadingStatus() {
+  if (typeof window === 'undefined') return false;
+
+  const rawTimestamp = window.sessionStorage.getItem(FORCE_READING_STORAGE_KEY);
+  if (!rawTimestamp) return false;
+
+  const timestamp = Number(rawTimestamp);
+  window.sessionStorage.removeItem(FORCE_READING_STORAGE_KEY);
+
+  return Number.isFinite(timestamp) && Date.now() - timestamp < FORCE_READING_WINDOW_MS;
+}
+
 export const BooksProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
@@ -153,6 +168,12 @@ export const BooksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const bookRef = doc(db, 'books', id);
     
     const normalizedData = { ...bookData };
+    if (normalizedData.status === 'lido' && shouldPreserveSelectedReadingStatus()) {
+      normalizedData.status = 'lendo';
+      normalizedData.startedAt = normalizedData.startedAt || Date.now();
+      delete normalizedData.finishedAt;
+    }
+
     if ('pageCount' in normalizedData) {
       normalizedData.pageCount = safeParseNumber(normalizedData.pageCount);
     }
