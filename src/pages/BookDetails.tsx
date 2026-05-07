@@ -354,9 +354,9 @@ export const BookDetails: React.FC = () => {
                           <span className="text-xs font-mono">{session.durationMinutes} min</span>
                         </div>
                       )}
-                      {session.note && (
+                      {session.quickNote && (
                         <div className="text-xs text-neutral-400 bg-neutral-900 px-3 py-1.5 rounded-lg border border-neutral-800 max-w-[200px] truncate">
-                          {session.note}
+                          {session.quickNote}
                         </div>
                       )}
                     </div>
