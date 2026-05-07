@@ -37,12 +37,16 @@ interface BookContextType {
   logBackupAction: (action: Omit<BackupHistory, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
   addSession: (session: Omit<ReadingSession, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
   getSessionsByBook: (bookId: string) => ReadingSession[];
-  createShelf: (shelf: Omit<Shelf, 'id' | 'createdAt' | 'userId'>) => Promise<void>;
+  createShelf: (shelf: Omit<Shelf, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => Promise<void>;
   updateShelf: (id: string, shelf: Partial<Shelf>) => Promise<void>;
   deleteShelf: (id: string) => Promise<void>;
   addBookToShelf: (shelfId: string, bookId: string) => Promise<void>;
   removeBookFromShelf: (shelfId: string, bookId: string) => Promise<void>;
   reorderBooksInShelf: (shelfId: string, bookIds: string[]) => Promise<void>;
+  addQuote: (quote: Omit<Quote, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
+  updateQuote: (id: string, quote: Partial<Quote>) => Promise<void>;
+  deleteQuote: (id: string) => Promise<void>;
+  getQuotesByBook: (bookId: string) => Quote[];
 }
 
 const BookContext = createContext<BookContextType | undefined>(undefined);
