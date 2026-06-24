@@ -1,3 +1,6 @@
+import { Platform } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+
 export type CapsulePngData = {
   readerName: string;
   monthName: string;
@@ -12,6 +15,14 @@ export type CapsulePngData = {
 };
 
 export async function pickImageAsDataUrl(): Promise<string | null> {
+  if (Platform.OS !== 'web') {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) return null;
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, quality: 0.85 });
+    if (result.canceled) return null;
+    return result.assets?.[0]?.uri || null;
+  }
+
   const documentRef = (globalThis as any).document;
   if (!documentRef?.createElement) return null;
 
@@ -108,7 +119,6 @@ export function downloadCapsulePng(data: CapsulePngData) {
   if (!ctx) return false;
 
   const gold = '#ff9900';
-  const goldSoft = '#ffc766';
   const bg = '#151310';
   const panel = '#1d1b18';
   const line = 'rgba(255,255,255,0.14)';
@@ -127,7 +137,6 @@ export function downloadCapsulePng(data: CapsulePngData) {
 
   ctx.fillStyle = gold;
   ctx.font = '700 28px Georgia, serif';
-  ctx.letterSpacing = '4px';
   ctx.fillText('READORA • MEMÓRIAS LITERÁRIAS', 130, 190);
 
   ctx.fillStyle = text;
@@ -154,17 +163,12 @@ export function downloadCapsulePng(data: CapsulePngData) {
   drawStat(ctx, 140, statY + 205, 'TEMPO DE FOCO', data.minutesLabel, gold, text, muted);
   drawStat(ctx, 560, statY + 205, 'MÉDIA DO MÊS', data.averageRating, gold, text, muted);
 
-  ctx.fillStyle = '#0b0b0b';
   roundedRect(ctx, 130, 1325, 820, 76, 8, '#0b0b0b', 'rgba(255,255,255,0.10)');
   ctx.fillStyle = muted;
   ctx.font = '800 24px Arial, sans-serif';
   ctx.fillText('ACERVO CONCLUÍDO (' + data.bookCount + ')', 160, 1373);
 
   roundedRect(ctx, 130, 1440, 820, 150, 18, '#171717', 'rgba(255,255,255,0.16)');
-  ctx.setLineDash([14, 12]);
-  ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-  ctx.strokeRect(150, 1460, 780, 110);
-  ctx.setLineDash([]);
   ctx.fillStyle = muted;
   ctx.font = 'italic 28px Georgia, serif';
   wrapText(ctx, 'Páginas em branco aguardando o despertar da próxima história do mês.', 190, 1512, 700, 38, 'center');
