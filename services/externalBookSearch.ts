@@ -10,6 +10,13 @@ function pickIsbn(industryIdentifiers?: Array<{ type: string; identifier: string
   return industryIdentifiers.find((item) => item.type === 'ISBN_13')?.identifier || industryIdentifiers[0]?.identifier;
 }
 
+async function fetchWithTimeout(url: string, timeoutMs = 2500) {
+  return Promise.race([
+    fetch(url),
+    new Promise<Response>((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs))
+  ]);
+}
+
 const demoBooks: ExternalBook[] = [
   {
     id: 'demo-eragon',
@@ -34,7 +41,7 @@ const demoBooks: ExternalBook[] = [
     totalPages: 748,
     isbn: '9780375826726',
     coverUrl: 'https://covers.openlibrary.org/b/isbn/9780375826726-L.jpg',
-    description: 'A saga de Eragon continua em meio a alianças, conflitos e descobertas sobre os Cavaleiros de Dragao.',
+    description: 'A saga de Eragon continua em meio a aliancas, conflitos e descobertas sobre os Cavaleiros de Dragao.',
     source: 'open-library'
   },
   {
@@ -47,10 +54,16 @@ const demoBooks: ExternalBook[] = [
     totalPages: 336,
     isbn: '9781538724736',
     coverUrl: 'https://covers.openlibrary.org/b/isbn/9781538724736-L.jpg',
-    description: 'Um suspense psicológico sobre manuscritos, segredos e uma narradora pouco confiavel.',
+    description: 'Um suspense psicologico sobre manuscritos, segredos e uma narradora pouco confiavel.',
     source: 'open-library'
   }
 ];
+
+function fallbackBooks(query: string) {
+  const normalized = query.toLowerCase();
+  const filtered = demoBooks.filter((book) => (book.title + ' ' + book.author + ' ' + book.genre).toLowerCase().includes(normalized));
+  return filtered.length ? filtered : demoBooks;
+}
 
 export async function searchGoogleBooks(query: string): Promise<ExternalBook[]> {
   const cleaned = query.trim();
@@ -58,7 +71,7 @@ export async function searchGoogleBooks(query: string): Promise<ExternalBook[]> 
 
   try {
     const url = 'https://www.googleapis.com/books/v1/volumes?q=' + encodeURIComponent(cleaned) + '&maxResults=12';
-    const response = await fetch(url);
+    const response = await fetchWithTimeout(url, 2200);
     if (response.ok) {
       const data = await response.json();
       const items = Array.isArray(data.items) ? data.items : [];
@@ -85,7 +98,7 @@ export async function searchGoogleBooks(query: string): Promise<ExternalBook[]> 
 
   try {
     const url = 'https://openlibrary.org/search.json?q=' + encodeURIComponent(cleaned) + '&limit=12';
-    const response = await fetch(url);
+    const response = await fetchWithTimeout(url, 2200);
     if (response.ok) {
       const data = await response.json();
       const docs = Array.isArray(data.docs) ? data.docs : [];
@@ -109,7 +122,5 @@ export async function searchGoogleBooks(query: string): Promise<ExternalBook[]> 
     }
   } catch {}
 
-  const normalized = cleaned.toLowerCase();
-  const filtered = demoBooks.filter((book) => (book.title + ' ' + book.author + ' ' + book.genre).toLowerCase().includes(normalized));
-  return filtered.length ? filtered : demoBooks;
+  return fallbackBooks(cleaned);
 }
