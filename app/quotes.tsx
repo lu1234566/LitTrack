@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
@@ -13,7 +13,22 @@ export default function QuotesScreen() {
   const [page, setPage] = useState('');
   const [tags, setTags] = useState('');
   const [bookId, setBookId] = useState(books[0]?.id || '');
+  const [search, setSearch] = useState('');
+  const [tagFilter, setTagFilter] = useState('all');
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
   const selectedBook = books.find((book) => book.id === bookId) || books[0];
+
+  const allTags = useMemo(() => ['all', ...Array.from(new Set(quotes.flatMap((quote) => quote.tags)))], [quotes]);
+
+  const visibleQuotes = useMemo(() => {
+    return quotes.filter((quote) => {
+      const haystack = (quote.text + ' ' + quote.bookTitle + ' ' + quote.author + ' ' + quote.tags.join(' ')).toLowerCase();
+      const okText = haystack.includes(search.toLowerCase());
+      const okTag = tagFilter === 'all' || quote.tags.includes(tagFilter);
+      const okFavorite = !favoritesOnly || quote.favorite;
+      return okText && okTag && okFavorite;
+    });
+  }, [favoritesOnly, quotes, search, tagFilter]);
 
   async function handleAdd() {
     if (!text.trim()) return;
@@ -34,7 +49,7 @@ export default function QuotesScreen() {
   return (
     <Screen>
       <Text style={styles.title}>Citacoes</Text>
-      <Text style={styles.subtitle}>Agora as citacoes sao independentes dos livros e podem ser favoritadas, marcadas e removidas.</Text>
+      <Text style={styles.subtitle}>Citacoes independentes com busca, tags, favoritos e associacao aos livros.</Text>
 
       <Card>
         <Text style={styles.kicker}>Nova citacao</Text>
@@ -53,8 +68,21 @@ export default function QuotesScreen() {
         <Pressable style={styles.button} onPress={handleAdd}><Text style={styles.buttonText}>Salvar citacao</Text></Pressable>
       </Card>
 
+      <TextInput style={styles.input} placeholder="Buscar citacao, livro ou tag" placeholderTextColor={appColors.textDim} value={search} onChangeText={setSearch} />
+      <View style={styles.bookPicker}>
+        <Pressable style={[styles.chip, favoritesOnly && styles.chipActive]} onPress={() => setFavoritesOnly(!favoritesOnly)}>
+          <Text style={[styles.chipText, favoritesOnly && styles.chipTextActive]}>Favoritas</Text>
+        </Pressable>
+        {allTags.map((tag) => (
+          <Pressable key={tag} style={[styles.chip, tagFilter === tag && styles.chipActive]} onPress={() => setTagFilter(tag)}>
+            <Text style={[styles.chipText, tagFilter === tag && styles.chipTextActive]}>{tag === 'all' ? 'Todas' : tag}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <Text style={styles.resultCount}>{visibleQuotes.length} citacao(oes)</Text>
       {quotes.length === 0 ? <Text style={styles.muted}>Nenhuma citacao cadastrada ainda.</Text> : null}
-      {quotes.map((quote) => (
+      {visibleQuotes.map((quote) => (
         <Card key={quote.id}>
           <Text style={styles.quote}>{quote.text}</Text>
           <Text style={styles.book}>{quote.bookTitle}{quote.page ? ' • p. ' + quote.page : ''}</Text>
@@ -89,6 +117,7 @@ const styles = StyleSheet.create({
   book: { color: appColors.gold, fontWeight: '900', marginTop: 8 },
   author: { color: appColors.textMuted, marginTop: 2 },
   tags: { color: appColors.textDim, marginTop: 8, fontSize: 12 },
+  resultCount: { color: appColors.textMuted, fontSize: 13 },
   actions: { flexDirection: 'row', gap: 10, marginTop: 12 },
   secondary: { flex: 1, borderColor: appColors.border, borderWidth: 1, borderRadius: 999, alignItems: 'center', paddingVertical: 10 },
   secondaryText: { color: appColors.text, fontWeight: '900' },
