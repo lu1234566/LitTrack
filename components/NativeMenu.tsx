@@ -5,6 +5,7 @@ import { appColors } from '@/theme/tokens';
 const menu = [
   { name: 'Descobrir', path: '/discover', text: 'Buscar livros e capas reais.' },
   { name: 'Conta', path: '/account', text: 'Conta e sincronizacao.' },
+  { name: 'Progresso', path: '/progress', text: 'Conquistas e sequencia.' },
   { name: 'Metas', path: '/goals', text: 'Objetivos anuais e paginas.' },
   { name: 'Pesquisa', path: '/search', text: 'Busca unificada.' },
   { name: 'Galeria', path: '/gallery', text: 'Parede visual de livros.' },
