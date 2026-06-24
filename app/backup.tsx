@@ -8,6 +8,7 @@ import { useQuotes } from '@/contexts/QuoteContext';
 import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { useShelves } from '@/contexts/ShelfContext';
 import { createReadoraBackup, parseReadoraBackup, stringifyBackup } from '@/services/readoraBackup';
+import { printTextDocument } from '@/services/webPlatformTools';
 import { appColors, appFonts } from '@/theme/tokens';
 import type { Book, BookStatus } from '@/types/book';
 
@@ -15,7 +16,7 @@ const scopes: Array<'all' | BookStatus> = ['all', 'finished', 'reading', 'wishli
 const ratings = [0, 1, 2, 3, 4, 5];
 
 export default function BackupScreen() {
-  const { books, stats, replaceBooks } = useBooks();
+  const { books, replaceBooks } = useBooks();
   const { preferences, updatePreferences } = usePreferences();
   const { quotes, setQuoteList } = useQuotes();
   const { shelves, setShelfList } = useShelves();
@@ -46,13 +47,13 @@ export default function BackupScreen() {
     setMessage('Backup JSON filtrado gerado com ' + selectedBooks.length + ' livro(s).');
   }
 
-  function generateReport() {
+  function buildReportText() {
     const selectedIds = new Set(selectedBooks.map((book) => book.id));
     const selectedQuotes = quotes.filter((quote) => !quote.bookId || selectedIds.has(quote.bookId));
     const selectedSessions = sessions.filter((session) => selectedBooks.some((book) => book.id === session.bookId));
     const selectedPages = selectedBooks.reduce((sum, book) => sum + (book.totalPages || 0), 0);
     const selectedAverage = selectedBooks.length ? selectedBooks.reduce((sum, book) => sum + (book.rating || 0), 0) / selectedBooks.length : 0;
-    const lines = [
+    return [
       'READORA — RELATÓRIO DA BIBLIOTECA',
       'Leitor: ' + preferences.readerName,
       'Gerado em: ' + new Date().toLocaleString('pt-BR'),
@@ -75,8 +76,11 @@ export default function BackupScreen() {
       '',
       'SESSÕES RECENTES',
       ...(selectedSessions.slice(0, 10).map((session) => '- ' + session.bookTitle + ': ' + session.pagesRead + ' páginas em ' + session.minutesRead + ' minutos'))
-    ];
-    setReportText(lines.join('\n'));
+    ].join('\n');
+  }
+
+  function generateReport() {
+    setReportText(buildReportText());
     setMessage('Relatório textual filtrado gerado.');
   }
 
@@ -88,6 +92,13 @@ export default function BackupScreen() {
       return;
     }
     setMessage('Selecione o relatório gerado e copie manualmente.');
+  }
+
+  function printReport() {
+    const text = reportText || buildReportText();
+    setReportText(text);
+    const ok = printTextDocument('Readora — Relatório da Biblioteca', text);
+    setMessage(ok ? 'Janela de impressão aberta. Use “Salvar como PDF” no navegador.' : 'Impressão disponível apenas no navegador.');
   }
 
   async function importBackup() {
@@ -132,9 +143,9 @@ export default function BackupScreen() {
 
         <Card>
           <View style={[styles.exportIcon, styles.blueIcon]}><Text style={styles.blueIconText}>▤</Text></View>
-          <Text style={styles.exportTitle}>Relatório de Leitura</Text>
-          <Text style={styles.exportText}>Gera um relatório textual filtrado pronto para copiar, imprimir ou converter em PDF pelo navegador.</Text>
-          <Pressable style={styles.pdfButton} onPress={generateReport}><Text style={styles.pdfText}>⇩ Gerar Relatório</Text></Pressable>
+          <Text style={styles.exportTitle}>Relatório / PDF</Text>
+          <Text style={styles.exportText}>Gera relatório filtrado e abre a impressão do navegador para salvar como PDF.</Text>
+          <Pressable style={styles.pdfButton} onPress={printReport}><Text style={styles.pdfText}>⇩ Imprimir / PDF</Text></Pressable>
         </Card>
       </View>
 
@@ -150,7 +161,7 @@ export default function BackupScreen() {
           <Text style={styles.cardTitle}>⊙ INFORMAÇÕES IMPORTANTES</Text>
           <Text style={styles.bullet}>• O JSON respeita os filtros de status, gênero e avaliação mínima.</Text>
           <Text style={styles.bullet}>• Ao importar, você pode restaurar uma biblioteca inteira pelo JSON.</Text>
-          <Text style={styles.bullet}>• O relatório textual também respeita os filtros e pode ser impresso como PDF.</Text>
+          <Text style={styles.bullet}>• O botão de PDF usa a impressão do navegador e permite salvar como PDF.</Text>
         </Card>
       </View>
 
@@ -163,7 +174,7 @@ export default function BackupScreen() {
 
       {reportText ? (
         <Card>
-          <View style={styles.reportHeader}><Text style={styles.cardTitle}>Relatório gerado</Text><Pressable style={styles.copyButton} onPress={copyReport}><Text style={styles.copyText}>Copiar relatório</Text></Pressable></View>
+          <View style={styles.reportHeader}><Text style={styles.cardTitle}>Relatório gerado</Text><View style={styles.reportButtons}><Pressable style={styles.copyButton} onPress={copyReport}><Text style={styles.copyText}>Copiar</Text></Pressable><Pressable style={styles.printButton} onPress={printReport}><Text style={styles.printText}>PDF</Text></Pressable></View></View>
           <TextInput style={styles.textAreaLarge} value={reportText} onChangeText={setReportText} multiline />
         </Card>
       ) : null}
@@ -237,8 +248,11 @@ const styles = StyleSheet.create({
   outlineText: { color: '#3b82f6', fontWeight: '900' },
   bullet: { color: appColors.textMuted, lineHeight: 24, marginTop: 10 },
   reportHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
+  reportButtons: { flexDirection: 'row', gap: 8 },
   copyButton: { backgroundColor: appColors.surfaceMuted, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10 },
   copyText: { color: appColors.text, fontWeight: '900' },
+  printButton: { backgroundColor: '#3b82f6', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10 },
+  printText: { color: appColors.text, fontWeight: '900' },
   historyTitle: { color: appColors.text, fontFamily: appFonts.display, fontSize: 24, fontWeight: '900' },
   historyItem: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: appColors.background, borderColor: appColors.border, borderWidth: 1, borderRadius: 14, padding: 12, marginTop: 12 },
   historyIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(59,130,246,0.12)', alignItems: 'center', justifyContent: 'center' },
