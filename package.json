@@ -14,26 +14,20 @@
     "build:android:production": "eas build -p android --profile production"
   },
   "dependencies": {
-    "@expo/vector-icons": "^15.0.0",
-    "@react-native-async-storage/async-storage": "^2.2.0",
-    "expo": "~56.0.0",
-    "expo-constants": "~19.0.0",
-    "expo-linear-gradient": "~16.0.0",
-    "expo-linking": "~9.0.0",
-    "expo-router": "~7.0.0",
-    "expo-secure-store": "~16.0.0",
-    "expo-splash-screen": "~32.0.0",
-    "expo-status-bar": "~4.0.0",
+    "@react-native-async-storage/async-storage": "^2.1.0",
+    "expo": "^53.0.0",
+    "expo-constants": "^17.0.0",
+    "expo-linking": "^7.0.0",
+    "expo-router": "^5.0.0",
+    "expo-status-bar": "^2.0.0",
     "firebase": "^12.10.0",
-    "react": "19.2.3",
-    "react-native": "0.85.0",
-    "react-native-gesture-handler": "~2.31.0",
-    "react-native-reanimated": "~4.3.0",
-    "react-native-safe-area-context": "~5.8.0",
-    "react-native-screens": "~4.20.0"
+    "react": "^19.0.0",
+    "react-native": "^0.79.0",
+    "react-native-safe-area-context": "^5.0.0",
+    "react-native-screens": "^4.0.0"
   },
   "devDependencies": {
-    "@types/react": "~19.2.0",
+    "@types/react": "^19.0.0",
     "typescript": "~5.8.2"
   }
 }
