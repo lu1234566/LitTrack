@@ -29,11 +29,11 @@ export function stringifyBackup(backup: ReadoraBackup) {
 }
 
 export function parseReadoraBackup(raw: string): ReadoraBackup {
-  const parsed = JSON.parse(raw);
+  const parsed = JSON.parse(raw) as Partial<ReadoraBackup>;
   if (!parsed || parsed.app !== 'Readora') throw new Error('Arquivo de backup invalido.');
   return {
     app: 'Readora',
-    version: Number(parsed.version) || 1,
+    version: 1,
     exportedAt: parsed.exportedAt || new Date().toISOString(),
     preferences: parsed.preferences,
     books: Array.isArray(parsed.books) ? parsed.books : [],
