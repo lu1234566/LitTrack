@@ -8,7 +8,8 @@
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "android": {
-      "package": "com.readora.mobile"
+      "package": "com.readora.mobile",
+      "edgeToEdgeEnabled": true
     },
     "ios": {
       "bundleIdentifier": "com.readora.mobile",
