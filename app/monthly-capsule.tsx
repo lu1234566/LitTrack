@@ -2,17 +2,25 @@ import { StyleSheet, Text } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
+import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { appColors } from '@/theme/tokens';
 
 export default function MonthlyCapsuleScreen() {
   const { books, stats } = useBooks();
+  const { sessions } = useReadingSessions();
   const month = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  const now = new Date();
   const monthBooks = books.filter((book) => {
     const d = new Date(book.updatedAt || book.createdAt);
-    const now = new Date();
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   });
-  const highlight = monthBooks[0] || books[0];
+  const monthSessions = sessions.filter((session) => {
+    const d = new Date(session.createdAt);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  const monthPages = monthSessions.reduce((sum, session) => sum + session.pagesRead, 0);
+  const monthMinutes = monthSessions.reduce((sum, session) => sum + session.minutesRead, 0);
+  const highlight = monthSessions[0] || null;
 
   return (
     <Screen>
@@ -20,13 +28,18 @@ export default function MonthlyCapsuleScreen() {
       <Text style={styles.subtitle}>Resumo afetivo e estatistico de {month}.</Text>
       <Card>
         <Text style={styles.kicker}>Resumo do mes</Text>
-        <Text style={styles.big}>{monthBooks.length}</Text>
-        <Text style={styles.body}>livro(s) movimentados neste mes, com {stats.pagesRead} paginas registradas no total.</Text>
+        <Text style={styles.big}>{monthSessions.length}</Text>
+        <Text style={styles.body}>sessao(oes) registradas, {monthPages} paginas e {monthMinutes} minutos de leitura.</Text>
       </Card>
       <Card>
-        <Text style={styles.kicker}>Destaque</Text>
-        <Text style={styles.highlight}>{highlight?.title || 'Sem livros ainda'}</Text>
-        <Text style={styles.body}>{highlight?.review || highlight?.reasonToRead || 'Adicione leituras para gerar uma capsula mais completa.'}</Text>
+        <Text style={styles.kicker}>Livro movimentado</Text>
+        <Text style={styles.highlight}>{monthBooks[0]?.title || 'Sem movimentacao de livros'}</Text>
+        <Text style={styles.body}>{monthBooks[0]?.review || monthBooks[0]?.reasonToRead || 'Adicione ou atualize leituras para enriquecer a capsula.'}</Text>
+      </Card>
+      <Card>
+        <Text style={styles.kicker}>Sessao destaque</Text>
+        <Text style={styles.highlight}>{highlight?.bookTitle || 'Sem sessoes no mes'}</Text>
+        <Text style={styles.body}>{highlight ? highlight.pagesRead + ' paginas em ' + highlight.minutesRead + ' minutos.' : 'Registre sessoes no detalhe de um livro.'}</Text>
       </Card>
       <Card>
         <Text style={styles.kicker}>Humor leitor</Text>
