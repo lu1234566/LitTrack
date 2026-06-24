@@ -28,8 +28,9 @@ export default function BookDetailsScreen() {
     );
   }
 
-  const progress = calculateProgress(book);
-  const bookSessions = sessionsForBook(book.id);
+  const currentBook = book;
+  const progress = calculateProgress(currentBook);
+  const bookSessions = sessionsForBook(currentBook.id);
 
   async function handleProgress() {
     const nextPage = Number(page);
@@ -37,7 +38,7 @@ export default function BookDetailsScreen() {
       Alert.alert('Pagina invalida', 'Digite um numero valido.');
       return;
     }
-    await updateProgress(book.id, nextPage);
+    await updateProgress(currentBook.id, nextPage);
   }
 
   async function handleSession() {
@@ -47,9 +48,9 @@ export default function BookDetailsScreen() {
       Alert.alert('Sessao vazia', 'Informe paginas lidas ou minutos de leitura.');
       return;
     }
-    await addSession({ bookId: book.id, bookTitle: book.title, pagesRead: pages, minutesRead: minutes, note: sessionNote.trim(), mood: sessionMood.trim() });
-    const nextPage = (book.currentPage || 0) + pages;
-    if (pages > 0) await updateProgress(book.id, nextPage);
+    await addSession({ bookId: currentBook.id, bookTitle: currentBook.title, pagesRead: pages, minutesRead: minutes, note: sessionNote.trim(), mood: sessionMood.trim() });
+    const nextPage = (currentBook.currentPage || 0) + pages;
+    if (pages > 0) await updateProgress(currentBook.id, nextPage);
     setPage(String(nextPage));
     setPagesRead('');
     setMinutesRead('');
@@ -58,7 +59,7 @@ export default function BookDetailsScreen() {
   }
 
   async function handleDelete() {
-    await deleteBook(book.id);
+    await deleteBook(currentBook.id);
     router.replace('/library');
   }
 
@@ -66,40 +67,40 @@ export default function BookDetailsScreen() {
     <Screen>
       <View style={styles.heroRow}>
         <View style={styles.coverBox}>
-          {book.coverUrl ? <Image source={{ uri: book.coverUrl }} style={styles.coverImage} /> : <Text style={styles.coverText}>{book.title.slice(0, 1)}</Text>}
+          {currentBook.coverUrl ? <Image source={{ uri: currentBook.coverUrl }} style={styles.coverImage} /> : <Text style={styles.coverText}>{currentBook.title.slice(0, 1)}</Text>}
         </View>
         <View style={styles.headerText}>
-          <Text style={styles.kicker}>{statusLabel(book.status)} • {book.genre}</Text>
-          <Text style={styles.title}>{book.title}</Text>
-          <Text style={styles.author}>{book.author}</Text>
+          <Text style={styles.kicker}>{statusLabel(currentBook.status)} • {currentBook.genre}</Text>
+          <Text style={styles.title}>{currentBook.title}</Text>
+          <Text style={styles.author}>{currentBook.author}</Text>
         </View>
       </View>
 
       <View style={styles.actionsTop}>
-        <Link href={{ pathname: '/edit/[id]', params: { id: book.id } }} asChild><Pressable style={styles.editButton}><Text style={styles.editText}>Editar livro</Text></Pressable></Link>
+        <Link href={{ pathname: '/edit/[id]', params: { id: currentBook.id } }} asChild><Pressable style={styles.editButton}><Text style={styles.editText}>Editar livro</Text></Pressable></Link>
         <Link href="/quotes" asChild><Pressable style={styles.editButton}><Text style={styles.editText}>Citacoes</Text></Pressable></Link>
       </View>
-      {book.status === 'wishlist' ? <Pressable style={styles.startButton} onPress={() => updateStatus(book.id, 'reading')}><Text style={styles.startText}>Comecar leitura</Text></Pressable> : null}
+      {currentBook.status === 'wishlist' ? <Pressable style={styles.startButton} onPress={() => updateStatus(currentBook.id, 'reading')}><Text style={styles.startText}>Comecar leitura</Text></Pressable> : null}
 
       <Card>
         <Text style={styles.cardTitle}>Progresso</Text>
         <Text style={styles.progressText}>{progress}% concluido</Text>
-        <View style={styles.progressTrack}><View style={[styles.progressFill, { width: progress + '%' }]} /></View>
-        <Text style={styles.muted}>{book.currentPage || 0} de {book.totalPages || 0} paginas</Text>
+        <View style={styles.progressTrack}><View style={[styles.progressFill, { width: percent(progress) }]} /></View>
+        <Text style={styles.muted}>{currentBook.currentPage || 0} de {currentBook.totalPages || 0} paginas</Text>
       </Card>
 
       <View style={styles.grid}>
-        <Card><Text style={styles.smallValue}>{book.rating || 0}/5</Text><Text style={styles.smallLabel}>nota</Text></Card>
-        <Card><Text style={styles.smallValue}>{book.publisher || '-'}</Text><Text style={styles.smallLabel}>editora</Text></Card>
-        <Card><Text style={styles.smallValue}>{book.publishedDate || '-'}</Text><Text style={styles.smallLabel}>ano</Text></Card>
+        <Card><Text style={styles.smallValue}>{currentBook.rating || 0}/5</Text><Text style={styles.smallLabel}>nota</Text></Card>
+        <Card><Text style={styles.smallValue}>{currentBook.publisher || '-'}</Text><Text style={styles.smallLabel}>editora</Text></Card>
+        <Card><Text style={styles.smallValue}>{currentBook.publishedDate || '-'}</Text><Text style={styles.smallLabel}>ano</Text></Card>
         <Card><Text style={styles.smallValue}>{bookSessions.length}</Text><Text style={styles.smallLabel}>sessoes</Text></Card>
       </View>
 
       <Card>
         <Text style={styles.cardTitle}>Dados de importacao</Text>
-        <Text style={styles.body}>ISBN: {book.isbn || 'nao informado'}</Text>
-        <Text style={styles.body}>Origem: {book.notes || 'cadastro manual'}</Text>
-        <Text style={styles.body}>Capa: {book.coverUrl ? 'configurada' : 'sem capa externa'}</Text>
+        <Text style={styles.body}>ISBN: {currentBook.isbn || 'nao informado'}</Text>
+        <Text style={styles.body}>Origem: {currentBook.notes || 'cadastro manual'}</Text>
+        <Text style={styles.body}>Capa: {currentBook.coverUrl ? 'configurada' : 'sem capa externa'}</Text>
       </Card>
 
       <TextInput style={styles.input} placeholder="Pagina atual" placeholderTextColor={appColors.textDim} value={page} onChangeText={setPage} keyboardType="numeric" />
@@ -117,9 +118,9 @@ export default function BookDetailsScreen() {
       </Card>
 
       <View style={styles.statusRow}>
-        <Pressable style={styles.secondaryButton} onPress={() => updateStatus(book.id, 'reading')}><Text style={styles.secondaryText}>Lendo</Text></Pressable>
-        <Pressable style={styles.secondaryButton} onPress={() => updateStatus(book.id, 'finished')}><Text style={styles.secondaryText}>Lido</Text></Pressable>
-        <Pressable style={styles.secondaryButton} onPress={() => updateStatus(book.id, 'wishlist')}><Text style={styles.secondaryText}>Quero ler</Text></Pressable>
+        <Pressable style={styles.secondaryButton} onPress={() => updateStatus(currentBook.id, 'reading')}><Text style={styles.secondaryText}>Lendo</Text></Pressable>
+        <Pressable style={styles.secondaryButton} onPress={() => updateStatus(currentBook.id, 'finished')}><Text style={styles.secondaryText}>Lido</Text></Pressable>
+        <Pressable style={styles.secondaryButton} onPress={() => updateStatus(currentBook.id, 'wishlist')}><Text style={styles.secondaryText}>Quero ler</Text></Pressable>
       </View>
 
       {bookSessions.slice(0, 3).map((session) => (
@@ -131,14 +132,18 @@ export default function BookDetailsScreen() {
         </Card>
       ))}
 
-      {book.reasonToRead ? <Card><Text style={styles.cardTitle}>Motivo de leitura</Text><Text style={styles.body}>{book.reasonToRead}</Text></Card> : null}
-      {book.favoriteQuote ? <Card><Text style={styles.cardTitle}>Citacao favorita</Text><Text style={styles.quote}>{book.favoriteQuote}</Text></Card> : null}
-      {book.review ? <Card><Text style={styles.cardTitle}>Resenha</Text><Text style={styles.body}>{book.review}</Text></Card> : null}
-      {book.notes ? <Card><Text style={styles.cardTitle}>Notas</Text><Text style={styles.body}>{book.notes}</Text></Card> : null}
+      {currentBook.reasonToRead ? <Card><Text style={styles.cardTitle}>Motivo de leitura</Text><Text style={styles.body}>{currentBook.reasonToRead}</Text></Card> : null}
+      {currentBook.favoriteQuote ? <Card><Text style={styles.cardTitle}>Citacao favorita</Text><Text style={styles.quote}>{currentBook.favoriteQuote}</Text></Card> : null}
+      {currentBook.review ? <Card><Text style={styles.cardTitle}>Resenha</Text><Text style={styles.body}>{currentBook.review}</Text></Card> : null}
+      {currentBook.notes ? <Card><Text style={styles.cardTitle}>Notas</Text><Text style={styles.body}>{currentBook.notes}</Text></Card> : null}
 
       <Pressable style={styles.deleteButton} onPress={handleDelete}><Text style={styles.deleteText}>Remover da biblioteca local</Text></Pressable>
     </Screen>
   );
+}
+
+function percent(value: number) {
+  return (value + '%') as `${number}%`;
 }
 
 const styles = StyleSheet.create({
@@ -158,22 +163,22 @@ const styles = StyleSheet.create({
   cardTitle: { color: appColors.gold, fontWeight: '900', fontSize: 13, letterSpacing: 1 },
   progressText: { color: appColors.text, fontSize: 26, fontWeight: '900' },
   progressTrack: { height: 8, borderRadius: 999, backgroundColor: appColors.border, overflow: 'hidden' },
-  progressFill: { height: '100%', backgroundColor: appColors.emerald },
-  muted: { color: appColors.textMuted },
+  progressFill: { height: '100%', backgroundColor: appColors.gold },
+  muted: { color: appColors.textMuted, lineHeight: 22 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   smallValue: { color: appColors.text, fontSize: 18, fontWeight: '900' },
-  smallLabel: { color: appColors.textMuted, fontSize: 12, marginTop: 4 },
-  input: { backgroundColor: appColors.surface, borderColor: appColors.border, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, color: appColors.text, fontSize: 16 },
-  textArea: { backgroundColor: appColors.surface, borderColor: appColors.border, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, color: appColors.text, fontSize: 16, minHeight: 90, textAlignVertical: 'top' },
+  smallLabel: { color: appColors.textDim, fontSize: 12 },
+  body: { color: appColors.textMuted, lineHeight: 22 },
+  input: { backgroundColor: appColors.surface, borderColor: appColors.border, borderWidth: 1, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, color: appColors.text, fontSize: 16 },
+  textArea: { backgroundColor: appColors.surface, borderColor: appColors.border, borderWidth: 1, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, color: appColors.text, fontSize: 16, minHeight: 90, textAlignVertical: 'top' },
   sessionRow: { flexDirection: 'row', gap: 10 },
   half: { flex: 1 },
-  primaryButton: { backgroundColor: appColors.gold, borderRadius: 999, paddingVertical: 16, alignItems: 'center' },
+  primaryButton: { backgroundColor: appColors.gold, borderRadius: 999, paddingVertical: 14, alignItems: 'center' },
   primaryText: { color: appColors.background, fontWeight: '900' },
   statusRow: { flexDirection: 'row', gap: 8 },
   secondaryButton: { flex: 1, borderColor: appColors.border, borderWidth: 1, borderRadius: 999, paddingVertical: 12, alignItems: 'center' },
-  secondaryText: { color: appColors.text, fontSize: 12, fontWeight: '800' },
-  body: { color: appColors.textMuted, lineHeight: 22 },
-  quote: { color: appColors.text, lineHeight: 24, fontSize: 16, fontStyle: 'italic' },
+  secondaryText: { color: appColors.textMuted, fontWeight: '900', fontSize: 12 },
+  quote: { color: appColors.text, fontSize: 18, fontStyle: 'italic', lineHeight: 26 },
   deleteButton: { borderColor: appColors.red, borderWidth: 1, borderRadius: 999, paddingVertical: 14, alignItems: 'center' },
   deleteText: { color: appColors.red, fontWeight: '900' }
 });
