@@ -25,8 +25,9 @@ Implementado até agora:
 - cápsula mensal;
 - exportação em JSON preview;
 - ajustes com status de Firebase e armazenamento;
+- menu de módulos mais polido;
 - persistência local com AsyncStorage;
-- helpers iniciais de sincronização Firestore.
+- helpers iniciais de push/pull Firestore.
 
 ## Como rodar no Codespaces
 
