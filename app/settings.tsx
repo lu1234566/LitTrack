@@ -2,25 +2,46 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
+import { useBooks } from '@/contexts/BookContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
-import { isNativeFirebaseConfigured } from '@/services/firebaseNative';
+import { isNativeFirebaseConfigured, pullBooksFromFirestore, pushBooksToFirestore } from '@/services/firebaseNative';
 import { appColors } from '@/theme/tokens';
 
 export default function SettingsScreen() {
+  const { books, replaceBooks } = useBooks();
   const { preferences, updatePreferences } = usePreferences();
   const [readerName, setReaderName] = useState(preferences.readerName);
   const [favoriteFormat, setFavoriteFormat] = useState(preferences.favoriteFormat);
   const [reminderText, setReminderText] = useState(preferences.reminderText);
   const [syncUserId, setSyncUserId] = useState(preferences.syncUserId);
+  const [syncMessage, setSyncMessage] = useState('');
 
   async function save() {
     await updatePreferences({ readerName, favoriteFormat, reminderText, syncUserId });
+    setSyncMessage('Preferencias salvas localmente.');
+  }
+
+  async function pushBooks() {
+    await updatePreferences({ syncUserId });
+    const result = await pushBooksToFirestore(syncUserId || 'local-reader', books);
+    setSyncMessage(result.ok ? result.count + ' livro(s) enviados ao Firestore.' : 'Firebase ainda nao configurado.');
+  }
+
+  async function pullBooks() {
+    await updatePreferences({ syncUserId });
+    const remoteBooks = await pullBooksFromFirestore(syncUserId || 'local-reader');
+    if (remoteBooks.length === 0) {
+      setSyncMessage(isNativeFirebaseConfigured ? 'Nenhum livro remoto encontrado.' : 'Firebase ainda nao configurado.');
+      return;
+    }
+    await replaceBooks(remoteBooks);
+    setSyncMessage(remoteBooks.length + ' livro(s) recebidos do Firestore.');
   }
 
   return (
     <Screen>
       <Text style={styles.title}>Ajustes</Text>
-      <Text style={styles.subtitle}>Preferencias locais e estado da migracao nativa.</Text>
+      <Text style={styles.subtitle}>Preferencias locais, estado da migracao nativa e sincronizacao manual.</Text>
 
       <Card>
         <Text style={styles.kicker}>Perfil local</Text>
@@ -35,12 +56,17 @@ export default function SettingsScreen() {
         <Text style={styles.value}>{isNativeFirebaseConfigured ? 'Configurado' : 'Pendente'}</Text>
         <Text style={styles.body}>Use EXPO_PUBLIC_FIREBASE_* no ambiente Expo para ativar sincronizacao.</Text>
         <TextInput style={styles.input} placeholder="ID local de sincronizacao" placeholderTextColor={appColors.textDim} value={syncUserId} onChangeText={setSyncUserId} />
+        <View style={styles.actionRow}>
+          <Pressable style={styles.secondaryButton} onPress={pushBooks}><Text style={styles.secondaryText}>Enviar livros</Text></Pressable>
+          <Pressable style={styles.secondaryButton} onPress={pullBooks}><Text style={styles.secondaryText}>Receber livros</Text></Pressable>
+        </View>
+        {syncMessage ? <Text style={styles.body}>{syncMessage}</Text> : null}
       </Card>
 
       <Card>
         <Text style={styles.kicker}>Armazenamento</Text>
         <Text style={styles.value}>Local</Text>
-        <Text style={styles.body}>A biblioteca esta salva em AsyncStorage enquanto login nativo e Firestore sao migrados.</Text>
+        <Text style={styles.body}>A biblioteca esta salva em AsyncStorage enquanto login nativo e Firestore completo sao migrados.</Text>
       </Card>
 
       <Card>
@@ -59,8 +85,11 @@ const styles = StyleSheet.create({
   value: { color: appColors.text, fontSize: 24, fontWeight: '900' },
   body: { color: appColors.textMuted, lineHeight: 22 },
   row: { flexDirection: 'row', justifyContent: 'space-between' },
+  actionRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
   gold: { color: appColors.gold, fontWeight: '900' },
   input: { backgroundColor: appColors.surfaceSoft, borderColor: appColors.border, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, color: appColors.text, fontSize: 16, marginTop: 10 },
   button: { backgroundColor: appColors.gold, borderRadius: 999, paddingVertical: 14, alignItems: 'center', marginTop: 12 },
-  buttonText: { color: appColors.background, fontWeight: '900' }
+  buttonText: { color: appColors.background, fontWeight: '900' },
+  secondaryButton: { flex: 1, borderColor: appColors.gold, borderWidth: 1, borderRadius: 999, alignItems: 'center', paddingVertical: 12 },
+  secondaryText: { color: appColors.gold, fontWeight: '900', fontSize: 12 }
 });
