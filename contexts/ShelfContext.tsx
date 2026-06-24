@@ -10,6 +10,7 @@ type ShelfContextValue = {
   addShelf: (shelf: ShelfInput) => Promise<void>;
   updateShelf: (shelfId: string, patch: Partial<Shelf>) => Promise<void>;
   deleteShelf: (shelfId: string) => Promise<void>;
+  setShelfList: (nextShelves: Shelf[]) => Promise<void>;
   toggleBookInShelf: (shelfId: string, bookId: string) => Promise<void>;
 };
 
@@ -19,6 +20,7 @@ const ShelfContext = createContext<ShelfContextValue>({
   addShelf: async () => {},
   updateShelf: async () => {},
   deleteShelf: async () => {},
+  setShelfList: async () => {},
   toggleBookInShelf: async () => {}
 });
 
@@ -33,6 +35,10 @@ export function ShelfProvider({ children }: { children: React.ReactNode }) {
   async function persist(nextShelves: Shelf[]) {
     setShelves(nextShelves);
     await saveShelves(nextShelves);
+  }
+
+  async function setShelfList(nextShelves: Shelf[]) {
+    await persist(nextShelves);
   }
 
   async function addShelf(input: ShelfInput) {
@@ -52,12 +58,12 @@ export function ShelfProvider({ children }: { children: React.ReactNode }) {
     await persist(shelves.map((shelf) => {
       if (shelf.id !== shelfId) return shelf;
       const hasBook = shelf.bookIds.includes(bookId);
-      const bookIds = hasBook ? shelf.bookIds.filter((id) => id !== bookId) : [...shelf.bookIds, bookId];
+      const bookIds = hasBook ? shelf.bookIds.filter((item) => item !== bookId) : [...shelf.bookIds, bookId];
       return { ...shelf, bookIds, updatedAt: Date.now() };
     }));
   }
 
-  const value = useMemo(() => ({ shelves, loadingShelves, addShelf, updateShelf, deleteShelf, toggleBookInShelf }), [shelves, loadingShelves]);
+  const value = useMemo(() => ({ shelves, loadingShelves, addShelf, updateShelf, deleteShelf, setShelfList, toggleBookInShelf }), [shelves, loadingShelves]);
   return <ShelfContext.Provider value={value}>{children}</ShelfContext.Provider>;
 }
 
