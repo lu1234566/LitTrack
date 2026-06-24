@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { appColors } from '@/theme/tokens';
 
 const menu = [
+  { name: 'Metas', path: '/goals', text: 'Objetivos anuais e paginas.' },
   { name: 'Pesquisa', path: '/search', text: 'Busca local na biblioteca.' },
   { name: 'Galeria', path: '/gallery', text: 'Parede visual de livros.' },
   { name: 'Perfil', path: '/literary-profile', text: 'Arquetipo e generos.' },
@@ -14,7 +15,7 @@ const menu = [
   { name: 'Timeline', path: '/timeline', text: 'Eventos recentes.' },
   { name: 'Recomendacoes', path: '/recommendations', text: 'Proximas leituras.' },
   { name: 'Exportar', path: '/export', text: 'Backup em JSON.' },
-  { name: 'Ajustes', path: '/settings', text: 'Estado da migracao.' }
+  { name: 'Ajustes', path: '/settings', text: 'Preferencias locais.' }
 ];
 
 export function NativeMenu() {
