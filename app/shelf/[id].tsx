@@ -26,17 +26,18 @@ export default function ShelfDetailScreen() {
     );
   }
 
-  const shelfBooks = books.filter((book) => shelf.bookIds.includes(book.id));
-  const otherBooks = books.filter((book) => !shelf.bookIds.includes(book.id));
+  const currentShelf = shelf;
+  const shelfBooks = books.filter((book) => currentShelf.bookIds.includes(book.id));
+  const otherBooks = books.filter((book) => !currentShelf.bookIds.includes(book.id));
 
   function startEditing() {
-    setName(shelf.name);
-    setDescription(shelf.description || '');
+    setName(currentShelf.name);
+    setDescription(currentShelf.description || '');
     setEditing(true);
   }
 
   async function saveEditing() {
-    await updateShelf(shelf.id, { name: name.trim() || shelf.name, description: description.trim() });
+    await updateShelf(currentShelf.id, { name: name.trim() || currentShelf.name, description: description.trim() });
     setEditing(false);
   }
 
@@ -51,8 +52,8 @@ export default function ShelfDetailScreen() {
         </Card>
       ) : (
         <>
-          <Text style={styles.title}>{shelf.name}</Text>
-          <Text style={styles.subtitle}>{shelf.description || 'Colecao manual do Readora.'}</Text>
+          <Text style={styles.title}>{currentShelf.name}</Text>
+          <Text style={styles.subtitle}>{currentShelf.description || 'Colecao manual do Readora.'}</Text>
           <Pressable style={styles.outlineButton} onPress={startEditing}><Text style={styles.outlineText}>Editar nome e descricao</Text></Pressable>
         </>
       )}
@@ -71,9 +72,9 @@ export default function ShelfDetailScreen() {
         <Text style={styles.kicker}>Disponiveis</Text>
         <View style={styles.bookList}>
           {[...shelfBooks, ...otherBooks].map((book) => {
-            const active = shelf.bookIds.includes(book.id);
+            const active = currentShelf.bookIds.includes(book.id);
             return (
-              <Pressable key={book.id} style={[styles.chip, active && styles.chipActive]} onPress={() => toggleBookInShelf(shelf.id, book.id)}>
+              <Pressable key={book.id} style={[styles.chip, active && styles.chipActive]} onPress={() => toggleBookInShelf(currentShelf.id, book.id)}>
                 <Text style={[styles.chipText, active && styles.chipTextActive]} numberOfLines={1}>{book.title}</Text>
               </Pressable>
             );
