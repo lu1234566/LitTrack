@@ -29,6 +29,7 @@ export default function RootLayout() {
                 <Stack.Screen name="goals" options={{ title: 'Metas' }} />
                 <Stack.Screen name="quotes" options={{ title: 'Citacoes' }} />
                 <Stack.Screen name="shelves" options={{ title: 'Estantes' }} />
+                <Stack.Screen name="shelf/[id]" options={{ title: 'Estante' }} />
                 <Stack.Screen name="timeline" options={{ title: 'Timeline' }} />
                 <Stack.Screen name="export" options={{ title: 'Exportar' }} />
               </Stack>
