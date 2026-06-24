@@ -13,18 +13,19 @@ Implementado até agora:
 - tema visual dark premium do Readora;
 - navegação inferior fixa;
 - Dashboard com estatísticas, meta anual, insight do leitor e sessões recentes;
-- Biblioteca com busca e filtros;
+- Biblioteca com busca, filtros por status/gênero e ordenação;
 - formulário expandido de livro;
 - tela completa de detalhes do livro;
 - edição de livro existente;
 - registro de sessões de leitura por livro;
 - Timeline real com histórico de sessões;
 - galeria visual de livros;
-- citações independentes com tags, página, favorito e remoção;
-- estantes manuais com criação, remoção e vínculo de livros;
+- citações independentes com busca, tags, favoritos e remoção;
+- estantes manuais com criação, remoção, vínculo de livros e tela individual;
 - perfil literário com arquétipo e gêneros;
 - retrospectiva local com sessões;
-- recomendações simples;
+- recomendações com base em biblioteca, citações, estantes e sessões;
+- comparativo anual com livros, páginas, minutos e sessões;
 - cápsula mensal baseada em sessões;
 - exportação em JSON preview com livros, citações, estantes, sessões, estatísticas e preferências;
 - ajustes editáveis com nome do leitor, formato favorito e lembrete;
@@ -88,11 +89,10 @@ EXPO_PUBLIC_FIREBASE_APP_ID
 1. Login Google nativo.
 2. Sincronização Firestore ligada ao usuário autenticado.
 3. Capas reais e busca externa de livros.
-4. Estantes com tela individual e edição avançada.
-5. Citações com edição completa e filtro por tag.
-6. Ícone e splash final.
-7. Teste em aparelho físico.
-8. Build AAB de produção.
+4. Edição completa de estantes e citações.
+5. Ícone e splash final.
+6. Teste em aparelho físico.
+7. Build AAB de produção.
 
 ## Observação importante
 
