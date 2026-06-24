@@ -1,6 +1,6 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { useBooks } from '@/contexts/BookContext';
 import { statusLabel } from '@/services/bookStorage';
@@ -17,7 +17,7 @@ export default function GalleryScreen() {
   return (
     <Screen>
       <Text style={styles.title}>Galeria</Text>
-      <Text style={styles.subtitle}>Parede visual das suas leituras com filtro por status.</Text>
+      <Text style={styles.subtitle}>Parede visual das suas leituras com filtro por status e capas reais quando disponiveis.</Text>
       <View style={styles.filterRow}>
         {filters.map((item) => (
           <Pressable key={item} style={[styles.filterButton, filter === item && styles.filterActive]} onPress={() => setFilter(item)}>
@@ -31,8 +31,7 @@ export default function GalleryScreen() {
           <Link key={book.id} href={{ pathname: '/book/[id]', params: { id: book.id } }} asChild>
             <Pressable style={styles.tile}>
               <View style={styles.cover}>
-                <Text style={styles.initial}>{book.title.slice(0, 1).toUpperCase()}</Text>
-                <Text style={styles.genre} numberOfLines={1}>{book.genre}</Text>
+                {book.coverUrl ? <Image source={{ uri: book.coverUrl }} style={styles.coverImage} /> : <><Text style={styles.initial}>{book.title.slice(0, 1).toUpperCase()}</Text><Text style={styles.genre} numberOfLines={1}>{book.genre}</Text></>}
               </View>
               <Text style={styles.bookTitle} numberOfLines={2}>{book.title}</Text>
               <Text style={styles.status}>{statusLabel(book.status)}</Text>
@@ -62,7 +61,8 @@ const styles = StyleSheet.create({
   count: { color: appColors.textMuted, fontSize: 13 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
   tile: { width: '47%', gap: 8 },
-  cover: { height: 190, borderRadius: 22, backgroundColor: appColors.surface, borderColor: appColors.gold, borderWidth: 1, justifyContent: 'center', alignItems: 'center', padding: 14 },
+  cover: { height: 190, borderRadius: 22, backgroundColor: appColors.surface, borderColor: appColors.gold, borderWidth: 1, justifyContent: 'center', alignItems: 'center', padding: 0, overflow: 'hidden' },
+  coverImage: { width: '100%', height: '100%' },
   initial: { color: appColors.gold, fontSize: 48, fontWeight: '900' },
   genre: { color: appColors.textDim, marginTop: 10, fontWeight: '800' },
   bookTitle: { color: appColors.text, fontWeight: '900', lineHeight: 18 },
