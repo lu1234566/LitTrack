@@ -8,6 +8,7 @@ import { useQuotes } from '@/contexts/QuoteContext';
 import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { useShelves } from '@/contexts/ShelfContext';
 import { isNativeFirebaseConfigured, pullReadoraBundle, pushReadoraBundle } from '@/services/firebaseNative';
+import { cancelReadingReminders, scheduleReadingReminder } from '@/services/notificationScheduler';
 import { appColors, appFonts } from '@/theme/tokens';
 import type { LayoutMode, ReminderFrequency } from '@/types/preferences';
 
@@ -72,6 +73,21 @@ export default function SettingsScreen() {
     const next = !reminderEnabled;
     setReminderEnabled(next);
     await save({ reminderEnabled: next });
+    if (!next) {
+      await cancelReadingReminders();
+      setSyncMessage('Lembretes cancelados.');
+    }
+  }
+
+  async function saveReminders() {
+    await save();
+    if (!reminderEnabled) {
+      await cancelReadingReminders();
+      setSyncMessage('Lembretes desativados e cancelados.');
+      return;
+    }
+    const result = await scheduleReadingReminder(reminderText, reminderFrequency);
+    setSyncMessage(result.message);
   }
 
   async function pushAll() {
@@ -133,14 +149,14 @@ export default function SettingsScreen() {
         <Text style={styles.kicker}>FREQUÊNCIA E HORÁRIO</Text>
         <View style={styles.chips}>{frequencies.map((item) => <Pressable key={item.value} onPress={() => chooseFrequency(item.value)}><Text style={reminderFrequency === item.value ? styles.chipActive : styles.chip}>{item.label}</Text></Pressable>)}</View>
         <TextInput style={styles.input} placeholder="20:00" placeholderTextColor={appColors.textDim} value={reminderText} onChangeText={setReminderText} />
-        <Text style={styles.body}>Configuração salva localmente. Notificações reais dependem de permissão/pacote nativo em etapa posterior.</Text>
+        <Text style={styles.body}>No Android/iOS, este botão agenda notificações reais. No web, o app apenas salva a preferência.</Text>
         <Text style={styles.kicker}>TIPOS DE LEMBRETE</Text>
         <View style={[styles.row, mobile && styles.stack]}>
           <Reminder label="Hora de Ler" text="Um convite suave para seu próximo capítulo." />
           <Reminder label="Registrar Sessão" text="Lembrete para documentar seu progresso diário." />
           <Reminder label="Atualizar Status" text="Para livros que você não atualiza há algum tempo." />
         </View>
-        <Pressable style={styles.saveButton} onPress={() => save()}><Text style={styles.saveText}>▣ Salvar Lembretes</Text></Pressable>
+        <Pressable style={styles.saveButton} onPress={saveReminders}><Text style={styles.saveText}>▣ Salvar e Agendar</Text></Pressable>
       </Card>
 
       <Card>
