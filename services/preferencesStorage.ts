@@ -8,11 +8,14 @@ export const defaultPreferences: ReaderPreferences = {
   yearlyGoal: 24,
   dailyPageGoal: 20,
   favoriteFormat: 'Digital e fisico',
-  reminderText: 'Ler um pouco todos os dias',
+  reminderText: '20:00',
+  reminderEnabled: true,
+  reminderFrequency: 'daily',
   syncUserId: 'local-reader',
   visualAccent: 'gold',
   visualDensity: 'comfortable',
-  textScale: 'normal'
+  textScale: 'normal',
+  layoutMode: 'auto'
 };
 
 export async function loadPreferences(): Promise<ReaderPreferences> {
