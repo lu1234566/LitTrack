@@ -8,8 +8,10 @@ Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
     shouldPlaySound: true,
-    shouldSetBadge: false
-  })
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true
+  } as Notifications.NotificationBehavior)
 });
 
 export async function requestReminderPermission() {
@@ -37,7 +39,7 @@ export async function scheduleReadingReminder(reminderText: string, frequency: R
     await Notifications.scheduleNotificationAsync({
       identifier: REMINDER_ID_KEY + '-weekly',
       content: { title, body },
-      trigger: { weekday: 2, hour: parsed.hour, minute: parsed.minute, repeats: true }
+      trigger: { weekday: 2, hour: parsed.hour, minute: parsed.minute, repeats: true } as Notifications.NotificationTriggerInput
     });
     return { ok: true, message: 'Lembrete semanal agendado.' };
   }
@@ -46,7 +48,7 @@ export async function scheduleReadingReminder(reminderText: string, frequency: R
     await Promise.all([2, 3, 4, 5, 6].map((weekday) => Notifications.scheduleNotificationAsync({
       identifier: REMINDER_ID_KEY + '-weekday-' + weekday,
       content: { title, body },
-      trigger: { weekday, hour: parsed.hour, minute: parsed.minute, repeats: true }
+      trigger: { weekday, hour: parsed.hour, minute: parsed.minute, repeats: true } as Notifications.NotificationTriggerInput
     })));
     return { ok: true, message: 'Lembretes em dias úteis agendados.' };
   }
@@ -54,7 +56,7 @@ export async function scheduleReadingReminder(reminderText: string, frequency: R
   await Notifications.scheduleNotificationAsync({
     identifier: REMINDER_ID_KEY + '-daily',
     content: { title, body },
-    trigger: { hour: parsed.hour, minute: parsed.minute, repeats: true }
+    trigger: { hour: parsed.hour, minute: parsed.minute, repeats: true } as Notifications.NotificationTriggerInput
   });
   return { ok: true, message: 'Lembrete diário agendado.' };
 }
