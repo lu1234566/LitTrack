@@ -6,13 +6,18 @@ import { BookCard } from '@/components/BookCard';
 import { NativeMenu } from '@/components/NativeMenu';
 import { useBooks } from '@/contexts/BookContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
+import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { appColors } from '@/theme/tokens';
 
 export default function DashboardScreen() {
   const { books, stats, loading } = useBooks();
   const { preferences } = usePreferences();
+  const { sessions } = useReadingSessions();
   const activeBooks = books.filter((book) => book.status === 'reading');
   const recentBooks = books.slice(0, 3);
+  const recentSessions = sessions.slice(0, 3);
+  const sessionPages = sessions.reduce((sum, session) => sum + session.pagesRead, 0);
+  const sessionMinutes = sessions.reduce((sum, session) => sum + session.minutesRead, 0);
   const goalProgress = preferences.yearlyGoal > 0 ? Math.min(100, Math.round((stats.finishedBooks / preferences.yearlyGoal) * 100)) : 0;
 
   return (
@@ -20,12 +25,12 @@ export default function DashboardScreen() {
       <View style={styles.hero}>
         <Text style={styles.kicker}>READORA</Text>
         <Text style={styles.title}>Ola, {preferences.readerName}</Text>
-        <Text style={styles.subtitle}>Seu diario literario nativo esta ganhando vida com biblioteca local, metas, insights e modulos conectados.</Text>
+        <Text style={styles.subtitle}>Seu diario literario nativo esta ganhando vida com biblioteca local, metas, insights e sessoes de leitura.</Text>
       </View>
 
       <View style={styles.actions}>
         <Link href="/add" asChild><Pressable style={styles.primaryButton}><Text style={styles.primaryButtonText}>Adicionar livro</Text></Pressable></Link>
-        <Link href="/goals" asChild><Pressable style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Metas</Text></Pressable></Link>
+        <Link href="/timeline" asChild><Pressable style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Timeline</Text></Pressable></Link>
       </View>
 
       <Card>
@@ -38,15 +43,25 @@ export default function DashboardScreen() {
       <View style={styles.grid}>
         <Card><Text style={styles.statNumber}>{stats.totalBooks}</Text><Text style={styles.statLabel}>livros na estante</Text></Card>
         <Card><Text style={styles.statNumber}>{stats.pagesRead}</Text><Text style={styles.statLabel}>paginas lidas</Text></Card>
-        <Card><Text style={styles.statNumber}>{stats.completionRate}%</Text><Text style={styles.statLabel}>conclusao</Text></Card>
-        <Card><Text style={styles.statNumber}>{stats.favoriteGenre}</Text><Text style={styles.statLabel}>genero dominante</Text></Card>
+        <Card><Text style={styles.statNumber}>{sessions.length}</Text><Text style={styles.statLabel}>sessoes</Text></Card>
+        <Card><Text style={styles.statNumber}>{sessionMinutes}</Text><Text style={styles.statLabel}>minutos</Text></Card>
       </View>
 
       <Card>
         <Text style={styles.cardTitle}>Insight do leitor</Text>
         <Text style={styles.body}>Voce esta com {stats.readingBooks} leitura(s) ativa(s), {stats.finishedBooks} livro(s) concluidos e media geral {stats.averageRating}/5.</Text>
-        <Text style={styles.body}>Formato preferido: {preferences.favoriteFormat}. Lembrete: {preferences.reminderText}.</Text>
+        <Text style={styles.body}>Sessoes registradas somam {sessionPages} paginas. Formato preferido: {preferences.favoriteFormat}.</Text>
       </Card>
+
+      <Text style={styles.sectionTitle}>Sessoes recentes</Text>
+      {recentSessions.length === 0 ? <Text style={styles.muted}>Nenhuma sessao registrada ainda.</Text> : null}
+      {recentSessions.map((session) => (
+        <Card key={session.id}>
+          <Text style={styles.cardTitle}>{session.bookTitle}</Text>
+          <Text style={styles.body}>{session.pagesRead} paginas • {session.minutesRead} min • {new Date(session.createdAt).toLocaleDateString('pt-BR')}</Text>
+          {session.note ? <Text style={styles.body}>{session.note}</Text> : null}
+        </Card>
+      ))}
 
       <Text style={styles.sectionTitle}>Lendo agora</Text>
       {loading ? <Text style={styles.muted}>Carregando biblioteca...</Text> : null}
