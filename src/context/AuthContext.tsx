@@ -1,7 +1,49 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth, db, googleProvider, isFirebaseConfigured } from '../lib/firebase';
-import { onAuthStateChanged, signInWithPopup, signOut, browserPopupRedirectResolver } from 'firebase/auth';
+import { onAuthStateChanged, signInWithPopup, signInWithRedirect, getRedirectResult, signOut } from 'firebase/auth';
 import { doc, setDoc, getDoc, getDocFromServer } from 'firebase/firestore';
+
+function isNativeWebViewEnvironment() {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    return false;
+  }
+
+  const protocol = window.location.protocol;
+  const userAgent = navigator.userAgent || '';
+
+  return (
+    protocol === 'capacitor:' ||
+    protocol === 'ionic:' ||
+    /\bwv\b/i.test(userAgent) ||
+    /Capacitor/i.test(userAgent)
+  );
+}
+
+function getFirebaseAuthHelpMessage(error: any) {
+  if (error?.code === 'auth/network-request-failed' || error?.code === 'auth/unauthorized-domain') {
+    return `Erro no Firebase Auth.
+
+Verifique em Firebase Console > Authentication > Settings > Authorized domains se o domínio usado pelo app web está autorizado.
+
+Se estiver usando APK via Capacitor, teste também a build web hospedada em um domínio HTTPS autorizado antes de empacotar.`;
+  }
+
+  if (error?.code === 'auth/popup-blocked') {
+    return 'O popup de login foi bloqueado pelo navegador. Permita popups para este site ou tente novamente.';
+  }
+
+  if (error?.code === 'auth/popup-closed-by-user') {
+    return 'A janela de login foi fechada antes da conclusão.';
+  }
+
+  if (error?.code === 'auth/operation-not-supported-in-this-environment') {
+    return `Este ambiente não suporta o fluxo atual de login.
+
+No navegador comum, o app usa popup. Em APK/WebView, ele tenta redirect. Se continuar falhando, será necessário trocar para autenticação nativa do Capacitor/Firebase.`;
+  }
+
+  return `Erro ao entrar com Google: ${error?.message || String(error)}`;
+}
 
 async function testConnection() {
   try {
@@ -84,6 +126,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Connection test is purely diagnostic and non-fatal
     testConnection().catch(() => {});
 
+    // When the app is packed as Android WebView/Capacitor, popup auth can be unreliable.
+    // Reading the redirect result keeps the auth flow compatible with signInWithRedirect.
+    getRedirectResult(auth).catch((error) => {
+      console.error('[Firebase Auth Redirect Error]', error);
+    });
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         const userData: UserData = {
@@ -127,7 +175,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         };
 
-        // Trigger sync but don't await it to block USer state
+        // Trigger sync but don't await it to block user state
         syncUser();
         setUser(userData);
       } else {
@@ -145,31 +193,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
     try {
-      // Use standard popup flow without explicit resolver as it's more robust in framed environments
+      if (isNativeWebViewEnvironment()) {
+        await signInWithRedirect(auth, googleProvider);
+        return;
+      }
+
       await signInWithPopup(auth, googleProvider);
     } catch (error: any) {
-      if (error.code === 'auth/network-request-failed') {
-        const devDomain = 'ais-dev-2jtjryvuvhqa7boghzexjo-75142644423.us-east1.run.app';
-        const preDomain = 'ais-pre-2jtjryvuvhqa7boghzexjo-75142644423.us-east1.run.app';
-        
-        console.error(`[Firebase Auth Error] network-request-failed.
-This is likely a domain authorization issue.
-Please add the following domains to Firebase Console > Authentication > Settings > Authorized domains:
-1. ${devDomain}
-2. ${preDomain}`);
-        
-        alert(`Erro de rede no Firebase Auth. 
-Provavelmente os domínios do AI Studio não estão autorizados no seu console Firebase.
-
-Por favor, adicione estes domínios em Autenticação > Configurações > Domínios Autorizados:
-• ${devDomain}
-• ${preDomain}`);
-      } else if (error.code === 'auth/popup-blocked') {
-        alert("O popup de login foi bloqueado pelo navegador. Por favor, permita popups para este site.");
-      } else {
-        console.error('Error signing in with Google:', error);
-        alert(`Erro ao entrar com Google: ${error.message}`);
-      }
+      console.error('Error signing in with Google:', error);
+      alert(getFirebaseAuthHelpMessage(error));
       throw error;
     }
   }, []);
