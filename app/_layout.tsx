@@ -1,4 +1,5 @@
 import { Stack } from 'expo-router';
+import { AutoSyncBridge } from '@/components/AutoSyncBridge';
 import { BookProvider } from '@/contexts/BookContext';
 import { PreferencesProvider } from '@/contexts/PreferencesContext';
 import { QuoteProvider } from '@/contexts/QuoteContext';
@@ -17,9 +18,7 @@ export default function RootLayout() {
               <ReadingSessionProvider>
                 <Stack
                   screenOptions={{
-                    headerStyle: { backgroundColor: appColors.background },
-                    headerTintColor: appColors.gold,
-                    headerTitleStyle: { fontWeight: '800' },
+                    headerShown: false,
                     contentStyle: { backgroundColor: appColors.background }
                   }}
                 >
@@ -43,6 +42,7 @@ export default function RootLayout() {
                   <Stack.Screen name="timeline" options={{ title: 'Timeline' }} />
                   <Stack.Screen name="export" options={{ title: 'Exportar' }} />
                 </Stack>
+                <AutoSyncBridge />
               </ReadingSessionProvider>
             </ShelfProvider>
           </QuoteProvider>
