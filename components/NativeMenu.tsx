@@ -3,14 +3,16 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { appColors } from '@/theme/tokens';
 
 const menu = [
+  { name: 'Descobrir', path: '/discover', text: 'Buscar livros e capas reais.' },
+  { name: 'Conta', path: '/account', text: 'Conta e sincronizacao.' },
   { name: 'Metas', path: '/goals', text: 'Objetivos anuais e paginas.' },
-  { name: 'Pesquisa', path: '/search', text: 'Busca local na biblioteca.' },
+  { name: 'Pesquisa', path: '/search', text: 'Busca unificada.' },
   { name: 'Galeria', path: '/gallery', text: 'Parede visual de livros.' },
   { name: 'Perfil', path: '/literary-profile', text: 'Arquetipo e generos.' },
   { name: 'Retrospectiva', path: '/retrospective', text: 'Resumo das leituras.' },
   { name: 'Comparativo', path: '/yearly-comparison', text: 'Anos e progresso.' },
   { name: 'Citacoes', path: '/quotes', text: 'Trechos favoritos.' },
-  { name: 'Estantes', path: '/shelves', text: 'Colecoes automaticas.' },
+  { name: 'Estantes', path: '/shelves', text: 'Colecoes manuais.' },
   { name: 'Capsula', path: '/monthly-capsule', text: 'Resumo mensal.' },
   { name: 'Timeline', path: '/timeline', text: 'Eventos recentes.' },
   { name: 'Recomendacoes', path: '/recommendations', text: 'Proximas leituras.' },
