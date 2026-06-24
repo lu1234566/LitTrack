@@ -1,0 +1,23 @@
+import { Stack } from 'expo-router';
+import { BookProvider } from '@/contexts/BookContext';
+import { appColors } from '@/theme/tokens';
+
+export default function RootLayout() {
+  return (
+    <BookProvider>
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: appColors.background },
+          headerTintColor: appColors.gold,
+          headerTitleStyle: { fontWeight: '800' },
+          contentStyle: { backgroundColor: appColors.background }
+        }}
+      >
+        <Stack.Screen name="index" options={{ title: 'Readora' }} />
+        <Stack.Screen name="library" options={{ title: 'Biblioteca' }} />
+        <Stack.Screen name="add" options={{ title: 'Adicionar livro' }} />
+        <Stack.Screen name="book/[id]" options={{ title: 'Detalhes' }} />
+      </Stack>
+    </BookProvider>
+  );
+}
