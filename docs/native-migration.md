@@ -12,7 +12,7 @@ Implementado até agora:
 - configuração `app.json`, `eas.json` e TypeScript;
 - tema visual dark premium do Readora;
 - navegação inferior fixa;
-- Dashboard com estatísticas e insight do leitor;
+- Dashboard com estatísticas, meta anual e insight do leitor;
 - Biblioteca com busca e filtros;
 - formulário expandido de livro;
 - tela completa de detalhes do livro;
@@ -23,8 +23,9 @@ Implementado até agora:
 - retrospectiva local;
 - recomendações simples;
 - cápsula mensal;
-- exportação em JSON preview;
-- ajustes com status de Firebase e armazenamento;
+- exportação em JSON preview com preferências;
+- ajustes editáveis com nome do leitor, formato favorito e lembrete;
+- tela de metas com meta anual e páginas diárias;
 - menu de módulos mais polido;
 - persistência local com AsyncStorage;
 - helpers iniciais de push/pull Firestore.
