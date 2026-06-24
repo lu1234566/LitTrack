@@ -1,3 +1,4 @@
+import { Link } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Screen } from '@/components/Screen';
@@ -51,7 +52,12 @@ export default function ShelvesScreen() {
                 );
               })}
             </View>
-            <Pressable style={styles.danger} onPress={() => deleteShelf(shelf.id)}><Text style={styles.dangerText}>Remover estante</Text></Pressable>
+            <View style={styles.actionRow}>
+              <Link href={{ pathname: '/shelf/[id]', params: { id: shelf.id } }} asChild>
+                <Pressable style={styles.openButton}><Text style={styles.openText}>Abrir estante</Text></Pressable>
+              </Link>
+              <Pressable style={styles.danger} onPress={() => deleteShelf(shelf.id)}><Text style={styles.dangerText}>Remover</Text></Pressable>
+            </View>
           </Card>
         );
       })}
@@ -75,6 +81,9 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: appColors.gold, borderColor: appColors.gold },
   chipText: { color: appColors.textMuted, fontSize: 12, fontWeight: '800' },
   chipTextActive: { color: appColors.background },
-  danger: { borderColor: appColors.red, borderWidth: 1, borderRadius: 999, paddingVertical: 10, alignItems: 'center', marginTop: 12 },
+  actionRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  openButton: { flex: 1, borderColor: appColors.gold, borderWidth: 1, borderRadius: 999, paddingVertical: 10, alignItems: 'center' },
+  openText: { color: appColors.gold, fontWeight: '900' },
+  danger: { flex: 1, borderColor: appColors.red, borderWidth: 1, borderRadius: 999, paddingVertical: 10, alignItems: 'center' },
   dangerText: { color: appColors.red, fontWeight: '900' }
 });
