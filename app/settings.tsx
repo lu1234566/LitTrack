@@ -4,11 +4,17 @@ import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
-import { isNativeFirebaseConfigured, pullBooksFromFirestore, pushBooksToFirestore } from '@/services/firebaseNative';
+import { useQuotes } from '@/contexts/QuoteContext';
+import { useReadingSessions } from '@/contexts/ReadingSessionContext';
+import { useShelves } from '@/contexts/ShelfContext';
+import { isNativeFirebaseConfigured, pullReadoraBundle, pushReadoraBundle } from '@/services/firebaseNative';
 import { appColors } from '@/theme/tokens';
 
 export default function SettingsScreen() {
   const { books, replaceBooks } = useBooks();
+  const { quotes, setQuoteList } = useQuotes();
+  const { shelves, setShelfList } = useShelves();
+  const { sessions, setSessionList } = useReadingSessions();
   const { preferences, updatePreferences } = usePreferences();
   const [readerName, setReaderName] = useState(preferences.readerName);
   const [favoriteFormat, setFavoriteFormat] = useState(preferences.favoriteFormat);
@@ -21,21 +27,32 @@ export default function SettingsScreen() {
     setSyncMessage('Preferencias salvas localmente.');
   }
 
-  async function pushBooks() {
-    await updatePreferences({ syncUserId });
-    const result = await pushBooksToFirestore(syncUserId || 'local-reader', books);
-    setSyncMessage(result.ok ? result.count + ' livro(s) enviados ao Firestore.' : 'Firebase ainda nao configurado.');
+  async function pushAll() {
+    const nextPreferences = { ...preferences, readerName, favoriteFormat, reminderText, syncUserId };
+    await updatePreferences(nextPreferences);
+    const result = await pushReadoraBundle(syncUserId || 'local-reader', { books, quotes, shelves, sessions, preferences: nextPreferences });
+    setSyncMessage(result.ok ? result.count + ' item(ns) enviados ao Firestore.' : 'Firebase ainda nao configurado.');
   }
 
-  async function pullBooks() {
+  async function pullAll() {
     await updatePreferences({ syncUserId });
-    const remoteBooks = await pullBooksFromFirestore(syncUserId || 'local-reader');
-    if (remoteBooks.length === 0) {
-      setSyncMessage(isNativeFirebaseConfigured ? 'Nenhum livro remoto encontrado.' : 'Firebase ainda nao configurado.');
+    const bundle = await pullReadoraBundle(syncUserId || 'local-reader');
+    if (!isNativeFirebaseConfigured) {
+      setSyncMessage('Firebase ainda nao configurado.');
       return;
     }
-    await replaceBooks(remoteBooks);
-    setSyncMessage(remoteBooks.length + ' livro(s) recebidos do Firestore.');
+    if (bundle.books?.length) await replaceBooks(bundle.books);
+    if (bundle.quotes?.length) await setQuoteList(bundle.quotes);
+    if (bundle.shelves?.length) await setShelfList(bundle.shelves);
+    if (bundle.sessions?.length) await setSessionList(bundle.sessions);
+    if (bundle.preferences) {
+      await updatePreferences({ ...preferences, ...bundle.preferences, syncUserId });
+      setReaderName(bundle.preferences.readerName || readerName);
+      setFavoriteFormat(bundle.preferences.favoriteFormat || favoriteFormat);
+      setReminderText(bundle.preferences.reminderText || reminderText);
+    }
+    const total = (bundle.books?.length || 0) + (bundle.quotes?.length || 0) + (bundle.shelves?.length || 0) + (bundle.sessions?.length || 0);
+    setSyncMessage(total > 0 ? total + ' item(ns) recebidos do Firestore.' : 'Nenhum dado remoto encontrado.');
   }
 
   return (
@@ -57,16 +74,15 @@ export default function SettingsScreen() {
         <Text style={styles.body}>Use EXPO_PUBLIC_FIREBASE_* no ambiente Expo para ativar sincronizacao.</Text>
         <TextInput style={styles.input} placeholder="ID local de sincronizacao" placeholderTextColor={appColors.textDim} value={syncUserId} onChangeText={setSyncUserId} />
         <View style={styles.actionRow}>
-          <Pressable style={styles.secondaryButton} onPress={pushBooks}><Text style={styles.secondaryText}>Enviar livros</Text></Pressable>
-          <Pressable style={styles.secondaryButton} onPress={pullBooks}><Text style={styles.secondaryText}>Receber livros</Text></Pressable>
+          <Pressable style={styles.secondaryButton} onPress={pushAll}><Text style={styles.secondaryText}>Enviar tudo</Text></Pressable>
+          <Pressable style={styles.secondaryButton} onPress={pullAll}><Text style={styles.secondaryText}>Receber tudo</Text></Pressable>
         </View>
         {syncMessage ? <Text style={styles.body}>{syncMessage}</Text> : null}
       </Card>
 
       <Card>
-        <Text style={styles.kicker}>Armazenamento</Text>
-        <Text style={styles.value}>Local</Text>
-        <Text style={styles.body}>A biblioteca esta salva em AsyncStorage enquanto login nativo e Firestore completo sao migrados.</Text>
+        <Text style={styles.kicker}>Pacote local</Text>
+        <Text style={styles.body}>{books.length} livros, {quotes.length} citacoes, {shelves.length} estantes e {sessions.length} sessoes.</Text>
       </Card>
 
       <Card>
