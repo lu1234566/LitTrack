@@ -1,7 +1,9 @@
+import { Link } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { BookCard } from '@/components/BookCard';
+import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
 import { BookStatus } from '@/types/book';
 import { appColors } from '@/theme/tokens';
@@ -43,6 +45,14 @@ export default function LibraryScreen() {
         <Text style={styles.title}>Biblioteca</Text>
         <Text style={styles.subtitle}>{stats.totalBooks} livros, {stats.pagesRead} paginas registradas e genero principal {stats.favoriteGenre}.</Text>
       </View>
+
+      <Card>
+        <Text style={styles.heroTitle}>Importar com capa real</Text>
+        <Text style={styles.heroText}>Use a busca externa para trazer capa, paginas, editora, ano e ISBN automaticamente.</Text>
+        <Link href="/discover" asChild>
+          <Pressable style={styles.heroButton}><Text style={styles.heroButtonText}>Abrir Descobrir</Text></Pressable>
+        </Link>
+      </Card>
 
       <TextInput style={styles.input} placeholder="Titulo, autor, genero ou editora" placeholderTextColor={appColors.textDim} value={text} onChangeText={setText} />
 
@@ -92,6 +102,10 @@ const styles = StyleSheet.create({
   header: { gap: 8 },
   title: { color: appColors.text, fontSize: 32, fontWeight: '900' },
   subtitle: { color: appColors.textMuted, fontSize: 15, lineHeight: 22 },
+  heroTitle: { color: appColors.text, fontSize: 20, fontWeight: '900' },
+  heroText: { color: appColors.textMuted, lineHeight: 22 },
+  heroButton: { backgroundColor: appColors.gold, borderRadius: 999, alignItems: 'center', paddingVertical: 14, marginTop: 10 },
+  heroButtonText: { color: appColors.background, fontWeight: '900' },
   input: { backgroundColor: appColors.surface, borderColor: appColors.border, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, color: appColors.text, fontSize: 16 },
   label: { color: appColors.gold, fontWeight: '900', fontSize: 13, letterSpacing: 1, marginTop: 4 },
   filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
