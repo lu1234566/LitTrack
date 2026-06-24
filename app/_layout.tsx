@@ -27,6 +27,7 @@ export default function RootLayout() {
                   <Stack.Screen name="library" options={{ title: 'Biblioteca' }} />
                   <Stack.Screen name="discover" options={{ title: 'Descobrir' }} />
                   <Stack.Screen name="account" options={{ title: 'Conta' }} />
+                  <Stack.Screen name="progress" options={{ title: 'Progresso' }} />
                   <Stack.Screen name="add" options={{ title: 'Adicionar livro' }} />
                   <Stack.Screen name="edit/[id]" options={{ title: 'Editar livro' }} />
                   <Stack.Screen name="book/[id]" options={{ title: 'Detalhes' }} />
