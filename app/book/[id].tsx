@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Screen } from '@/components/Screen';
@@ -46,6 +46,15 @@ export default function BookDetailsScreen() {
         <Text style={styles.author}>{book.author}</Text>
       </View>
 
+      <View style={styles.actionsTop}>
+        <Link href={{ pathname: '/edit/[id]', params: { id: book.id } }} asChild>
+          <Pressable style={styles.editButton}><Text style={styles.editText}>Editar livro</Text></Pressable>
+        </Link>
+        <Link href="/quotes" asChild>
+          <Pressable style={styles.editButton}><Text style={styles.editText}>Citacoes</Text></Pressable>
+        </Link>
+      </View>
+
       <Card>
         <Text style={styles.cardTitle}>Progresso</Text>
         <Text style={styles.progressText}>{progress}% concluido</Text>
@@ -84,6 +93,9 @@ const styles = StyleSheet.create({
   kicker: { color: appColors.gold, fontSize: 12, fontWeight: '900', letterSpacing: 1 },
   title: { color: appColors.text, fontSize: 32, fontWeight: '900' },
   author: { color: appColors.textMuted, fontSize: 16 },
+  actionsTop: { flexDirection: 'row', gap: 10 },
+  editButton: { flex: 1, borderColor: appColors.gold, borderWidth: 1, borderRadius: 999, paddingVertical: 12, alignItems: 'center' },
+  editText: { color: appColors.gold, fontWeight: '900' },
   cardTitle: { color: appColors.gold, fontWeight: '900', fontSize: 13, letterSpacing: 1 },
   progressText: { color: appColors.text, fontSize: 26, fontWeight: '900' },
   progressTrack: { height: 8, borderRadius: 999, backgroundColor: appColors.border, overflow: 'hidden' },
