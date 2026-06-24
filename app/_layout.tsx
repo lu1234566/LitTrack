@@ -17,6 +17,7 @@ export default function RootLayout() {
         <Stack.Screen name="library" options={{ title: 'Biblioteca' }} />
         <Stack.Screen name="add" options={{ title: 'Adicionar livro' }} />
         <Stack.Screen name="book/[id]" options={{ title: 'Detalhes' }} />
+        <Stack.Screen name="export" options={{ title: 'Exportar' }} />
       </Stack>
     </BookProvider>
   );
