@@ -34,10 +34,12 @@ export default function EditBookScreen() {
     );
   }
 
+  const currentBook = book;
+
   async function handleSave() {
-    await updateBook(book.id, {
-      title: title.trim() || book.title,
-      author: author.trim() || book.author,
+    await updateBook(currentBook.id, {
+      title: title.trim() || currentBook.title,
+      author: author.trim() || currentBook.author,
       genre: genre.trim() || 'A definir',
       publisher: publisher.trim(),
       publishedDate: year.trim(),
@@ -52,7 +54,7 @@ export default function EditBookScreen() {
       favoriteQuote: quote.trim(),
       review: review.trim()
     });
-    router.replace({ pathname: '/book/[id]', params: { id: book.id } });
+    router.replace({ pathname: '/book/[id]', params: { id: currentBook.id } } as never);
   }
 
   return (
