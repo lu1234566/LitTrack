@@ -15,7 +15,11 @@
       "supportsTablet": true
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-web-browser",
+      "expo-image-picker",
+      "expo-media-library",
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true
