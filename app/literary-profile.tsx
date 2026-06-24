@@ -2,21 +2,28 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
+import { useQuotes } from '@/contexts/QuoteContext';
+import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { appColors } from '@/theme/tokens';
 
 export default function LiteraryProfileScreen() {
   const { books, stats } = useBooks();
+  const { quotes } = useQuotes();
+  const { sessions } = useReadingSessions();
   const topGenres = Object.entries(books.reduce<Record<string, number>>((acc, book) => {
     acc[book.genre] = (acc[book.genre] || 0) + 1;
     return acc;
   }, {})).sort((a, b) => b[1] - a[1]).slice(0, 4);
 
-  const archetype = stats.favoriteGenre.toLowerCase().includes('fantasia') ? 'Leitor de mundos' : stats.averageRating >= 4 ? 'Curador exigente' : 'Explorador literario';
+  const totalMinutes = sessions.reduce((sum, session) => sum + session.minutesRead, 0);
+  const totalSessionPages = sessions.reduce((sum, session) => sum + session.pagesRead, 0);
+  const favoriteQuotes = quotes.filter((quote) => quote.favorite).length;
+  const archetype = resolveArchetype(stats.favoriteGenre, stats.averageRating, sessions.length, favoriteQuotes);
 
   return (
     <Screen>
       <Text style={styles.title}>Perfil literario</Text>
-      <Text style={styles.subtitle}>Uma leitura inicial do seu comportamento com base na biblioteca local.</Text>
+      <Text style={styles.subtitle}>Leitura do seu comportamento com base em livros, sessoes e citacoes.</Text>
       <Card>
         <Text style={styles.cardTitle}>Arquetipo</Text>
         <Text style={styles.archetype}>{archetype}</Text>
@@ -34,9 +41,24 @@ export default function LiteraryProfileScreen() {
       <Card>
         <Text style={styles.cardTitle}>Ritmo</Text>
         <Text style={styles.body}>Voce tem {stats.readingBooks} leitura(s) ativa(s), {stats.finishedBooks} concluida(s) e {stats.wishlistBooks} desejada(s).</Text>
+        <Text style={styles.body}>Sessoes: {sessions.length}. Paginas em sessoes: {totalSessionPages}. Minutos: {totalMinutes}.</Text>
+      </Card>
+      <Card>
+        <Text style={styles.cardTitle}>Memoria literaria</Text>
+        <Text style={styles.body}>{quotes.length} citacao(oes) cadastradas, com {favoriteQuotes} favorita(s).</Text>
+        <Text style={styles.body}>Quanto mais citacoes e sessoes forem registradas, mais preciso fica o perfil.</Text>
       </Card>
     </Screen>
   );
+}
+
+function resolveArchetype(genre: string, averageRating: number, sessions: number, favoriteQuotes: number) {
+  const lowerGenre = genre.toLowerCase();
+  if (lowerGenre.includes('fantasia')) return 'Leitor de mundos';
+  if (favoriteQuotes >= 3) return 'Guardiao de trechos';
+  if (sessions >= 8) return 'Leitor disciplinado';
+  if (averageRating >= 4) return 'Curador exigente';
+  return 'Explorador literario';
 }
 
 const styles = StyleSheet.create({
