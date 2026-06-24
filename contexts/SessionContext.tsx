@@ -31,15 +31,17 @@ const SessionContext = createContext<SessionContextValue>({
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
-  const redirectUri = AuthSession.makeRedirectUri({ scheme: 'readora' });
+  const nonce = useMemo(() => Math.random().toString(36).slice(2), []);
+  const redirectUri = useMemo(() => AuthSession.makeRedirectUri({ scheme: 'readora' }), []);
   const isGoogleLoginPrepared = Boolean(isNativeFirebaseConfigured && hasGoogleClientId);
-  const [request, , promptAsync] = AuthSession.useAuthRequest({
-    clientId: googleClientId,
+  const requestConfig = useMemo(() => ({
+    clientId: googleClientId || 'readora-placeholder-client-id',
     scopes: ['openid', 'profile', 'email'],
     redirectUri,
     responseType: AuthSession.ResponseType.IdToken,
-    extraParams: { nonce: Math.random().toString(36).slice(2) }
-  }, discovery);
+    extraParams: { nonce }
+  }), [nonce, redirectUri]);
+  const [request, , promptAsync] = AuthSession.useAuthRequest(requestConfig, discovery);
 
   useEffect(() => listenToFirebaseUser(setUser), []);
 
