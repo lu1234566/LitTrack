@@ -5,6 +5,7 @@ import { useBooks } from '@/contexts/BookContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
 import { useQuotes } from '@/contexts/QuoteContext';
 import { useShelves } from '@/contexts/ShelfContext';
+import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { appColors } from '@/theme/tokens';
 
 export default function ExportScreen() {
@@ -12,8 +13,9 @@ export default function ExportScreen() {
   const { preferences } = usePreferences();
   const { quotes } = useQuotes();
   const { shelves } = useShelves();
-  const payload = { exportedAt: new Date().toISOString(), preferences, stats, books, quotes, shelves };
-  const preview = JSON.stringify(payload, null, 2).slice(0, 1400);
+  const { sessions } = useReadingSessions();
+  const payload = { exportedAt: new Date().toISOString(), preferences, stats, books, quotes, shelves, sessions };
+  const preview = JSON.stringify(payload, null, 2).slice(0, 1600);
 
   return (
     <Screen>
@@ -21,7 +23,7 @@ export default function ExportScreen() {
       <Text style={styles.subtitle}>Previa do backup local com todos os dados principais.</Text>
       <Card>
         <Text style={styles.kicker}>Conteudo pronto para backup</Text>
-        <Text style={styles.body}>{books.length} livros, {quotes.length} citacoes e {shelves.length} estantes.</Text>
+        <Text style={styles.body}>{books.length} livros, {quotes.length} citacoes, {shelves.length} estantes e {sessions.length} sessoes.</Text>
         <Text style={styles.body}>{stats.pagesRead} paginas, genero principal {stats.favoriteGenre}.</Text>
         <Text style={styles.body}>Leitor: {preferences.readerName}. Meta anual: {preferences.yearlyGoal} livros.</Text>
       </Card>
