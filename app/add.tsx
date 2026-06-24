@@ -1,6 +1,6 @@
-import { router } from 'expo-router';
-import { useState } from 'react';
-import { Alert, Image, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { Alert, Image, Platform, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
@@ -14,6 +14,7 @@ const moods = ['Sombrio', 'Tenso', 'Reflexivo', 'Aconchegante', 'Emocional', 'Mi
 
 export default function AddBookScreen() {
   const { addBook } = useBooks();
+  const params = useLocalSearchParams<{ isbn?: string }>();
   const { width } = useWindowDimensions();
   const mobile = width < 760;
   const [title, setTitle] = useState('');
@@ -35,6 +36,14 @@ export default function AddBookScreen() {
   const [status, setStatus] = useState<BookStatus>('finished');
   const [searchMessage, setSearchMessage] = useState('');
   const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    const scannedIsbn = Array.isArray(params.isbn) ? params.isbn[0] : params.isbn;
+    if (scannedIsbn && scannedIsbn !== isbn) {
+      setIsbn(scannedIsbn);
+      handleSearch(scannedIsbn, 'isbn');
+    }
+  }, [params.isbn]);
 
   async function handleSearch(query: string, mode: 'isbn' | 'title') {
     const cleaned = query.trim();
@@ -75,7 +84,7 @@ export default function AddBookScreen() {
   async function chooseLocalCover() {
     const image = await pickImageAsDataUrl();
     if (!image) {
-      setSearchMessage('Seleção local disponível apenas no navegador ou nenhum arquivo foi escolhido.');
+      setSearchMessage('Nenhuma imagem foi escolhida ou a permissão de galeria foi negada.');
       return;
     }
     setCoverUrl(image);
@@ -83,6 +92,10 @@ export default function AddBookScreen() {
   }
 
   async function scanIsbnFromImage() {
+    if (Platform.OS !== 'web') {
+      router.push('/scan-isbn' as never);
+      return;
+    }
     setSearchMessage('Selecione uma foto/print do código de barras do livro.');
     const value = await scanBarcodeFromImage();
     if (!value) {
