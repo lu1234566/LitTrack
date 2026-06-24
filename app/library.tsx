@@ -7,20 +7,35 @@ import { BookStatus } from '@/types/book';
 import { appColors } from '@/theme/tokens';
 
 const filters: Array<'all' | BookStatus> = ['all', 'reading', 'finished', 'wishlist'];
+const sortOptions = ['recentes', 'nota', 'titulo', 'paginas'] as const;
+
+type SortOption = typeof sortOptions[number];
 
 export default function LibraryScreen() {
   const { books, loading, stats } = useBooks();
   const [text, setText] = useState('');
   const [filter, setFilter] = useState<'all' | BookStatus>('all');
+  const [genreFilter, setGenreFilter] = useState('all');
+  const [sortBy, setSortBy] = useState<SortOption>('recentes');
+
+  const genres = useMemo(() => ['all', ...Array.from(new Set(books.map((book) => book.genre).filter(Boolean)))], [books]);
 
   const visibleBooks = useMemo(() => {
-    return books.filter((book) => {
+    const filtered = books.filter((book) => {
       const okFilter = filter === 'all' || book.status === filter;
-      const haystack = (book.title + ' ' + book.author + ' ' + book.genre).toLowerCase();
+      const okGenre = genreFilter === 'all' || book.genre === genreFilter;
+      const haystack = (book.title + ' ' + book.author + ' ' + book.genre + ' ' + (book.publisher || '')).toLowerCase();
       const okText = haystack.includes(text.toLowerCase());
-      return okFilter && okText;
+      return okFilter && okGenre && okText;
     });
-  }, [books, filter, text]);
+
+    return filtered.sort((a, b) => {
+      if (sortBy === 'nota') return (b.rating || 0) - (a.rating || 0);
+      if (sortBy === 'titulo') return a.title.localeCompare(b.title);
+      if (sortBy === 'paginas') return (b.totalPages || 0) - (a.totalPages || 0);
+      return (b.updatedAt || b.createdAt) - (a.updatedAt || a.createdAt);
+    });
+  }, [books, filter, genreFilter, sortBy, text]);
 
   return (
     <Screen>
@@ -29,8 +44,9 @@ export default function LibraryScreen() {
         <Text style={styles.subtitle}>{stats.totalBooks} livros, {stats.pagesRead} paginas registradas e genero principal {stats.favoriteGenre}.</Text>
       </View>
 
-      <TextInput style={styles.input} placeholder="Titulo, autor ou genero" placeholderTextColor={appColors.textDim} value={text} onChangeText={setText} />
+      <TextInput style={styles.input} placeholder="Titulo, autor, genero ou editora" placeholderTextColor={appColors.textDim} value={text} onChangeText={setText} />
 
+      <Text style={styles.label}>Status</Text>
       <View style={styles.filterRow}>
         {filters.map((item) => (
           <Pressable key={item} style={[styles.filterButton, filter === item && styles.filterActive]} onPress={() => setFilter(item)}>
@@ -39,6 +55,25 @@ export default function LibraryScreen() {
         ))}
       </View>
 
+      <Text style={styles.label}>Genero</Text>
+      <View style={styles.filterRow}>
+        {genres.map((genre) => (
+          <Pressable key={genre} style={[styles.filterButton, genreFilter === genre && styles.filterActive]} onPress={() => setGenreFilter(genre)}>
+            <Text style={[styles.filterText, genreFilter === genre && styles.filterTextActive]}>{genre === 'all' ? 'Todos' : genre}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <Text style={styles.label}>Ordenar por</Text>
+      <View style={styles.filterRow}>
+        {sortOptions.map((option) => (
+          <Pressable key={option} style={[styles.filterButton, sortBy === option && styles.filterActive]} onPress={() => setSortBy(option)}>
+            <Text style={[styles.filterText, sortBy === option && styles.filterTextActive]}>{option}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <Text style={styles.resultCount}>{visibleBooks.length} resultado(s)</Text>
       {loading ? <Text style={styles.muted}>Carregando livros...</Text> : null}
       {!loading && visibleBooks.length === 0 ? <Text style={styles.muted}>Nenhum livro encontrado.</Text> : null}
       {visibleBooks.map((book) => <BookCard key={book.id} book={book} />)}
@@ -58,10 +93,12 @@ const styles = StyleSheet.create({
   title: { color: appColors.text, fontSize: 32, fontWeight: '900' },
   subtitle: { color: appColors.textMuted, fontSize: 15, lineHeight: 22 },
   input: { backgroundColor: appColors.surface, borderColor: appColors.border, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, color: appColors.text, fontSize: 16 },
+  label: { color: appColors.gold, fontWeight: '900', fontSize: 13, letterSpacing: 1, marginTop: 4 },
   filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   filterButton: { borderColor: appColors.border, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
   filterActive: { backgroundColor: appColors.gold, borderColor: appColors.gold },
   filterText: { color: appColors.textMuted, fontSize: 12, fontWeight: '800' },
   filterTextActive: { color: appColors.background },
+  resultCount: { color: appColors.textMuted, fontSize: 13 },
   muted: { color: appColors.textMuted }
 });
