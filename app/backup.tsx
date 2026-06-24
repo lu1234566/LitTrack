@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
@@ -9,6 +9,10 @@ import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { useShelves } from '@/contexts/ShelfContext';
 import { createReadoraBackup, parseReadoraBackup, stringifyBackup } from '@/services/readoraBackup';
 import { appColors, appFonts } from '@/theme/tokens';
+import type { Book, BookStatus } from '@/types/book';
+
+const scopes: Array<'all' | BookStatus> = ['all', 'finished', 'reading', 'wishlist'];
+const ratings = [0, 1, 2, 3, 4, 5];
 
 export default function BackupScreen() {
   const { books, stats, replaceBooks } = useBooks();
@@ -18,45 +22,62 @@ export default function BackupScreen() {
   const { sessions, setSessionList } = useReadingSessions();
   const { width } = useWindowDimensions();
   const mobile = width < 760;
+  const [scope, setScope] = useState<'all' | BookStatus>('all');
+  const [genre, setGenre] = useState('all');
+  const [minRating, setMinRating] = useState(0);
   const [backupText, setBackupText] = useState('');
   const [reportText, setReportText] = useState('');
   const [importText, setImportText] = useState('');
   const [message, setMessage] = useState('');
 
+  const genres = useMemo(() => ['all', ...Array.from(new Set(books.map((book) => book.genre).filter(Boolean)))], [books]);
+  const selectedBooks = useMemo(() => filterBooks(books, scope, genre, minRating), [books, genre, minRating, scope]);
+
   function generateBackup() {
-    const backup = createReadoraBackup({ books, quotes, shelves, sessions, preferences });
+    const selectedIds = new Set(selectedBooks.map((book) => book.id));
+    const backup = createReadoraBackup({
+      books: selectedBooks,
+      quotes: quotes.filter((quote) => !quote.bookId || selectedIds.has(quote.bookId)),
+      shelves,
+      sessions: sessions.filter((session) => selectedBooks.some((book) => book.id === session.bookId)),
+      preferences
+    });
     setBackupText(stringifyBackup(backup));
-    setMessage('Backup JSON gerado. Copie o texto para guardar ou migrar.');
+    setMessage('Backup JSON filtrado gerado com ' + selectedBooks.length + ' livro(s).');
   }
 
   function generateReport() {
+    const selectedIds = new Set(selectedBooks.map((book) => book.id));
+    const selectedQuotes = quotes.filter((quote) => !quote.bookId || selectedIds.has(quote.bookId));
+    const selectedSessions = sessions.filter((session) => selectedBooks.some((book) => book.id === session.bookId));
+    const selectedPages = selectedBooks.reduce((sum, book) => sum + (book.totalPages || 0), 0);
+    const selectedAverage = selectedBooks.length ? selectedBooks.reduce((sum, book) => sum + (book.rating || 0), 0) / selectedBooks.length : 0;
     const lines = [
       'READORA — RELATÓRIO DA BIBLIOTECA',
       'Leitor: ' + preferences.readerName,
       'Gerado em: ' + new Date().toLocaleString('pt-BR'),
+      'Filtro de status: ' + labelForScope(scope),
+      'Filtro de gênero: ' + (genre === 'all' ? 'Todos os gêneros' : genre),
+      'Nota mínima: ' + minRating + '/5',
       '',
-      'RESUMO',
-      '- Livros: ' + books.length,
-      '- Livros concluídos: ' + stats.finishedBooks,
-      '- Lendo agora: ' + stats.readingBooks,
-      '- Quero ler: ' + stats.wishlistBooks,
-      '- Páginas registradas: ' + stats.pagesRead,
-      '- Média geral: ' + stats.averageRating.toFixed(1),
-      '- Citações: ' + quotes.length,
-      '- Estantes: ' + shelves.length,
-      '- Sessões: ' + sessions.length,
+      'RESUMO FILTRADO',
+      '- Livros selecionados: ' + selectedBooks.length,
+      '- Páginas cadastradas: ' + selectedPages,
+      '- Média filtrada: ' + selectedAverage.toFixed(1),
+      '- Citações relacionadas: ' + selectedQuotes.length,
+      '- Sessões relacionadas: ' + selectedSessions.length,
       '',
       'LIVROS',
-      ...books.map((book, index) => (index + 1) + '. ' + book.title + ' — ' + book.author + ' | ' + book.genre + ' | ' + statusLabel(book.status) + ' | ' + (book.rating || 0) + '/5'),
+      ...(selectedBooks.length ? selectedBooks.map((book, index) => (index + 1) + '. ' + book.title + ' — ' + book.author + ' | ' + book.genre + ' | ' + statusLabel(book.status) + ' | ' + (book.rating || 0) + '/5') : ['Nenhum livro selecionado.']),
       '',
       'CITAÇÕES FAVORITAS',
-      ...quotes.filter((quote) => quote.favorite).map((quote) => '- “' + quote.text + '” — ' + quote.bookTitle),
+      ...(selectedQuotes.filter((quote) => quote.favorite).map((quote) => '- “' + quote.text + '” — ' + quote.bookTitle)),
       '',
       'SESSÕES RECENTES',
-      ...sessions.slice(0, 10).map((session) => '- ' + session.bookTitle + ': ' + session.pagesRead + ' páginas em ' + session.minutesRead + ' minutos')
+      ...(selectedSessions.slice(0, 10).map((session) => '- ' + session.bookTitle + ': ' + session.pagesRead + ' páginas em ' + session.minutesRead + ' minutos'))
     ];
     setReportText(lines.join('\n'));
-    setMessage('Relatório textual gerado. Para PDF, copie este relatório e imprima pelo navegador/sistema.');
+    setMessage('Relatório textual filtrado gerado.');
   }
 
   async function copyReport() {
@@ -94,25 +115,25 @@ export default function BackupScreen() {
         <Card>
           <Text style={styles.cardTitle}>▽ Filtros de Exportação</Text>
           <Text style={styles.kicker}>ESCOPO</Text>
-          <View style={styles.fakeSelect}><Text style={styles.selectText}>Todos os livros</Text></View>
+          <View style={styles.filterRow}>{scopes.map((item) => <Pressable key={item} onPress={() => setScope(item)}><Text style={scope === item ? styles.filterActive : styles.filter}>{labelForScope(item)}</Text></Pressable>)}</View>
           <Text style={styles.kicker}>GÊNERO</Text>
-          <View style={styles.fakeSelect}><Text style={styles.selectText}>Todos os gêneros</Text></View>
-          <Text style={styles.kicker}>AVALIAÇÃO MÍNIMA <Text style={styles.gold}>0★</Text></Text>
-          <View style={styles.slider}><View style={styles.sliderKnob} /></View>
-          <Text style={styles.body}>Livros selecionados: <Text style={styles.white}>{books.length}</Text></Text>
+          <View style={styles.filterRow}>{genres.slice(0, 8).map((item) => <Pressable key={item} onPress={() => setGenre(item)}><Text style={genre === item ? styles.filterActive : styles.filter}>{item === 'all' ? 'Todos' : item}</Text></Pressable>)}</View>
+          <Text style={styles.kicker}>AVALIAÇÃO MÍNIMA <Text style={styles.gold}>{minRating}★</Text></Text>
+          <View style={styles.filterRow}>{ratings.map((item) => <Pressable key={item} onPress={() => setMinRating(item)}><Text style={minRating === item ? styles.ratingActive : styles.rating}>{item}★</Text></Pressable>)}</View>
+          <Text style={styles.body}>Livros selecionados: <Text style={styles.white}>{selectedBooks.length}</Text></Text>
         </Card>
 
         <Card>
           <View style={styles.exportIcon}><Text style={styles.exportIconText}>♧</Text></View>
           <Text style={styles.exportTitle}>Exportar JSON</Text>
-          <Text style={styles.exportText}>Ideal para backup completo e portabilidade. Inclui todos os metadados, resenhas e configurações.</Text>
+          <Text style={styles.exportText}>Gera backup filtrado com os livros selecionados e dados relacionados.</Text>
           <Pressable style={styles.downloadButton} onPress={generateBackup}><Text style={styles.downloadText}>⇩ Gerar JSON</Text></Pressable>
         </Card>
 
         <Card>
           <View style={[styles.exportIcon, styles.blueIcon]}><Text style={styles.blueIconText}>▤</Text></View>
           <Text style={styles.exportTitle}>Relatório de Leitura</Text>
-          <Text style={styles.exportText}>Gera um relatório textual pronto para copiar, imprimir ou converter em PDF pelo navegador.</Text>
+          <Text style={styles.exportText}>Gera um relatório textual filtrado pronto para copiar, imprimir ou converter em PDF pelo navegador.</Text>
           <Pressable style={styles.pdfButton} onPress={generateReport}><Text style={styles.pdfText}>⇩ Gerar Relatório</Text></Pressable>
         </Card>
       </View>
@@ -127,9 +148,9 @@ export default function BackupScreen() {
 
         <Card>
           <Text style={styles.cardTitle}>⊙ INFORMAÇÕES IMPORTANTES</Text>
-          <Text style={styles.bullet}>• Os arquivos gerados contêm apenas seus dados pessoais e de leitura.</Text>
+          <Text style={styles.bullet}>• O JSON respeita os filtros de status, gênero e avaliação mínima.</Text>
           <Text style={styles.bullet}>• Ao importar, você pode restaurar uma biblioteca inteira pelo JSON.</Text>
-          <Text style={styles.bullet}>• O relatório textual pode ser copiado e impresso como PDF pelo próprio navegador.</Text>
+          <Text style={styles.bullet}>• O relatório textual também respeita os filtros e pode ser impresso como PDF.</Text>
         </Card>
       </View>
 
@@ -166,6 +187,17 @@ export default function BackupScreen() {
   );
 }
 
+function filterBooks(books: Book[], scope: 'all' | BookStatus, genre: string, minRating: number) {
+  return books.filter((book) => (scope === 'all' || book.status === scope) && (genre === 'all' || book.genre === genre) && (book.rating || 0) >= minRating);
+}
+
+function labelForScope(status: 'all' | BookStatus) {
+  if (status === 'finished') return 'Lidos';
+  if (status === 'wishlist') return 'Quero ler';
+  if (status === 'reading') return 'Lendo';
+  return 'Todos';
+}
+
 function statusLabel(status: string) {
   if (status === 'finished') return 'Lido';
   if (status === 'wishlist') return 'Quero ler';
@@ -181,12 +213,13 @@ const styles = StyleSheet.create({
   midGrid: { flexDirection: 'row', gap: 18 },
   cardTitle: { color: appColors.gold, fontFamily: appFonts.display, fontSize: 18, fontWeight: '900' },
   kicker: { color: appColors.textDim, fontSize: 10, letterSpacing: 3, fontWeight: '900', marginTop: 14 },
-  fakeSelect: { backgroundColor: appColors.background, borderColor: appColors.border, borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, marginTop: 8 },
-  selectText: { color: appColors.text, fontWeight: '800' },
+  filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
+  filter: { color: appColors.textMuted, borderColor: appColors.border, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, overflow: 'hidden', fontWeight: '800' },
+  filterActive: { color: appColors.background, backgroundColor: appColors.gold, borderColor: appColors.gold, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, overflow: 'hidden', fontWeight: '900' },
+  rating: { color: appColors.textMuted, borderColor: appColors.border, borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 7, overflow: 'hidden', fontWeight: '800' },
+  ratingActive: { color: appColors.background, backgroundColor: appColors.gold, borderColor: appColors.gold, borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 7, overflow: 'hidden', fontWeight: '900' },
   gold: { color: appColors.gold },
   white: { color: appColors.text, fontWeight: '900' },
-  slider: { height: 6, borderRadius: 999, backgroundColor: appColors.surfaceMuted, marginTop: 10 },
-  sliderKnob: { width: 10, height: 10, borderRadius: 999, backgroundColor: appColors.gold, marginTop: -2 },
   body: { color: appColors.textMuted, lineHeight: 22, marginTop: 10 },
   exportIcon: { alignSelf: 'center', width: 54, height: 54, borderRadius: 16, backgroundColor: appColors.goldDeep, alignItems: 'center', justifyContent: 'center' },
   exportIconText: { color: appColors.gold, fontSize: 28 },
