@@ -30,7 +30,7 @@ export default function ProgressScreen() {
       <Card>
         <Text style={styles.kicker}>Meta anual</Text>
         <Text style={styles.big}>{stats.finishedBooks}/{preferences.yearlyGoal}</Text>
-        <View style={styles.track}><View style={[styles.fill, { width: goalProgress + '%' }]} /></View>
+        <View style={styles.track}><View style={[styles.fill, { width: percent(goalProgress) }]} /></View>
         <Text style={styles.body}>{goalProgress}% da meta anual concluida.</Text>
       </Card>
 
@@ -48,13 +48,17 @@ export default function ProgressScreen() {
           <Card key={achievement.id}>
             <Text style={styles.achievementTitle}>{achievement.unlocked ? '✓ ' : '○ '}{achievement.title}</Text>
             <Text style={styles.body}>{achievement.description}</Text>
-            <View style={styles.track}><View style={[styles.fill, { width: progress + '%' }]} /></View>
+            <View style={styles.track}><View style={[styles.fill, { width: percent(progress) }]} /></View>
             <Text style={styles.label}>{achievement.progress}/{achievement.target}</Text>
           </Card>
         );
       })}
     </Screen>
   );
+}
+
+function percent(value: number) {
+  return (value + '%') as `${number}%`;
 }
 
 const styles = StyleSheet.create({
