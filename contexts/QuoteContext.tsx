@@ -10,6 +10,7 @@ type QuoteContextValue = {
   addQuote: (quote: QuoteInput) => Promise<void>;
   updateQuote: (quoteId: string, patch: Partial<Quote>) => Promise<void>;
   deleteQuote: (quoteId: string) => Promise<void>;
+  setQuoteList: (nextQuotes: Quote[]) => Promise<void>;
   toggleFavoriteQuote: (quoteId: string) => Promise<void>;
 };
 
@@ -19,6 +20,7 @@ const QuoteContext = createContext<QuoteContextValue>({
   addQuote: async () => {},
   updateQuote: async () => {},
   deleteQuote: async () => {},
+  setQuoteList: async () => {},
   toggleFavoriteQuote: async () => {}
 });
 
@@ -33,6 +35,10 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
   async function persist(nextQuotes: Quote[]) {
     setQuotes(nextQuotes);
     await saveQuotes(nextQuotes);
+  }
+
+  async function setQuoteList(nextQuotes: Quote[]) {
+    await persist(nextQuotes);
   }
 
   async function addQuote(input: QuoteInput) {
@@ -52,7 +58,7 @@ export function QuoteProvider({ children }: { children: React.ReactNode }) {
     await persist(quotes.map((quote) => quote.id === quoteId ? { ...quote, favorite: !quote.favorite, updatedAt: Date.now() } : quote));
   }
 
-  const value = useMemo(() => ({ quotes, loadingQuotes, addQuote, updateQuote, deleteQuote, toggleFavoriteQuote }), [quotes, loadingQuotes]);
+  const value = useMemo(() => ({ quotes, loadingQuotes, addQuote, updateQuote, deleteQuote, setQuoteList, toggleFavoriteQuote }), [quotes, loadingQuotes]);
   return <QuoteContext.Provider value={value}>{children}</QuoteContext.Provider>;
 }
 
