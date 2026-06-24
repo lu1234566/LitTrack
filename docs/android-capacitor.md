@@ -24,6 +24,24 @@ VITE_FIREBASE_APP_ID=...
 VITE_FIREBASE_DATABASE_ID=
 ```
 
+Para o GitHub Actions gerar um APK já configurado, cadastre estas mesmas chaves em:
+
+```txt
+GitHub > Settings > Secrets and variables > Actions > Variables
+```
+
+Variáveis esperadas:
+
+```txt
+VITE_FIREBASE_API_KEY
+VITE_FIREBASE_AUTH_DOMAIN
+VITE_FIREBASE_PROJECT_ID
+VITE_FIREBASE_STORAGE_BUCKET
+VITE_FIREBASE_MESSAGING_SENDER_ID
+VITE_FIREBASE_APP_ID
+VITE_FIREBASE_DATABASE_ID
+```
+
 ## 3. Testar web antes do APK
 
 ```bash
@@ -80,7 +98,27 @@ Ele tenta gerar um APK debug em:
 android/app/build/outputs/apk/debug/
 ```
 
-## 6. Firebase Auth no Android/WebView
+## 6. Gerar APK pelo GitHub Actions
+
+O workflow fica em:
+
+```txt
+.github/workflows/android-capacitor.yml
+```
+
+Ele roda automaticamente em push para `main` e também pode ser executado manualmente em:
+
+```txt
+GitHub > Actions > Android APK - Capacitor > Run workflow
+```
+
+Quando terminar, baixe o artifact:
+
+```txt
+readora-debug-apk
+```
+
+## 7. Firebase Auth no Android/WebView
 
 O app usa Firebase Web Auth. No navegador comum, ele tenta `signInWithPopup`. Quando detecta ambiente de WebView/Capacitor, ele tenta `signInWithRedirect`.
 
@@ -93,7 +131,7 @@ Se o login Google falhar no APK, verifique:
 
 Se o fluxo WebView continuar instável, o próximo passo técnico recomendado é trocar o login por uma solução nativa de Capacitor/Firebase Auth.
 
-## 7. Sobre Expo
+## 8. Sobre Expo
 
 O repositório pode continuar linkado ao Expo para organização e automação futura, mas este projeto não é Expo/React Native no momento. Ele é React + Vite. Por isso, o caminho atual para Android é Capacitor.
 
