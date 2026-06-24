@@ -2,19 +2,23 @@ import { StyleSheet, Text } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
+import { usePreferences } from '@/contexts/PreferencesContext';
 import { appColors } from '@/theme/tokens';
 
 export default function ExportScreen() {
   const { books, stats } = useBooks();
-  const preview = JSON.stringify({ exportedAt: new Date().toISOString(), stats, books }, null, 2).slice(0, 900);
+  const { preferences } = usePreferences();
+  const payload = { exportedAt: new Date().toISOString(), preferences, stats, books };
+  const preview = JSON.stringify(payload, null, 2).slice(0, 1200);
 
   return (
     <Screen>
       <Text style={styles.title}>Exportar</Text>
-      <Text style={styles.subtitle}>Previa do backup local. O compartilhamento nativo sera ligado na proxima etapa.</Text>
+      <Text style={styles.subtitle}>Previa do backup local com biblioteca, estatisticas e preferencias.</Text>
       <Card>
         <Text style={styles.kicker}>Conteudo pronto para backup</Text>
         <Text style={styles.body}>{books.length} livros, {stats.pagesRead} paginas, genero principal {stats.favoriteGenre}.</Text>
+        <Text style={styles.body}>Leitor: {preferences.readerName}. Meta anual: {preferences.yearlyGoal} livros.</Text>
       </Card>
       <Card>
         <Text style={styles.kicker}>Previa JSON</Text>
