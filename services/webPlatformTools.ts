@@ -21,6 +21,29 @@ export async function pickImageAsDataUrl(): Promise<string | null> {
   });
 }
 
+export async function pickTextFile(accept = '.json,text/plain,application/json'): Promise<string | null> {
+  const documentRef = (globalThis as any).document;
+  if (!documentRef?.createElement) return null;
+
+  return new Promise((resolve) => {
+    const input = documentRef.createElement('input');
+    input.type = 'file';
+    input.accept = accept;
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (!file) {
+        resolve(null);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : null);
+      reader.onerror = () => resolve(null);
+      reader.readAsText(file, 'utf-8');
+    };
+    input.click();
+  });
+}
+
 export async function scanBarcodeFromImage(): Promise<string | null> {
   const documentRef = (globalThis as any).document;
   const BarcodeDetectorRef = (globalThis as any).BarcodeDetector;
@@ -44,6 +67,22 @@ export async function scanBarcodeFromImage(): Promise<string | null> {
     img.onerror = () => resolve(null);
     img.src = dataUrl;
   });
+}
+
+export function downloadTextFile(filename: string, content: string, mimeType = 'text/plain;charset=utf-8') {
+  const documentRef = (globalThis as any).document;
+  const URLRef = (globalThis as any).URL;
+  if (!documentRef?.createElement || !URLRef?.createObjectURL) return false;
+  const blob = new Blob([content], { type: mimeType });
+  const url = URLRef.createObjectURL(blob);
+  const link = documentRef.createElement('a');
+  link.href = url;
+  link.download = filename;
+  documentRef.body.appendChild(link);
+  link.click();
+  documentRef.body.removeChild(link);
+  URLRef.revokeObjectURL(url);
+  return true;
 }
 
 export function printTextDocument(title: string, body: string) {
