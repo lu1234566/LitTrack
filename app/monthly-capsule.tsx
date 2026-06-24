@@ -3,11 +3,14 @@ import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-na
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
+import { usePreferences } from '@/contexts/PreferencesContext';
 import { useReadingSessions } from '@/contexts/ReadingSessionContext';
+import { downloadCapsulePng } from '@/services/webPlatformTools';
 import { appColors, appFonts } from '@/theme/tokens';
 
 export default function MonthlyCapsuleScreen() {
   const { books, stats } = useBooks();
+  const { preferences } = usePreferences();
   const { sessions } = useReadingSessions();
   const { width } = useWindowDimensions();
   const mobile = width < 760;
@@ -26,6 +29,7 @@ export default function MonthlyCapsuleScreen() {
   const monthMinutes = monthSessions.reduce((sum, session) => sum + session.minutesRead, 0);
   const monthName = new Date().toLocaleDateString('pt-BR', { month: 'long' });
   const vibe = monthSessions[0]?.mood || 'Sereno';
+  const minutesLabel = Math.floor(monthMinutes / 60) + 'h ' + (monthMinutes % 60) + 'm';
 
   const caption = useMemo(() => 'Minha cápsula literária de ' + monthName + ' no Readora 📚✨\n\n📖 Livros concluídos: ' + stats.finishedBooks + '\n📄 Páginas lidas: ' + monthPages + '\n⭐ Média do mês: ' + stats.averageRating.toFixed(1) + '\n🎭 Vibe: ' + vibe + '\n\nGerado automaticamente pelo @readora.app 📱\n#Readora #CapsulaLiteraria #Leitura #Books #MonthlyWrapUp', [monthName, monthPages, stats.averageRating, stats.finishedBooks, vibe]);
 
@@ -39,8 +43,20 @@ export default function MonthlyCapsuleScreen() {
     setMessage('Seu dispositivo não liberou cópia automática. Selecione a legenda abaixo e copie manualmente.');
   }
 
-  function prepareCapture() {
-    setMessage('PNG sem dependência nativa ainda: use a prévia da cápsula como área de captura/screenshot por enquanto.');
+  function handleDownloadPng() {
+    const ok = downloadCapsulePng({
+      readerName: preferences.readerName || 'Lucas Barcelar',
+      monthName,
+      year: String(now.getFullYear()),
+      finishedBooks: stats.finishedBooks,
+      pages: monthPages,
+      minutesLabel,
+      averageRating: stats.averageRating.toFixed(1),
+      vibe,
+      genre: stats.favoriteGenre || 'Diverso',
+      bookCount: monthBooks.length
+    });
+    setMessage(ok ? 'Cápsula PNG baixada pelo navegador.' : 'Download PNG disponível apenas no navegador com suporte a Canvas.');
   }
 
   return (
@@ -64,12 +80,12 @@ export default function MonthlyCapsuleScreen() {
           <View style={styles.capsuleCard}>
             <Text style={styles.cardKicker}>READORA • MEMÓRIAS LITERÁRIAS</Text>
             <Text style={styles.cardTitle}>Cápsula de {monthName}</Text>
-            <Text style={styles.cardSubtitle}>Jornada de Lucas Barcelar • {now.getFullYear()}</Text>
+            <Text style={styles.cardSubtitle}>Jornada de {preferences.readerName || 'Lucas Barcelar'} • {now.getFullYear()}</Text>
             <Text style={styles.poem}>“{monthName} foi um período de pausa e reflexão silenciosa entre as páginas.”</Text>
             <View style={styles.miniGrid}>
               <MiniStat label="LIVROS LIDOS" value={String(stats.finishedBooks)} />
               <MiniStat label="PÁGINAS" value={String(monthPages)} />
-              <MiniStat label="TEMPO DE FOCO" value={Math.floor(monthMinutes / 60) + 'h ' + (monthMinutes % 60) + 'm'} />
+              <MiniStat label="TEMPO DE FOCO" value={minutesLabel} />
               <MiniStat label="MÉDIA DO MÊS" value={stats.averageRating.toFixed(1)} />
             </View>
             <Text style={styles.acervo}>ACERVO CONCLUÍDO ({monthBooks.length})</Text>
@@ -83,7 +99,7 @@ export default function MonthlyCapsuleScreen() {
           <EssenceLine value={String(monthPages)} label="PÁGINAS PERCORRIDAS" text="A distância mística que seus olhos atravessaram este mês." />
           <EssenceLine value={String(stats.finishedBooks)} label="HISTÓRIAS CONCLUÍDAS" text="O número de universos que agora fazem parte da sua história." />
           <EssenceLine value={vibe} label="ATMOSFERA DOMINANTE" text="O sentimento que guiou suas escolhas e momentos de leitura." />
-          <Pressable style={styles.downloadButton} onPress={prepareCapture}><Text style={styles.downloadText}>⇩ Preparar captura da cápsula</Text></Pressable>
+          <Pressable style={styles.downloadButton} onPress={handleDownloadPng}><Text style={styles.downloadText}>⇩ Baixar Cápsula PNG</Text></Pressable>
         </View>
       </View>
 
