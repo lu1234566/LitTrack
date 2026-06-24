@@ -21,13 +21,14 @@ export function AutoSyncBridge() {
   const lastPayload = useRef('');
 
   useEffect(() => {
-    if (!user?.uid || !isNativeFirebaseConfigured || firstPullDone.current) return;
+    const userId = user?.uid;
+    if (!userId || !isNativeFirebaseConfigured || firstPullDone.current) return;
     firstPullDone.current = true;
     let cancelled = false;
     async function pull() {
       setStatus('Sincronizando dados remotos...');
       try {
-        const bundle = await pullReadoraBundle(user.uid);
+        const bundle = await pullReadoraBundle(userId);
         if (cancelled) return;
         if (bundle.books?.length) await replaceBooks(mergeByUpdatedAt(books, bundle.books));
         if (bundle.quotes?.length) await setQuoteList(mergeByUpdatedAt(quotes, bundle.quotes));
@@ -44,14 +45,15 @@ export function AutoSyncBridge() {
   }, [user?.uid]);
 
   useEffect(() => {
-    if (!user?.uid || !isNativeFirebaseConfigured) return;
+    const userId = user?.uid;
+    if (!userId || !isNativeFirebaseConfigured) return;
     const payload = JSON.stringify({ books, quotes, shelves, sessions, preferences });
     if (payload === lastPayload.current) return;
     lastPayload.current = payload;
     const timeout = setTimeout(async () => {
       try {
         setStatus('Salvando na nuvem...');
-        const result = await pushReadoraBundle(user.uid, { books, quotes, shelves, sessions, preferences });
+        const result = await pushReadoraBundle(userId, { books, quotes, shelves, sessions, preferences });
         setStatus(result.ok ? 'Sincronizado com a nuvem.' : 'Firebase não configurado.');
       } catch {
         setStatus('Erro ao sincronizar com a nuvem.');
