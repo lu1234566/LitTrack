@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "Readora Native",
+    "slug": "readora-native",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "readora",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "android": {
+      "package": "com.readora.mobile",
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.CAMERA"
+      ]
+    },
+    "ios": {
+      "bundleIdentifier": "com.readora.mobile",
+      "supportsTablet": true
+    },
+    "plugins": [
+      "expo-router",
+      "expo-web-browser",
+      "expo-image-picker",
+      "expo-media-library",
+      "expo-notifications",
+      "expo-camera"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "3a93b87d-49a4-44f7-9a48-514f78101579"
+      }
+    },
+    "owner": "luscas115"
+  }
+}
