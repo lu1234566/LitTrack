@@ -15,6 +15,9 @@ Implementado até agora:
 - Dashboard com estatísticas, meta anual, insight do leitor e sessões recentes;
 - Biblioteca com busca, filtros por status/gênero e ordenação;
 - busca unificada em livros, citações e estantes;
+- busca externa via Google Books com importação de capa, editora, páginas, ano e ISBN;
+- cards e galeria com suporte a capas reais;
+- estrutura de conta preparada para Google e sincronização por usuário;
 - formulário expandido de livro;
 - tela completa de detalhes do livro;
 - edição de livro existente;
@@ -83,13 +86,16 @@ EXPO_PUBLIC_FIREBASE_PROJECT_ID
 EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET
 EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
 EXPO_PUBLIC_FIREBASE_APP_ID
+EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID
+EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID
+EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID
 ```
 
 ## O que ainda falta
 
-1. Login Google nativo.
+1. Ligar AuthSession ao token real do Google.
 2. Sincronização automática ligada ao usuário autenticado.
-3. Capas reais e busca externa de livros.
+3. Busca externa com fallback Open Library.
 4. Edição completa de estantes e citações.
 5. Ícone e splash final.
 6. Teste em aparelho físico.
