@@ -1,6 +1,6 @@
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { calculateProgress, useBooks } from '@/contexts/BookContext';
@@ -64,16 +64,22 @@ export default function BookDetailsScreen() {
 
   return (
     <Screen>
-      <View style={styles.header}>
-        <Text style={styles.kicker}>{statusLabel(book.status)} • {book.genre}</Text>
-        <Text style={styles.title}>{book.title}</Text>
-        <Text style={styles.author}>{book.author}</Text>
+      <View style={styles.heroRow}>
+        <View style={styles.coverBox}>
+          {book.coverUrl ? <Image source={{ uri: book.coverUrl }} style={styles.coverImage} /> : <Text style={styles.coverText}>{book.title.slice(0, 1)}</Text>}
+        </View>
+        <View style={styles.headerText}>
+          <Text style={styles.kicker}>{statusLabel(book.status)} • {book.genre}</Text>
+          <Text style={styles.title}>{book.title}</Text>
+          <Text style={styles.author}>{book.author}</Text>
+        </View>
       </View>
 
       <View style={styles.actionsTop}>
         <Link href={{ pathname: '/edit/[id]', params: { id: book.id } }} asChild><Pressable style={styles.editButton}><Text style={styles.editText}>Editar livro</Text></Pressable></Link>
         <Link href="/quotes" asChild><Pressable style={styles.editButton}><Text style={styles.editText}>Citacoes</Text></Pressable></Link>
       </View>
+      {book.status === 'wishlist' ? <Pressable style={styles.startButton} onPress={() => updateStatus(book.id, 'reading')}><Text style={styles.startText}>Comecar leitura</Text></Pressable> : null}
 
       <Card>
         <Text style={styles.cardTitle}>Progresso</Text>
@@ -88,6 +94,13 @@ export default function BookDetailsScreen() {
         <Card><Text style={styles.smallValue}>{book.publishedDate || '-'}</Text><Text style={styles.smallLabel}>ano</Text></Card>
         <Card><Text style={styles.smallValue}>{bookSessions.length}</Text><Text style={styles.smallLabel}>sessoes</Text></Card>
       </View>
+
+      <Card>
+        <Text style={styles.cardTitle}>Dados de importacao</Text>
+        <Text style={styles.body}>ISBN: {book.isbn || 'nao informado'}</Text>
+        <Text style={styles.body}>Origem: {book.notes || 'cadastro manual'}</Text>
+        <Text style={styles.body}>Capa: {book.coverUrl ? 'configurada' : 'sem capa externa'}</Text>
+      </Card>
 
       <TextInput style={styles.input} placeholder="Pagina atual" placeholderTextColor={appColors.textDim} value={page} onChangeText={setPage} keyboardType="numeric" />
       <Pressable style={styles.primaryButton} onPress={handleProgress}><Text style={styles.primaryText}>Atualizar progresso</Text></Pressable>
@@ -129,13 +142,19 @@ export default function BookDetailsScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { gap: 8 },
+  heroRow: { flexDirection: 'row', gap: 16, alignItems: 'center' },
+  coverBox: { width: 92, height: 138, borderRadius: 18, backgroundColor: appColors.surface, borderColor: appColors.gold, borderWidth: 1, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  coverImage: { width: '100%', height: '100%' },
+  coverText: { color: appColors.gold, fontSize: 42, fontWeight: '900' },
+  headerText: { flex: 1, gap: 8 },
   kicker: { color: appColors.gold, fontSize: 12, fontWeight: '900', letterSpacing: 1 },
   title: { color: appColors.text, fontSize: 32, fontWeight: '900' },
   author: { color: appColors.textMuted, fontSize: 16 },
   actionsTop: { flexDirection: 'row', gap: 10 },
   editButton: { flex: 1, borderColor: appColors.gold, borderWidth: 1, borderRadius: 999, paddingVertical: 12, alignItems: 'center' },
   editText: { color: appColors.gold, fontWeight: '900' },
+  startButton: { backgroundColor: appColors.gold, borderRadius: 999, paddingVertical: 14, alignItems: 'center' },
+  startText: { color: appColors.background, fontWeight: '900' },
   cardTitle: { color: appColors.gold, fontWeight: '900', fontSize: 13, letterSpacing: 1 },
   progressText: { color: appColors.text, fontSize: 26, fontWeight: '900' },
   progressTrack: { height: 8, borderRadius: 999, backgroundColor: appColors.border, overflow: 'hidden' },
