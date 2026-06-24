@@ -1,53 +1,85 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useReadingSessions } from '@/contexts/ReadingSessionContext';
-import { appColors } from '@/theme/tokens';
+import { appColors, appFonts } from '@/theme/tokens';
 
 export default function TimelineScreen() {
   const { sessions, deleteSession } = useReadingSessions();
+  const { width } = useWindowDimensions();
+  const mobile = width < 760;
   const totalPages = sessions.reduce((sum, session) => sum + session.pagesRead, 0);
   const totalMinutes = sessions.reduce((sum, session) => sum + session.minutesRead, 0);
 
   return (
     <Screen>
-      <Text style={styles.title}>Timeline</Text>
-      <Text style={styles.subtitle}>Historico real das suas sessoes de leitura.</Text>
-
-      <View style={styles.grid}>
-        <Card><Text style={styles.big}>{sessions.length}</Text><Text style={styles.label}>sessoes</Text></Card>
-        <Card><Text style={styles.big}>{totalPages}</Text><Text style={styles.label}>paginas</Text></Card>
-        <Card><Text style={styles.big}>{totalMinutes}</Text><Text style={styles.label}>minutos</Text></Card>
+      <View style={styles.header}>
+        <Text style={styles.title}>Linha do Tempo</Text>
+        <Text style={styles.subtitle}>A cronologia viva das suas sessões de leitura.</Text>
       </View>
 
-      {sessions.length === 0 ? <Text style={styles.muted}>Nenhuma sessao registrada ainda.</Text> : null}
-      {sessions.map((session) => (
-        <Card key={session.id}>
-          <View style={styles.row}>
-            <Text style={styles.book}>{session.bookTitle}</Text>
-            <Text style={styles.date}>{new Date(session.createdAt).toLocaleDateString('pt-BR')}</Text>
+      <View style={[styles.grid, mobile && styles.stack]}>
+        <Metric label="SESSÕES" value={String(sessions.length)} />
+        <Metric label="PÁGINAS" value={String(totalPages)} />
+        <Metric label="MINUTOS" value={String(totalMinutes)} />
+      </View>
+
+      {sessions.length === 0 ? (
+        <View style={styles.emptyState}>
+          <View style={styles.emptyCircle}><Text style={styles.emptyIcon}>↺</Text></View>
+          <Text style={styles.emptyTitle}>Nenhum marco registrado</Text>
+          <Text style={styles.emptyText}>Registre uma sessão rápida ou atualize o progresso de um livro para criar sua linha do tempo.</Text>
+        </View>
+      ) : null}
+
+      <View style={styles.timelineList}>
+        {sessions.map((session, index) => (
+          <View key={session.id} style={styles.timelineItem}>
+            <View style={styles.timelineRail}><View style={styles.dot} />{index !== sessions.length - 1 ? <View style={styles.line} /> : null}</View>
+            <Card>
+              <View style={styles.row}>
+                <Text style={styles.book}>{session.bookTitle}</Text>
+                <Text style={styles.date}>{new Date(session.createdAt).toLocaleDateString('pt-BR')}</Text>
+              </View>
+              <Text style={styles.body}>{session.pagesRead} páginas • {session.minutesRead} minutos</Text>
+              {session.mood ? <Text style={styles.mood}>Humor: {session.mood}</Text> : null}
+              {session.note ? <Text style={styles.body}>{session.note}</Text> : null}
+              <Pressable style={styles.danger} onPress={() => deleteSession(session.id)}><Text style={styles.dangerText}>Remover sessão</Text></Pressable>
+            </Card>
           </View>
-          <Text style={styles.body}>{session.pagesRead} paginas • {session.minutesRead} minutos</Text>
-          {session.mood ? <Text style={styles.body}>Humor: {session.mood}</Text> : null}
-          {session.note ? <Text style={styles.body}>{session.note}</Text> : null}
-          <Pressable style={styles.danger} onPress={() => deleteSession(session.id)}><Text style={styles.dangerText}>Remover sessao</Text></Pressable>
-        </Card>
-      ))}
+        ))}
+      </View>
     </Screen>
   );
 }
 
+function Metric({ label, value }: { label: string; value: string }) {
+  return <Card><Text style={styles.metricLabel}>{label}</Text><Text style={styles.big}>{value}</Text></Card>;
+}
+
 const styles = StyleSheet.create({
-  title: { color: appColors.text, fontSize: 32, fontWeight: '900' },
-  subtitle: { color: appColors.textMuted, fontSize: 15, lineHeight: 22 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  big: { color: appColors.text, fontSize: 28, fontWeight: '900' },
-  label: { color: appColors.textMuted, fontSize: 12, marginTop: 4 },
+  stack: { flexDirection: 'column' },
+  header: { gap: 8 },
+  title: { color: appColors.text, fontFamily: appFonts.display, fontSize: 48, lineHeight: 56, fontWeight: '900' },
+  subtitle: { color: appColors.textMuted, fontSize: 18, lineHeight: 26 },
+  grid: { flexDirection: 'row', gap: 16 },
+  metricLabel: { color: appColors.textDim, fontSize: 10, letterSpacing: 4, fontWeight: '900' },
+  big: { color: appColors.text, fontSize: 30, fontWeight: '900' },
+  emptyState: { minHeight: 360, alignItems: 'center', justifyContent: 'center', gap: 14 },
+  emptyCircle: { width: 84, height: 84, borderRadius: 999, backgroundColor: appColors.surface, borderColor: appColors.border, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  emptyIcon: { color: appColors.gold, fontSize: 42 },
+  emptyTitle: { color: appColors.text, fontFamily: appFonts.display, fontSize: 30, fontWeight: '900', textAlign: 'center' },
+  emptyText: { color: appColors.textDim, fontSize: 17, textAlign: 'center', maxWidth: 480, lineHeight: 24 },
+  timelineList: { gap: 0 },
+  timelineItem: { flexDirection: 'row', gap: 16 },
+  timelineRail: { width: 24, alignItems: 'center' },
+  dot: { width: 14, height: 14, borderRadius: 999, backgroundColor: appColors.gold, marginTop: 28 },
+  line: { flex: 1, width: 2, backgroundColor: appColors.border, marginTop: 4 },
   row: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
-  book: { color: appColors.gold, fontSize: 16, fontWeight: '900', flex: 1 },
-  date: { color: appColors.textDim, fontSize: 12 },
+  book: { color: appColors.gold, fontFamily: appFonts.display, fontSize: 22, fontWeight: '900', flex: 1 },
+  date: { color: appColors.textDim, fontSize: 12, fontWeight: '900' },
   body: { color: appColors.textMuted, lineHeight: 22 },
-  muted: { color: appColors.textMuted },
+  mood: { color: appColors.text, fontWeight: '900' },
   danger: { borderColor: appColors.red, borderWidth: 1, borderRadius: 999, paddingVertical: 10, alignItems: 'center', marginTop: 12 },
   dangerText: { color: appColors.red, fontWeight: '900' }
 });
