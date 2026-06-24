@@ -14,7 +14,7 @@ export default function ScanIsbnScreen() {
     const value = result.data?.replace(/[^0-9Xx]/g, '');
     if (!value) return;
     setScanned(true);
-    router.replace({ pathname: '/add', params: { isbn: value } });
+    router.replace({ pathname: '/add', params: { isbn: value } } as never);
   }
 
   if (!permission) {
@@ -55,7 +55,7 @@ export default function ScanIsbnScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: appColors.background },
   camera: { flex: 1 },
-  overlay: { position: 'absolute', inset: 0, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: 'rgba(0,0,0,0.28)' },
+  overlay: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: 'rgba(0,0,0,0.28)' },
   scanTitle: { color: appColors.text, fontFamily: appFonts.display, fontSize: 42, fontWeight: '900' },
   scanText: { color: appColors.textMuted, textAlign: 'center', fontSize: 17, marginTop: 8 },
   frame: { width: '82%', maxWidth: 420, height: 210, borderColor: appColors.gold, borderWidth: 3, borderRadius: 26, marginTop: 32, backgroundColor: 'rgba(255,153,0,0.08)' },
