@@ -27,7 +27,7 @@ export function Screen({ children, scroll = true }: { children: ReactNode; scrol
   const density = densityValue(preferences.visualDensity);
   const accent = accentColor(preferences.visualAccent);
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 900;
+  const isDesktop = preferences.layoutMode === 'desktop' ? true : preferences.layoutMode === 'mobile' ? false : width >= 900;
   const [drawerOpen, setDrawerOpen] = useState(false);
   const content = <View style={[styles.content, isDesktop ? styles.desktopContent : styles.mobileContent, { gap: density.screenGap }]}>{children}</View>;
 
