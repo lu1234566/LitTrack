@@ -20,9 +20,9 @@ export default function DiscoverScreen() {
     try {
       const books = await searchGoogleBooks(query);
       setResults(books);
-      setMessage(books.length ? books.length + ' resultado(s) encontrados.' : 'Nenhum resultado encontrado.');
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Erro ao buscar livros.');
+      setMessage(books.length ? books.length + ' resultado(s) encontrados. A busca usa Google Books, Open Library e fallback local.' : 'Nenhum resultado encontrado.');
+    } catch {
+      setMessage('Busca indisponivel no momento. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -54,7 +54,7 @@ export default function DiscoverScreen() {
   return (
     <Screen>
       <Text style={styles.title}>Descobrir livros</Text>
-      <Text style={styles.subtitle}>Busque na Google Books API e importe capa, autor, editora, ano, paginas e ISBN.</Text>
+      <Text style={styles.subtitle}>Busque e importe capa, autor, editora, ano, paginas e ISBN. Se a API externa falhar, o app usa fallback para teste.</Text>
       <View style={styles.searchRow}>
         <TextInput style={styles.input} placeholder="Titulo, autor ou ISBN" placeholderTextColor={appColors.textDim} value={query} onChangeText={setQuery} />
         <Pressable style={styles.button} onPress={search}><Text style={styles.buttonText}>{loading ? '...' : 'Buscar'}</Text></Pressable>
@@ -72,6 +72,7 @@ export default function DiscoverScreen() {
               <Text style={styles.meta}>{book.author}</Text>
               <Text style={styles.meta}>{book.publisher || 'Editora desconhecida'} • {book.publishedDate || 'sem ano'}</Text>
               <Text style={styles.meta}>{book.totalPages || 0} paginas • {book.genre}</Text>
+              <Text style={styles.source}>{book.source}</Text>
             </View>
           </View>
           {book.description ? <Text style={styles.description} numberOfLines={3}>{book.description}</Text> : null}
@@ -97,6 +98,7 @@ const styles = StyleSheet.create({
   info: { flex: 1, gap: 4 },
   bookTitle: { color: appColors.text, fontSize: 18, fontWeight: '900' },
   meta: { color: appColors.textMuted, fontSize: 13 },
+  source: { color: appColors.gold, fontSize: 12, fontWeight: '900' },
   description: { color: appColors.textMuted, lineHeight: 20, marginTop: 12 },
   importButton: { backgroundColor: appColors.gold, borderRadius: 999, paddingVertical: 12, alignItems: 'center', marginTop: 12 },
   importText: { color: appColors.background, fontWeight: '900' }
