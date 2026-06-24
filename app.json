@@ -19,7 +19,8 @@
       "expo-web-browser",
       "expo-image-picker",
       "expo-media-library",
-      "expo-notifications"
+      "expo-notifications",
+      "expo-camera"
     ],
     "experiments": {
       "typedRoutes": true
