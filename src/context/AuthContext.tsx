@@ -1,0 +1,239 @@
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { auth, db, googleProvider, isFirebaseConfigured } from '../lib/firebase';
+import { onAuthStateChanged, signInWithPopup, signInWithRedirect, getRedirectResult, signOut } from 'firebase/auth';
+import { doc, setDoc, getDoc, getDocFromServer } from 'firebase/firestore';
+
+function isNativeWebViewEnvironment() {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    return false;
+  }
+
+  const protocol = window.location.protocol;
+  const userAgent = navigator.userAgent || '';
+
+  return (
+    protocol === 'capacitor:' ||
+    protocol === 'ionic:' ||
+    /\bwv\b/i.test(userAgent) ||
+    /Capacitor/i.test(userAgent)
+  );
+}
+
+function getFirebaseAuthHelpMessage(error: any) {
+  if (error?.code === 'auth/network-request-failed' || error?.code === 'auth/unauthorized-domain') {
+    return `Erro no Firebase Auth.
+
+Verifique em Firebase Console > Authentication > Settings > Authorized domains se o domínio usado pelo app web está autorizado.
+
+Se estiver usando APK via Capacitor, teste também a build web hospedada em um domínio HTTPS autorizado antes de empacotar.`;
+  }
+
+  if (error?.code === 'auth/popup-blocked') {
+    return 'O popup de login foi bloqueado pelo navegador. Permita popups para este site ou tente novamente.';
+  }
+
+  if (error?.code === 'auth/popup-closed-by-user') {
+    return 'A janela de login foi fechada antes da conclusão.';
+  }
+
+  if (error?.code === 'auth/operation-not-supported-in-this-environment') {
+    return `Este ambiente não suporta o fluxo atual de login.
+
+No navegador comum, o app usa popup. Em APK/WebView, ele tenta redirect. Se continuar falhando, será necessário trocar para autenticação nativa do Capacitor/Firebase.`;
+  }
+
+  return `Erro ao entrar com Google: ${error?.message || String(error)}`;
+}
+
+async function testConnection() {
+  try {
+    // Attempt to fetch a non-existent doc from server to test connection
+    await getDocFromServer(doc(db, 'test', 'connection'));
+  } catch (error) {
+    if(error instanceof Error && error.message.includes('the client is offline')) {
+      console.error("Please check your Firebase configuration. The Firestore client is offline.");
+    }
+    // Skip logging for other errors (like permission denied), as this is simply a connection test.
+  }
+}
+
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+export interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId: string | undefined;
+    email: string | null | undefined;
+    emailVerified: boolean | undefined;
+    isAnonymous: boolean | undefined;
+  }
+}
+
+export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth?.currentUser?.uid,
+      email: auth?.currentUser?.email,
+      emailVerified: auth?.currentUser?.emailVerified,
+      isAnonymous: auth?.currentUser?.isAnonymous,
+    },
+    operationType,
+    path
+  };
+  
+  // LOG the error but DO NOT THROW. 
+  // This prevents Firestore permission/connection issues from crashing the app boot.
+  console.error('Firestore Error (Non-fatal): ', JSON.stringify(errInfo, null, 2));
+}
+
+interface UserData {
+  userId: string;
+  name: string;
+  email: string;
+  profilePhoto: string;
+}
+
+interface AuthContextType {
+  user: UserData | null;
+  loading: boolean;
+  isConfigured: boolean;
+  loginWithGoogle: () => Promise<void>;
+  logout: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!isFirebaseConfigured || !auth || !db) {
+      setLoading(false);
+      return;
+    }
+
+    // Connection test is purely diagnostic and non-fatal
+    testConnection().catch(() => {});
+
+    // When the app is packed as Android WebView/Capacitor, popup auth can be unreliable.
+    // Reading the redirect result keeps the auth flow compatible with signInWithRedirect.
+    getRedirectResult(auth).catch((error) => {
+      console.error('[Firebase Auth Redirect Error]', error);
+    });
+
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        const userData: UserData = {
+          userId: firebaseUser.uid,
+          name: firebaseUser.displayName || 'Usuário',
+          email: firebaseUser.email || '',
+          profilePhoto: firebaseUser.photoURL || '',
+        };
+        
+        // Non-blocking sync with Firestore
+        const syncUser = async () => {
+          if (!db) return;
+
+          try {
+            const userRef = doc(db, 'users', firebaseUser.uid);
+            const userSnap = await getDoc(userRef).catch(e => {
+              handleFirestoreError(e, OperationType.GET, `users/${firebaseUser.uid}`);
+              return null;
+            });
+            
+            if (userSnap && !userSnap.exists()) {
+              await setDoc(userRef, {
+                id: firebaseUser.uid,
+                displayName: firebaseUser.displayName || 'Usuário',
+                email: firebaseUser.email || '',
+                photoURL: firebaseUser.photoURL || '',
+                bio: '',
+                booksRead: 0,
+                pagesRead: 0,
+                averageRating: 0,
+                favoriteGenre: '',
+                readingStreak: 0,
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+              }).catch(e => {
+                handleFirestoreError(e, OperationType.WRITE, `users/${firebaseUser.uid}`);
+              });
+            }
+          } catch (e) {
+            console.error("Silent error during user sync:", e);
+          }
+        };
+
+        // Trigger sync but don't await it to block user state
+        syncUser();
+        setUser(userData);
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const loginWithGoogle = React.useCallback(async () => {
+    if (!isFirebaseConfigured || !auth || !googleProvider) {
+      alert("Configuração do Firebase indisponível. O app está em modo seguro.");
+      return;
+    }
+    try {
+      if (isNativeWebViewEnvironment()) {
+        await signInWithRedirect(auth, googleProvider);
+        return;
+      }
+
+      await signInWithPopup(auth, googleProvider);
+    } catch (error: any) {
+      console.error('Error signing in with Google:', error);
+      alert(getFirebaseAuthHelpMessage(error));
+      throw error;
+    }
+  }, []);
+
+  const logout = React.useCallback(async () => {
+    if (!auth) return;
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  }, []);
+
+  const value = React.useMemo(() => ({ 
+    user, 
+    loading, 
+    isConfigured: isFirebaseConfigured, 
+    loginWithGoogle, 
+    logout 
+  }), [user, loading, loginWithGoogle, logout]);
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};

@@ -1,0 +1,5 @@
+{
+  "name": "Readora",
+  "description": "Readora — Diário Literário pessoal e sofisticado.",
+  "requestFramePermissions": ["camera"]
+}
