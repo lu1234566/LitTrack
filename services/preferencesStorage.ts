@@ -9,7 +9,10 @@ export const defaultPreferences: ReaderPreferences = {
   dailyPageGoal: 20,
   favoriteFormat: 'Digital e fisico',
   reminderText: 'Ler um pouco todos os dias',
-  syncUserId: 'local-reader'
+  syncUserId: 'local-reader',
+  visualAccent: 'gold',
+  visualDensity: 'comfortable',
+  textScale: 'normal'
 };
 
 export async function loadPreferences(): Promise<ReaderPreferences> {
