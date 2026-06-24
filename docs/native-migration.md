@@ -29,11 +29,11 @@ Implementado até agora:
 - comparativo anual com livros, páginas, minutos e sessões;
 - cápsula mensal baseada em sessões;
 - exportação em JSON preview com livros, citações, estantes, sessões, estatísticas e preferências;
-- ajustes editáveis com nome do leitor, formato favorito, lembrete e sincronização manual de livros;
+- ajustes editáveis com nome do leitor, formato favorito, lembrete e sincronização manual completa;
 - tela de metas com meta anual e páginas diárias;
 - menu de módulos mais polido;
 - persistência local com AsyncStorage;
-- helpers iniciais de push/pull Firestore.
+- helpers de push/pull Firestore para livros, citações, estantes, sessões e preferências.
 
 ## Como rodar no Codespaces
 
@@ -88,7 +88,7 @@ EXPO_PUBLIC_FIREBASE_APP_ID
 ## O que ainda falta
 
 1. Login Google nativo.
-2. Sincronização Firestore ligada ao usuário autenticado.
+2. Sincronização automática ligada ao usuário autenticado.
 3. Capas reais e busca externa de livros.
 4. Edição completa de estantes e citações.
 5. Ícone e splash final.
