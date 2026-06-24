@@ -11,6 +11,16 @@ export interface Book {
   currentPage?: number;
   review?: string;
   favoriteQuote?: string;
+  publisher?: string;
+  publishedDate?: string;
+  isbn?: string;
+  coverUrl?: string;
+  priority?: string;
+  reasonToRead?: string;
+  mood?: string;
+  notes?: string;
+  startedAt?: number;
+  finishedAt?: number;
   createdAt: number;
   updatedAt: number;
 }
@@ -22,4 +32,7 @@ export interface ReadingStats {
   wishlistBooks: number;
   averageRating: number;
   pagesRead: number;
+  completionRate: number;
+  favoriteGenre: string;
+  currentProgress: number;
 }
