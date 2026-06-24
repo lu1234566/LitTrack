@@ -3,18 +3,18 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { appColors } from '@/theme/tokens';
 
 const menu = [
-  { name: 'Pesquisa', path: '/search' },
-  { name: 'Galeria', path: '/gallery' },
-  { name: 'Perfil', path: '/literary-profile' },
-  { name: 'Retrospectiva', path: '/retrospective' },
-  { name: 'Comparativo', path: '/yearly-comparison' },
-  { name: 'Citacoes', path: '/quotes' },
-  { name: 'Estantes', path: '/shelves' },
-  { name: 'Capsula', path: '/monthly-capsule' },
-  { name: 'Timeline', path: '/timeline' },
-  { name: 'Recomendacoes', path: '/recommendations' },
-  { name: 'Exportar', path: '/export' },
-  { name: 'Ajustes', path: '/settings' }
+  { name: 'Pesquisa', path: '/search', text: 'Busca local na biblioteca.' },
+  { name: 'Galeria', path: '/gallery', text: 'Parede visual de livros.' },
+  { name: 'Perfil', path: '/literary-profile', text: 'Arquetipo e generos.' },
+  { name: 'Retrospectiva', path: '/retrospective', text: 'Resumo das leituras.' },
+  { name: 'Comparativo', path: '/yearly-comparison', text: 'Anos e progresso.' },
+  { name: 'Citacoes', path: '/quotes', text: 'Trechos favoritos.' },
+  { name: 'Estantes', path: '/shelves', text: 'Colecoes automaticas.' },
+  { name: 'Capsula', path: '/monthly-capsule', text: 'Resumo mensal.' },
+  { name: 'Timeline', path: '/timeline', text: 'Eventos recentes.' },
+  { name: 'Recomendacoes', path: '/recommendations', text: 'Proximas leituras.' },
+  { name: 'Exportar', path: '/export', text: 'Backup em JSON.' },
+  { name: 'Ajustes', path: '/settings', text: 'Estado da migracao.' }
 ];
 
 export function NativeMenu() {
@@ -23,8 +23,12 @@ export function NativeMenu() {
       {menu.map((item) => (
         <Link key={item.path} href={item.path as never} asChild>
           <Pressable style={styles.item}>
-            <Text style={styles.itemTitle}>{item.name}</Text>
-            <Text style={styles.itemText}>Em migracao nativa.</Text>
+            <View style={styles.dot} />
+            <View style={styles.textBox}>
+              <Text style={styles.itemTitle}>{item.name}</Text>
+              <Text style={styles.itemText}>{item.text}</Text>
+            </View>
+            <Text style={styles.chevron}>›</Text>
           </Pressable>
         </Link>
       ))}
@@ -33,14 +37,11 @@ export function NativeMenu() {
 }
 
 const styles = StyleSheet.create({
-  wrapper: { gap: 12 },
-  item: {
-    backgroundColor: appColors.surface,
-    borderColor: appColors.border,
-    borderWidth: 1,
-    borderRadius: 20,
-    padding: 16
-  },
+  wrapper: { gap: 10 },
+  item: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: appColors.surface, borderColor: appColors.border, borderWidth: 1, borderRadius: 20, padding: 14 },
+  dot: { width: 10, height: 10, borderRadius: 999, backgroundColor: appColors.gold },
+  textBox: { flex: 1 },
   itemTitle: { color: appColors.text, fontSize: 16, fontWeight: '900' },
-  itemText: { color: appColors.textMuted, fontSize: 13, marginTop: 4 }
+  itemText: { color: appColors.textMuted, fontSize: 13, marginTop: 3 },
+  chevron: { color: appColors.gold, fontSize: 26, fontWeight: '900' }
 });
