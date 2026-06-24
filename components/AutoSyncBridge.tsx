@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Platform, Text, View } from 'react-native';
 import { useBooks } from '@/contexts/BookContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
 import { useQuotes } from '@/contexts/QuoteContext';
@@ -21,6 +21,7 @@ export function AutoSyncBridge() {
   const lastPayload = useRef('');
 
   useEffect(() => {
+    if (Platform.OS === 'web') return;
     const userId: string = user?.uid ?? '';
     if (!userId || !isNativeFirebaseConfigured || firstPullDone.current) return;
     firstPullDone.current = true;
@@ -45,6 +46,7 @@ export function AutoSyncBridge() {
   }, [user?.uid]);
 
   useEffect(() => {
+    if (Platform.OS === 'web') return;
     const userId: string = user?.uid ?? '';
     if (!userId || !isNativeFirebaseConfigured) return;
     const payload = JSON.stringify({ books, quotes, shelves, sessions, preferences });
@@ -62,7 +64,7 @@ export function AutoSyncBridge() {
     return () => clearTimeout(timeout);
   }, [user?.uid, books, quotes, shelves, sessions, preferences]);
 
-  if (!user || !status) return null;
+  if (Platform.OS === 'web' || !user || !status) return null;
   return <View style={{ position: 'absolute', right: 14, bottom: 14, backgroundColor: appColors.surface, borderColor: appColors.border, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, zIndex: 100 }}><Text style={{ color: appColors.textMuted, fontSize: 11, fontWeight: '900' }}>{status}</Text></View>;
 }
 
