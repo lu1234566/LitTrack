@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
@@ -10,6 +11,7 @@ export default function MonthlyCapsuleScreen() {
   const { sessions } = useReadingSessions();
   const { width } = useWindowDimensions();
   const mobile = width < 760;
+  const [message, setMessage] = useState('');
   const month = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
   const now = new Date();
   const monthBooks = books.filter((book) => {
@@ -24,6 +26,22 @@ export default function MonthlyCapsuleScreen() {
   const monthMinutes = monthSessions.reduce((sum, session) => sum + session.minutesRead, 0);
   const monthName = new Date().toLocaleDateString('pt-BR', { month: 'long' });
   const vibe = monthSessions[0]?.mood || 'Sereno';
+
+  const caption = useMemo(() => 'Minha cápsula literária de ' + monthName + ' no Readora 📚✨\n\n📖 Livros concluídos: ' + stats.finishedBooks + '\n📄 Páginas lidas: ' + monthPages + '\n⭐ Média do mês: ' + stats.averageRating.toFixed(1) + '\n🎭 Vibe: ' + vibe + '\n\nGerado automaticamente pelo @readora.app 📱\n#Readora #CapsulaLiteraria #Leitura #Books #MonthlyWrapUp', [monthName, monthPages, stats.averageRating, stats.finishedBooks, vibe]);
+
+  async function copyCaption() {
+    const clipboard = (globalThis as any).navigator?.clipboard;
+    if (clipboard?.writeText) {
+      await clipboard.writeText(caption);
+      setMessage('Legenda copiada para a área de transferência.');
+      return;
+    }
+    setMessage('Seu dispositivo não liberou cópia automática. Selecione a legenda abaixo e copie manualmente.');
+  }
+
+  function prepareCapture() {
+    setMessage('PNG sem dependência nativa ainda: use a prévia da cápsula como área de captura/screenshot por enquanto.');
+  }
 
   return (
     <Screen>
@@ -65,7 +83,7 @@ export default function MonthlyCapsuleScreen() {
           <EssenceLine value={String(monthPages)} label="PÁGINAS PERCORRIDAS" text="A distância mística que seus olhos atravessaram este mês." />
           <EssenceLine value={String(stats.finishedBooks)} label="HISTÓRIAS CONCLUÍDAS" text="O número de universos que agora fazem parte da sua história." />
           <EssenceLine value={vibe} label="ATMOSFERA DOMINANTE" text="O sentimento que guiou suas escolhas e momentos de leitura." />
-          <Pressable style={styles.downloadButton}><Text style={styles.downloadText}>⇩ Baixar para Galeria (PNG)</Text></Pressable>
+          <Pressable style={styles.downloadButton} onPress={prepareCapture}><Text style={styles.downloadText}>⇩ Preparar captura da cápsula</Text></Pressable>
         </View>
       </View>
 
@@ -73,9 +91,10 @@ export default function MonthlyCapsuleScreen() {
       <Card>
         <View style={[styles.captionHeader, mobile && styles.stack]}>
           <Text style={styles.captionTitle}>Pronta para copiar e colar no seu post.</Text>
-          <Pressable style={styles.copyButton}><Text style={styles.copyText}>▧ Copiar Legenda</Text></Pressable>
+          <Pressable style={styles.copyButton} onPress={copyCaption}><Text style={styles.copyText}>▧ Copiar Legenda</Text></Pressable>
         </View>
-        <Text style={styles.caption}>Minha cápsula literária de {monthName} no Readora 📚✨{`\n\n`}📖 Livros concluídos: {stats.finishedBooks}{`\n`}📄 Páginas lidas: {monthPages}{`\n`}⭐ Média do mês: {stats.averageRating.toFixed(1)}{`\n`}🎭 Vibe: {vibe}{`\n\n`}Gerado automaticamente pelo @readora.app 📱{`\n`}#Readora #CapsulaLiteraria #Leitura #Books #MonthlyWrapUp</Text>
+        {message ? <Text style={styles.message}>{message}</Text> : null}
+        <Text selectable style={styles.caption}>{caption}</Text>
       </Card>
     </Screen>
   );
@@ -137,5 +156,6 @@ const styles = StyleSheet.create({
   captionTitle: { color: appColors.text, fontSize: 24, fontWeight: '900', flex: 1 },
   copyButton: { backgroundColor: appColors.gold, borderRadius: 16, paddingVertical: 16, paddingHorizontal: 24 },
   copyText: { color: appColors.background, fontWeight: '900', fontSize: 17 },
+  message: { color: appColors.gold, fontWeight: '900', marginTop: 12 },
   caption: { color: appColors.textMuted, fontFamily: appFonts.mono, fontSize: 18, lineHeight: 30, backgroundColor: appColors.background, borderColor: appColors.border, borderWidth: 1, borderRadius: 22, padding: 28, marginTop: 18 }
 });
