@@ -9,6 +9,7 @@ type ReadingSessionContextValue = {
   loadingSessions: boolean;
   addSession: (session: SessionInput) => Promise<void>;
   deleteSession: (sessionId: string) => Promise<void>;
+  setSessionList: (nextSessions: ReadingSession[]) => Promise<void>;
   sessionsForBook: (bookId: string) => ReadingSession[];
 };
 
@@ -17,6 +18,7 @@ const ReadingSessionContext = createContext<ReadingSessionContextValue>({
   loadingSessions: true,
   addSession: async () => {},
   deleteSession: async () => {},
+  setSessionList: async () => {},
   sessionsForBook: () => []
 });
 
@@ -33,6 +35,10 @@ export function ReadingSessionProvider({ children }: { children: React.ReactNode
     await saveReadingSessions(nextSessions);
   }
 
+  async function setSessionList(nextSessions: ReadingSession[]) {
+    await persist(nextSessions);
+  }
+
   async function addSession(input: SessionInput) {
     const now = Date.now();
     await persist([{ ...input, id: 'session-' + String(now), createdAt: now, updatedAt: now }, ...sessions]);
@@ -46,7 +52,7 @@ export function ReadingSessionProvider({ children }: { children: React.ReactNode
     return sessions.filter((session) => session.bookId === bookId).sort((a, b) => b.createdAt - a.createdAt);
   }
 
-  const value = useMemo(() => ({ sessions, loadingSessions, addSession, deleteSession, sessionsForBook }), [sessions, loadingSessions]);
+  const value = useMemo(() => ({ sessions, loadingSessions, addSession, deleteSession, setSessionList, sessionsForBook }), [sessions, loadingSessions]);
   return <ReadingSessionContext.Provider value={value}>{children}</ReadingSessionContext.Provider>;
 }
 
