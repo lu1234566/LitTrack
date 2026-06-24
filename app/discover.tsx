@@ -7,22 +7,52 @@ import { searchGoogleBooks } from '@/services/externalBookSearch';
 import { ExternalBook } from '@/types/externalBook';
 import { appColors } from '@/theme/tokens';
 
+const instantResults: ExternalBook[] = [
+  {
+    id: 'instant-eragon',
+    title: 'Eragon',
+    author: 'Christopher Paolini',
+    genre: 'Fantasia',
+    publisher: 'Rocco',
+    publishedDate: '2003',
+    totalPages: 468,
+    isbn: '9788532518485',
+    coverUrl: 'https://covers.openlibrary.org/b/isbn/9780375826689-L.jpg',
+    description: 'Um jovem encontra uma pedra azul que revela ser um ovo de dragao, iniciando uma jornada em Alagaesia.',
+    source: 'open-library'
+  },
+  {
+    id: 'instant-brisingr',
+    title: 'Brisingr',
+    author: 'Christopher Paolini',
+    genre: 'Fantasia',
+    publisher: 'Rocco',
+    publishedDate: '2008',
+    totalPages: 748,
+    isbn: '9780375826726',
+    coverUrl: 'https://covers.openlibrary.org/b/isbn/9780375826726-L.jpg',
+    description: 'A saga de Eragon continua em meio a aliancas, conflitos e descobertas sobre os Cavaleiros de Dragao.',
+    source: 'open-library'
+  }
+];
+
 export default function DiscoverScreen() {
   const { addBook } = useBooks();
   const [query, setQuery] = useState('Eragon');
-  const [results, setResults] = useState<ExternalBook[]>([]);
+  const [results, setResults] = useState<ExternalBook[]>(instantResults);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState('Resultados iniciais prontos para teste. Clique em Buscar para tentar APIs externas.');
 
   async function search() {
     setLoading(true);
-    setMessage('');
+    setMessage('Buscando em Google Books e Open Library...');
     try {
       const books = await searchGoogleBooks(query);
       setResults(books);
       setMessage(books.length ? books.length + ' resultado(s) encontrados. A busca usa Google Books, Open Library e fallback local.' : 'Nenhum resultado encontrado.');
     } catch {
-      setMessage('Busca indisponivel no momento. Tente novamente.');
+      setResults(instantResults);
+      setMessage('Busca externa indisponivel. Mostrando resultados locais para teste.');
     } finally {
       setLoading(false);
     }
