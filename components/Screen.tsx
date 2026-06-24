@@ -7,8 +7,9 @@ import { appColors } from '@/theme/tokens';
 const tabs = [
   { label: 'Inicio', href: '/' },
   { label: 'Livros', href: '/library' },
+  { label: 'Descobrir', href: '/discover' },
   { label: 'Novo', href: '/add' },
-  { label: 'Perfil', href: '/literary-profile' },
+  { label: 'Conta', href: '/account' },
   { label: 'Ajustes', href: '/settings' }
 ];
 
@@ -34,7 +35,7 @@ export function Screen({ children, scroll = true }: { children: ReactNode; scrol
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: appColors.background },
-  scroll: { flexGrow: 1, paddingBottom: 86 },
+  scroll: { flexGrow: 1, paddingBottom: 132 },
   content: { flex: 1, padding: 20, gap: 16 },
   nav: {
     position: 'absolute',
@@ -50,5 +51,5 @@ const styles = StyleSheet.create({
     gap: 4
   },
   navItem: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 999 },
-  navText: { color: appColors.textMuted, fontSize: 11, fontWeight: '900' }
+  navText: { color: appColors.textMuted, fontSize: 10, fontWeight: '900' }
 });
