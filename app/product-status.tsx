@@ -11,8 +11,8 @@ const items = [
   { title: 'Perfil, insights e progresso', done: true, note: 'Gamificacao e leitura analitica.' },
   { title: 'Backup local', done: true, note: 'Exportacao e importacao por JSON.' },
   { title: 'Aparencia ajustavel', done: true, note: 'Cor, densidade e texto.' },
-  { title: 'Conta real Google', done: false, note: 'Proxima fase: AuthSession.' },
-  { title: 'Firebase automatico', done: false, note: 'Proxima fase: sync por usuario.' },
+  { title: 'Conta real Google', done: true, note: 'AuthSession ligado ao Firebase Auth.' },
+  { title: 'Firebase automatico', done: true, note: 'Autosync por usuario logado.' },
   { title: 'Build final', done: false, note: 'Teste fisico, APK/AAB, icone e splash.' }
 ];
 
@@ -23,12 +23,12 @@ export default function ProductStatusScreen() {
   return (
     <Screen>
       <Text style={styles.title}>Status do produto</Text>
-      <Text style={styles.subtitle}>Checklist honesto do que ja esta pronto e do que ainda falta antes de Firebase/producao.</Text>
+      <Text style={styles.subtitle}>Checklist honesto do que ja esta pronto e do que ainda falta antes de producao.</Text>
 
       <Card>
         <Text style={styles.kicker}>Readora Native</Text>
         <Text style={styles.big}>{progress}%</Text>
-        <View style={styles.track}><View style={[styles.fill, { width: progress + '%' }]} /></View>
+        <View style={styles.track}><View style={[styles.fill, { width: percent(progress) }]} /></View>
         <Text style={styles.body}>{done}/{items.length} blocos principais concluidos.</Text>
       </Card>
 
@@ -45,6 +45,10 @@ export default function ProductStatusScreen() {
       ))}
     </Screen>
   );
+}
+
+function percent(value: number) {
+  return (value + '%') as `${number}%`;
 }
 
 const styles = StyleSheet.create({
