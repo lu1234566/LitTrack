@@ -8,7 +8,7 @@ import { useQuotes } from '@/contexts/QuoteContext';
 import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { useShelves } from '@/contexts/ShelfContext';
 import { createReadoraBackup, parseReadoraBackup, stringifyBackup } from '@/services/readoraBackup';
-import { printTextDocument } from '@/services/webPlatformTools';
+import { downloadTextFile, pickTextFile, printTextDocument } from '@/services/webPlatformTools';
 import { appColors, appFonts } from '@/theme/tokens';
 import type { Book, BookStatus } from '@/types/book';
 
@@ -34,7 +34,7 @@ export default function BackupScreen() {
   const genres = useMemo(() => ['all', ...Array.from(new Set(books.map((book) => book.genre).filter(Boolean)))], [books]);
   const selectedBooks = useMemo(() => filterBooks(books, scope, genre, minRating), [books, genre, minRating, scope]);
 
-  function generateBackup() {
+  function buildBackupText() {
     const selectedIds = new Set(selectedBooks.map((book) => book.id));
     const backup = createReadoraBackup({
       books: selectedBooks,
@@ -43,8 +43,20 @@ export default function BackupScreen() {
       sessions: sessions.filter((session) => selectedBooks.some((book) => book.id === session.bookId)),
       preferences
     });
-    setBackupText(stringifyBackup(backup));
+    return stringifyBackup(backup);
+  }
+
+  function generateBackup() {
+    const text = buildBackupText();
+    setBackupText(text);
     setMessage('Backup JSON filtrado gerado com ' + selectedBooks.length + ' livro(s).');
+  }
+
+  function downloadBackup() {
+    const text = backupText || buildBackupText();
+    setBackupText(text);
+    const ok = downloadTextFile('readora-backup-' + new Date().toISOString().slice(0, 10) + '.json', text, 'application/json;charset=utf-8');
+    setMessage(ok ? 'Arquivo JSON baixado.' : 'Download direto disponível apenas no navegador. Copie o JSON manualmente.');
   }
 
   function buildReportText() {
@@ -84,6 +96,13 @@ export default function BackupScreen() {
     setMessage('Relatório textual filtrado gerado.');
   }
 
+  function downloadReport() {
+    const text = reportText || buildReportText();
+    setReportText(text);
+    const ok = downloadTextFile('readora-relatorio-' + new Date().toISOString().slice(0, 10) + '.txt', text);
+    setMessage(ok ? 'Relatório .txt baixado.' : 'Download direto disponível apenas no navegador. Copie o relatório manualmente.');
+  }
+
   async function copyReport() {
     const clipboard = (globalThis as any).navigator?.clipboard;
     if (clipboard?.writeText && reportText) {
@@ -99,6 +118,16 @@ export default function BackupScreen() {
     setReportText(text);
     const ok = printTextDocument('Readora — Relatório da Biblioteca', text);
     setMessage(ok ? 'Janela de impressão aberta. Use “Salvar como PDF” no navegador.' : 'Impressão disponível apenas no navegador.');
+  }
+
+  async function pickBackupFile() {
+    const text = await pickTextFile('.json,application/json,text/plain');
+    if (!text) {
+      setMessage('Seleção de arquivo disponível apenas no navegador ou nenhum arquivo foi escolhido.');
+      return;
+    }
+    setImportText(text);
+    setMessage('Arquivo carregado. Revise o conteúdo e toque em Importar JSON.');
   }
 
   async function importBackup() {
@@ -137,15 +166,17 @@ export default function BackupScreen() {
         <Card>
           <View style={styles.exportIcon}><Text style={styles.exportIconText}>♧</Text></View>
           <Text style={styles.exportTitle}>Exportar JSON</Text>
-          <Text style={styles.exportText}>Gera backup filtrado com os livros selecionados e dados relacionados.</Text>
-          <Pressable style={styles.downloadButton} onPress={generateBackup}><Text style={styles.downloadText}>⇩ Gerar JSON</Text></Pressable>
+          <Text style={styles.exportText}>Gera backup filtrado e permite baixar o arquivo .json no navegador.</Text>
+          <Pressable style={styles.downloadButton} onPress={downloadBackup}><Text style={styles.downloadText}>⇩ Baixar JSON</Text></Pressable>
+          <Pressable style={styles.secondaryMiniButton} onPress={generateBackup}><Text style={styles.secondaryMiniText}>Gerar e revisar</Text></Pressable>
         </Card>
 
         <Card>
           <View style={[styles.exportIcon, styles.blueIcon]}><Text style={styles.blueIconText}>▤</Text></View>
           <Text style={styles.exportTitle}>Relatório / PDF</Text>
-          <Text style={styles.exportText}>Gera relatório filtrado e abre a impressão do navegador para salvar como PDF.</Text>
+          <Text style={styles.exportText}>Baixe .txt ou use a impressão do navegador para salvar como PDF.</Text>
           <Pressable style={styles.pdfButton} onPress={printReport}><Text style={styles.pdfText}>⇩ Imprimir / PDF</Text></Pressable>
+          <Pressable style={styles.secondaryMiniButton} onPress={downloadReport}><Text style={styles.secondaryMiniText}>Baixar .txt</Text></Pressable>
         </Card>
       </View>
 
@@ -153,28 +184,28 @@ export default function BackupScreen() {
         <Card>
           <Text style={[styles.cardTitle, { color: '#3b82f6' }]}>⇧ Importar Backup</Text>
           <Text style={styles.body}>Restaure sua biblioteca a partir de um arquivo JSON exportado anteriormente.</Text>
-          <TextInput style={styles.textArea} placeholder="Cole aqui o JSON exportado" placeholderTextColor={appColors.textDim} value={importText} onChangeText={setImportText} multiline />
-          <Pressable style={styles.outlineButton} onPress={importBackup}><Text style={styles.outlineText}>Importar JSON</Text></Pressable>
+          <View style={[styles.reportButtons, mobile && styles.stack]}><Pressable style={styles.outlineButton} onPress={pickBackupFile}><Text style={styles.outlineText}>Escolher arquivo JSON</Text></Pressable><Pressable style={styles.outlineButton} onPress={importBackup}><Text style={styles.outlineText}>Importar JSON</Text></Pressable></View>
+          <TextInput style={styles.textArea} placeholder="Ou cole aqui o JSON exportado" placeholderTextColor={appColors.textDim} value={importText} onChangeText={setImportText} multiline />
         </Card>
 
         <Card>
           <Text style={styles.cardTitle}>⊙ INFORMAÇÕES IMPORTANTES</Text>
           <Text style={styles.bullet}>• O JSON respeita os filtros de status, gênero e avaliação mínima.</Text>
-          <Text style={styles.bullet}>• Ao importar, você pode restaurar uma biblioteca inteira pelo JSON.</Text>
-          <Text style={styles.bullet}>• O botão de PDF usa a impressão do navegador e permite salvar como PDF.</Text>
+          <Text style={styles.bullet}>• O botão Baixar JSON cria um arquivo .json no navegador.</Text>
+          <Text style={styles.bullet}>• O relatório pode ser baixado em .txt ou salvo como PDF pela impressão.</Text>
         </Card>
       </View>
 
       {backupText ? (
         <Card>
-          <Text style={styles.cardTitle}>Backup gerado</Text>
+          <View style={styles.reportHeader}><Text style={styles.cardTitle}>Backup gerado</Text><Pressable style={styles.copyButton} onPress={downloadBackup}><Text style={styles.copyText}>Baixar</Text></Pressable></View>
           <TextInput style={styles.textAreaLarge} value={backupText} onChangeText={setBackupText} multiline />
         </Card>
       ) : null}
 
       {reportText ? (
         <Card>
-          <View style={styles.reportHeader}><Text style={styles.cardTitle}>Relatório gerado</Text><View style={styles.reportButtons}><Pressable style={styles.copyButton} onPress={copyReport}><Text style={styles.copyText}>Copiar</Text></Pressable><Pressable style={styles.printButton} onPress={printReport}><Text style={styles.printText}>PDF</Text></Pressable></View></View>
+          <View style={styles.reportHeader}><Text style={styles.cardTitle}>Relatório gerado</Text><View style={styles.reportButtons}><Pressable style={styles.copyButton} onPress={copyReport}><Text style={styles.copyText}>Copiar</Text></Pressable><Pressable style={styles.copyButton} onPress={downloadReport}><Text style={styles.copyText}>TXT</Text></Pressable><Pressable style={styles.printButton} onPress={printReport}><Text style={styles.printText}>PDF</Text></Pressable></View></View>
           <TextInput style={styles.textAreaLarge} value={reportText} onChangeText={setReportText} multiline />
         </Card>
       ) : null}
@@ -242,9 +273,11 @@ const styles = StyleSheet.create({
   downloadText: { color: appColors.background, fontWeight: '900' },
   pdfButton: { backgroundColor: '#3b82f6', borderRadius: 12, paddingVertical: 13, alignItems: 'center', marginTop: 22 },
   pdfText: { color: appColors.text, fontWeight: '900' },
+  secondaryMiniButton: { borderColor: appColors.border, borderWidth: 1, borderRadius: 999, paddingVertical: 10, alignItems: 'center', marginTop: 10 },
+  secondaryMiniText: { color: appColors.textMuted, fontWeight: '900', fontSize: 12 },
   textArea: { backgroundColor: appColors.background, borderColor: appColors.border, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, color: appColors.text, fontSize: 12, minHeight: 120, textAlignVertical: 'top', marginTop: 12 },
   textAreaLarge: { backgroundColor: appColors.background, borderColor: appColors.border, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, color: appColors.text, fontSize: 12, minHeight: 220, textAlignVertical: 'top', marginTop: 12 },
-  outlineButton: { borderColor: '#3b82f6', borderWidth: 1, borderRadius: 999, paddingVertical: 13, alignItems: 'center', marginTop: 12 },
+  outlineButton: { borderColor: '#3b82f6', borderWidth: 1, borderRadius: 999, paddingVertical: 13, paddingHorizontal: 14, alignItems: 'center', marginTop: 12, flex: 1 },
   outlineText: { color: '#3b82f6', fontWeight: '900' },
   bullet: { color: appColors.textMuted, lineHeight: 24, marginTop: 10 },
   reportHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
