@@ -5,6 +5,7 @@ import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
 import { searchGoogleBooks } from '@/services/externalBookSearch';
+import { pickImageAsDataUrl, scanBarcodeFromImage } from '@/services/webPlatformTools';
 import { BookStatus } from '@/types/book';
 import { ExternalBook } from '@/types/externalBook';
 import { appColors, appFonts } from '@/theme/tokens';
@@ -71,6 +72,28 @@ export default function AddBookScreen() {
     setReason(book.description || reason);
   }
 
+  async function chooseLocalCover() {
+    const image = await pickImageAsDataUrl();
+    if (!image) {
+      setSearchMessage('Seleção local disponível apenas no navegador ou nenhum arquivo foi escolhido.');
+      return;
+    }
+    setCoverUrl(image);
+    setSearchMessage('Imagem local carregada como capa. Ela será salva junto ao livro neste dispositivo.');
+  }
+
+  async function scanIsbnFromImage() {
+    setSearchMessage('Selecione uma foto/print do código de barras do livro.');
+    const value = await scanBarcodeFromImage();
+    if (!value) {
+      setSearchMessage('Não consegui ler o código. Alguns navegadores não suportam BarcodeDetector; digite o ISBN manualmente.');
+      return;
+    }
+    setIsbn(value);
+    setSearchMessage('ISBN detectado: ' + value + '. Buscando dados...');
+    await handleSearch(value, 'isbn');
+  }
+
   function toggleMood(mood: string) {
     setSelectedMoods((current) => current.includes(mood) ? current.filter((item) => item !== mood) : [...current, mood]);
   }
@@ -120,7 +143,7 @@ export default function AddBookScreen() {
       <Card>
         <View style={styles.sectionHeader}><Text style={styles.sectionIcon}>▥</Text><Text style={styles.sectionTitle}>Importar dados do livro</Text><Text style={styles.chevron}>⌃</Text></View>
         <View style={[styles.importRow, mobile && styles.stack]}>
-          <Pressable style={[styles.scanButton, mobile && styles.full]} onPress={() => handleSearch(isbn, 'isbn')}><Text style={styles.scanText}>▣  Buscar ISBN</Text></Pressable>
+          <Pressable style={[styles.scanButton, mobile && styles.full]} onPress={scanIsbnFromImage}><Text style={styles.scanText}>▣  Escanear ISBN</Text></Pressable>
           <TextInput style={[styles.input, styles.flex, mobile && styles.full]} placeholder="Digite o ISBN do livro" placeholderTextColor={appColors.textDim} value={isbn} onChangeText={setIsbn} />
           <Pressable style={[styles.darkButton, mobile && styles.full]} onPress={() => handleSearch(isbn, 'isbn')}><Text style={styles.darkButtonText}>{searching ? 'Buscando...' : '⌕  Buscar por ISBN'}</Text></Pressable>
         </View>
@@ -138,7 +161,7 @@ export default function AddBookScreen() {
         <View style={styles.coverPlaceholder}>{coverUrl ? <Image source={{ uri: coverUrl }} style={styles.coverImage} /> : <><Text style={styles.coverIcon}>▯</Text><Text style={styles.coverText}>Nenhuma capa{`\n`}encontrada</Text></>}</View>
         <Pressable style={styles.darkButtonWide} onPress={() => handleSearch(isbn || title, isbn ? 'isbn' : 'title')}><Text style={styles.darkButtonText}>⌕  Tentar buscar novamente</Text></Pressable>
         <TextInput style={styles.input} placeholder="Colar URL da capa" placeholderTextColor={appColors.textDim} value={coverUrl} onChangeText={setCoverUrl} />
-        <Pressable style={styles.outlineButton} onPress={() => setSearchMessage('Sem pacote de imagem local ainda. Cole uma URL de capa ou use a busca online.')}><Text style={styles.outlineText}>▧  Usar imagem local neste dispositivo</Text></Pressable>
+        <Pressable style={styles.outlineButton} onPress={chooseLocalCover}><Text style={styles.outlineText}>▧  Usar imagem local neste dispositivo</Text></Pressable>
         <View style={[styles.row, mobile && styles.stack]}>
           <Field label="Autor" value={author} onChangeText={setAuthor} placeholder="Ex: Patrick Rothfuss" />
           <Field label="Número de Páginas" value={totalPages} onChangeText={setTotalPages} placeholder="Ex: 656" keyboardType="numeric" />
