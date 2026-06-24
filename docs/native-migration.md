@@ -16,14 +16,15 @@ Implementado até agora:
 - Biblioteca com busca e filtros;
 - formulário expandido de livro;
 - tela completa de detalhes do livro;
+- edição de livro existente;
 - galeria visual de livros;
-- citações derivadas dos livros;
-- estantes automáticas;
+- citações independentes com tags, página, favorito e remoção;
+- estantes manuais com criação, remoção e vínculo de livros;
 - perfil literário com arquétipo e gêneros;
 - retrospectiva local;
 - recomendações simples;
 - cápsula mensal;
-- exportação em JSON preview com preferências;
+- exportação em JSON preview com livros, citações, estantes, estatísticas e preferências;
 - ajustes editáveis com nome do leitor, formato favorito e lembrete;
 - tela de metas com meta anual e páginas diárias;
 - menu de módulos mais polido;
@@ -85,8 +86,8 @@ EXPO_PUBLIC_FIREBASE_APP_ID
 1. Login Google nativo.
 2. Sincronização Firestore ligada ao usuário autenticado.
 3. Capas reais e busca externa de livros.
-4. Estantes manuais editáveis.
-5. Citações independentes do livro.
+4. Estantes com tela individual e edição avançada.
+5. Citações com edição completa e filtro por tag.
 6. Ícone e splash final.
 7. Teste em aparelho físico.
 8. Build AAB de produção.
