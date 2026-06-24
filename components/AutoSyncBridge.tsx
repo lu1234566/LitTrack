@@ -21,14 +21,14 @@ export function AutoSyncBridge() {
   const lastPayload = useRef('');
 
   useEffect(() => {
-    const userId = user?.uid;
+    const userId: string = user?.uid ?? '';
     if (!userId || !isNativeFirebaseConfigured || firstPullDone.current) return;
     firstPullDone.current = true;
     let cancelled = false;
-    async function pull() {
+    async function pull(currentUserId: string) {
       setStatus('Sincronizando dados remotos...');
       try {
-        const bundle = await pullReadoraBundle(userId);
+        const bundle = await pullReadoraBundle(currentUserId);
         if (cancelled) return;
         if (bundle.books?.length) await replaceBooks(mergeByUpdatedAt(books, bundle.books));
         if (bundle.quotes?.length) await setQuoteList(mergeByUpdatedAt(quotes, bundle.quotes));
@@ -40,12 +40,12 @@ export function AutoSyncBridge() {
         setStatus('Não foi possível receber dados remotos.');
       }
     }
-    pull();
+    pull(userId);
     return () => { cancelled = true; };
   }, [user?.uid]);
 
   useEffect(() => {
-    const userId = user?.uid;
+    const userId: string = user?.uid ?? '';
     if (!userId || !isNativeFirebaseConfigured) return;
     const payload = JSON.stringify({ books, quotes, shelves, sessions, preferences });
     if (payload === lastPayload.current) return;
