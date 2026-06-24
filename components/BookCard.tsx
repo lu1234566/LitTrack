@@ -27,13 +27,17 @@ export function BookCard({ book }: { book: Book }) {
           </View>
           <Text style={styles.reason} numberOfLines={2}>{book.reasonToRead || book.review || 'Toque para ver detalhes da leitura.'}</Text>
           <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: progress + '%' }]} />
+            <View style={[styles.progressFill, { width: percent(progress) }]} />
           </View>
           <Text style={styles.progressText}>{progress}% concluido</Text>
         </View>
       </Pressable>
     </Link>
   );
+}
+
+function percent(value: number) {
+  return (value + '%') as `${number}%`;
 }
 
 const styles = StyleSheet.create({
