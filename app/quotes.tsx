@@ -1,15 +1,17 @@
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
 import { useQuotes } from '@/contexts/QuoteContext';
 import { Quote } from '@/types/quote';
-import { appColors } from '@/theme/tokens';
+import { appColors, appFonts } from '@/theme/tokens';
 
 export default function QuotesScreen() {
   const { books } = useBooks();
   const { quotes, addQuote, updateQuote, deleteQuote, toggleFavoriteQuote } = useQuotes();
+  const { width } = useWindowDimensions();
+  const mobile = width < 760;
   const [text, setText] = useState('');
   const [page, setPage] = useState('');
   const [tags, setTags] = useState('');
@@ -17,6 +19,7 @@ export default function QuotesScreen() {
   const [search, setSearch] = useState('');
   const [tagFilter, setTagFilter] = useState('all');
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [showComposer, setShowComposer] = useState(false);
   const [editingId, setEditingId] = useState('');
   const [editText, setEditText] = useState('');
   const [editPage, setEditPage] = useState('');
@@ -49,6 +52,7 @@ export default function QuotesScreen() {
     setText('');
     setPage('');
     setTags('');
+    setShowComposer(false);
   }
 
   function startEditing(quote: Quote) {
@@ -73,40 +77,55 @@ export default function QuotesScreen() {
 
   return (
     <Screen>
-      <Text style={styles.title}>Citacoes</Text>
-      <Text style={styles.subtitle}>Citacoes independentes com busca, tags, favoritos, edicao e associacao aos livros.</Text>
-
-      <Card>
-        <Text style={styles.kicker}>Nova citacao</Text>
-        <TextInput style={styles.textArea} placeholder="Trecho marcante" placeholderTextColor={appColors.textDim} value={text} onChangeText={setText} multiline />
-        <View style={styles.bookPicker}>
-          {books.slice(0, 4).map((book) => (
-            <Pressable key={book.id} style={[styles.chip, bookId === book.id && styles.chipActive]} onPress={() => setBookId(book.id)}>
-              <Text style={[styles.chipText, bookId === book.id && styles.chipTextActive]} numberOfLines={1}>{book.title}</Text>
-            </Pressable>
-          ))}
+      <View style={[styles.headerRow, mobile && styles.stack]}>
+        <View style={styles.titleBox}>
+          <Text style={styles.title}><Text style={styles.titleIcon}>” </Text>Diário de Citações</Text>
+          <Text style={styles.subtitle}>Sua biblioteca de memórias e passagens marcantes.</Text>
         </View>
-        <View style={styles.row}>
-          <TextInput style={[styles.input, styles.half]} placeholder="Pagina" placeholderTextColor={appColors.textDim} value={page} onChangeText={setPage} keyboardType="numeric" />
-          <TextInput style={[styles.input, styles.half]} placeholder="Tags" placeholderTextColor={appColors.textDim} value={tags} onChangeText={setTags} />
-        </View>
-        <Pressable style={styles.button} onPress={handleAdd}><Text style={styles.buttonText}>Salvar citacao</Text></Pressable>
-      </Card>
+        <Pressable style={styles.newButton} onPress={() => setShowComposer(!showComposer)}><Text style={styles.newButtonText}>＋ Nova Citação</Text></Pressable>
+      </View>
 
-      <TextInput style={styles.input} placeholder="Buscar citacao, livro ou tag" placeholderTextColor={appColors.textDim} value={search} onChangeText={setSearch} />
+      {showComposer ? (
+        <Card>
+          <Text style={styles.kicker}>NOVA MEMÓRIA</Text>
+          <TextInput style={styles.textArea} placeholder="Trecho marcante" placeholderTextColor={appColors.textDim} value={text} onChangeText={setText} multiline />
+          <View style={styles.bookPicker}>
+            {books.slice(0, 4).map((book) => (
+              <Pressable key={book.id} style={[styles.chip, bookId === book.id && styles.chipActive]} onPress={() => setBookId(book.id)}>
+                <Text style={[styles.chipText, bookId === book.id && styles.chipTextActive]} numberOfLines={1}>{book.title}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <View style={[styles.row, mobile && styles.stack]}>
+            <TextInput style={[styles.input, styles.half]} placeholder="Página" placeholderTextColor={appColors.textDim} value={page} onChangeText={setPage} keyboardType="numeric" />
+            <TextInput style={[styles.input, styles.half]} placeholder="Tags ou sentimentos" placeholderTextColor={appColors.textDim} value={tags} onChangeText={setTags} />
+          </View>
+          <Pressable style={styles.button} onPress={handleAdd}><Text style={styles.buttonText}>Salvar citação</Text></Pressable>
+        </Card>
+      ) : null}
+
+      <View style={[styles.filtersRow, mobile && styles.stack]}>
+        <TextInput style={styles.searchInput} placeholder="Pesquisar em textos, livros ou notas..." placeholderTextColor={appColors.textDim} value={search} onChangeText={setSearch} />
+        <Pressable style={[styles.selectField, favoritesOnly && styles.selectActive]} onPress={() => setFavoritesOnly(!favoritesOnly)}><Text style={styles.selectText}>♡ {favoritesOnly ? 'Favoritas' : 'Todos os Livros'}</Text></Pressable>
+        <Pressable style={styles.selectField} onPress={() => setTagFilter('all')}><Text style={styles.selectText}>◇ {tagFilter === 'all' ? 'Todos os Sentimentos' : tagFilter}</Text></Pressable>
+      </View>
+
       <View style={styles.bookPicker}>
-        <Pressable style={[styles.chip, favoritesOnly && styles.chipActive]} onPress={() => setFavoritesOnly(!favoritesOnly)}>
-          <Text style={[styles.chipText, favoritesOnly && styles.chipTextActive]}>Favoritas</Text>
-        </Pressable>
-        {allTags.map((tag) => (
+        {allTags.slice(0, 8).map((tag) => (
           <Pressable key={tag} style={[styles.chip, tagFilter === tag && styles.chipActive]} onPress={() => setTagFilter(tag)}>
             <Text style={[styles.chipText, tagFilter === tag && styles.chipTextActive]}>{tag === 'all' ? 'Todas' : tag}</Text>
           </Pressable>
         ))}
       </View>
 
-      <Text style={styles.resultCount}>{visibleQuotes.length} citacao(oes)</Text>
-      {quotes.length === 0 ? <Text style={styles.muted}>Nenhuma citacao cadastrada ainda.</Text> : null}
+      {quotes.length === 0 ? (
+        <View style={styles.emptyState}>
+          <View style={styles.emptyCircle}><Text style={styles.emptyIcon}>”</Text></View>
+          <Text style={styles.emptyTitle}>Nenhuma citação encontrada</Text>
+          <Text style={styles.emptyText}>Comece a salvar trechos que tocam sua alma.</Text>
+        </View>
+      ) : null}
+
       {visibleQuotes.map((quote) => {
         const editing = editingId === quote.id;
         return (
@@ -114,8 +133,8 @@ export default function QuotesScreen() {
             {editing ? (
               <>
                 <TextInput style={styles.textArea} placeholder="Editar trecho" placeholderTextColor={appColors.textDim} value={editText} onChangeText={setEditText} multiline />
-                <View style={styles.row}>
-                  <TextInput style={[styles.input, styles.half]} placeholder="Pagina" placeholderTextColor={appColors.textDim} value={editPage} onChangeText={setEditPage} keyboardType="numeric" />
+                <View style={[styles.row, mobile && styles.stack]}>
+                  <TextInput style={[styles.input, styles.half]} placeholder="Página" placeholderTextColor={appColors.textDim} value={editPage} onChangeText={setEditPage} keyboardType="numeric" />
                   <TextInput style={[styles.input, styles.half]} placeholder="Tags" placeholderTextColor={appColors.textDim} value={editTags} onChangeText={setEditTags} />
                 </View>
               </>
@@ -127,7 +146,7 @@ export default function QuotesScreen() {
                 <Text style={styles.tags}>{quote.tags.join(' • ') || 'sem tags'}</Text>
               </>
             )}
-            <View style={styles.actions}>
+            <View style={[styles.actions, mobile && styles.stack]}>
               {editing ? <Pressable style={styles.secondary} onPress={() => saveEditing(quote)}><Text style={styles.secondaryText}>Salvar</Text></Pressable> : <Pressable style={styles.secondary} onPress={() => startEditing(quote)}><Text style={styles.secondaryText}>Editar</Text></Pressable>}
               <Pressable style={styles.secondary} onPress={() => toggleFavoriteQuote(quote.id)}><Text style={styles.secondaryText}>{quote.favorite ? 'Favorita' : 'Favoritar'}</Text></Pressable>
               <Pressable style={styles.danger} onPress={() => deleteQuote(quote.id)}><Text style={styles.dangerText}>Remover</Text></Pressable>
@@ -140,29 +159,43 @@ export default function QuotesScreen() {
 }
 
 const styles = StyleSheet.create({
-  title: { color: appColors.text, fontSize: 32, fontWeight: '900' },
-  subtitle: { color: appColors.textMuted, fontSize: 15, lineHeight: 22 },
-  kicker: { color: appColors.gold, fontSize: 13, fontWeight: '900', letterSpacing: 1 },
-  textArea: { backgroundColor: appColors.surfaceSoft, borderColor: appColors.border, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, color: appColors.text, fontSize: 16, minHeight: 96, textAlignVertical: 'top', marginTop: 10 },
-  input: { backgroundColor: appColors.surfaceSoft, borderColor: appColors.border, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, color: appColors.text, fontSize: 16 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 20 },
+  titleBox: { flex: 1 },
+  stack: { flexDirection: 'column' },
+  title: { color: appColors.text, fontFamily: appFonts.display, fontSize: 48, lineHeight: 58, fontWeight: '900' },
+  titleIcon: { color: appColors.gold },
+  subtitle: { color: appColors.textMuted, fontSize: 20, lineHeight: 30 },
+  newButton: { backgroundColor: appColors.gold, borderRadius: 16, paddingVertical: 16, paddingHorizontal: 28, alignItems: 'center' },
+  newButtonText: { color: appColors.background, fontSize: 18, fontWeight: '900' },
+  kicker: { color: appColors.gold, fontSize: 12, fontWeight: '900', letterSpacing: 4 },
+  filtersRow: { flexDirection: 'row', gap: 14, alignItems: 'center' },
+  searchInput: { flex: 1, backgroundColor: appColors.surface, borderColor: appColors.border, borderWidth: 1, borderRadius: 18, paddingHorizontal: 22, paddingVertical: 18, color: appColors.text, fontSize: 18 },
+  selectField: { flex: 1, backgroundColor: appColors.surface, borderColor: appColors.border, borderWidth: 1, borderRadius: 18, paddingHorizontal: 22, paddingVertical: 18 },
+  selectActive: { borderColor: appColors.gold },
+  selectText: { color: appColors.text, fontSize: 16, fontWeight: '900' },
+  textArea: { backgroundColor: appColors.background, borderColor: appColors.border, borderWidth: 1, borderRadius: 18, paddingHorizontal: 18, paddingVertical: 16, color: appColors.text, fontSize: 18, minHeight: 120, textAlignVertical: 'top', marginTop: 10 },
+  input: { backgroundColor: appColors.background, borderColor: appColors.border, borderWidth: 1, borderRadius: 16, paddingHorizontal: 18, paddingVertical: 16, color: appColors.text, fontSize: 17 },
   row: { flexDirection: 'row', gap: 10, marginTop: 10 },
   half: { flex: 1 },
   bookPicker: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
-  chip: { borderColor: appColors.border, borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 8, maxWidth: '48%' },
+  chip: { borderColor: appColors.border, borderWidth: 1, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 9, maxWidth: '48%' },
   chipActive: { backgroundColor: appColors.gold, borderColor: appColors.gold },
   chipText: { color: appColors.textMuted, fontSize: 12, fontWeight: '800' },
   chipTextActive: { color: appColors.background },
-  button: { backgroundColor: appColors.gold, borderRadius: 999, paddingVertical: 14, alignItems: 'center', marginTop: 12 },
+  button: { backgroundColor: appColors.gold, borderRadius: 999, paddingVertical: 15, alignItems: 'center', marginTop: 12 },
   buttonText: { color: appColors.background, fontWeight: '900' },
-  quote: { color: appColors.text, fontSize: 17, lineHeight: 25, fontStyle: 'italic' },
+  emptyState: { minHeight: 420, alignItems: 'center', justifyContent: 'center', gap: 14 },
+  emptyCircle: { width: 86, height: 86, borderRadius: 999, backgroundColor: appColors.surface, borderColor: appColors.border, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  emptyIcon: { color: appColors.textDim, fontSize: 48 },
+  emptyTitle: { color: appColors.text, fontSize: 28, fontWeight: '900', textAlign: 'center' },
+  emptyText: { color: appColors.textDim, fontSize: 18, textAlign: 'center' },
+  quote: { color: appColors.text, fontFamily: appFonts.display, fontSize: 24, lineHeight: 32, fontStyle: 'italic' },
   book: { color: appColors.gold, fontWeight: '900', marginTop: 8 },
   author: { color: appColors.textMuted, marginTop: 2 },
   tags: { color: appColors.textDim, marginTop: 8, fontSize: 12 },
-  resultCount: { color: appColors.textMuted, fontSize: 13 },
   actions: { flexDirection: 'row', gap: 8, marginTop: 12 },
-  secondary: { flex: 1, borderColor: appColors.border, borderWidth: 1, borderRadius: 999, alignItems: 'center', paddingVertical: 10 },
+  secondary: { flex: 1, borderColor: appColors.border, borderWidth: 1, borderRadius: 999, alignItems: 'center', paddingVertical: 11 },
   secondaryText: { color: appColors.text, fontWeight: '900', fontSize: 12 },
-  danger: { flex: 1, borderColor: appColors.red, borderWidth: 1, borderRadius: 999, alignItems: 'center', paddingVertical: 10 },
-  dangerText: { color: appColors.red, fontWeight: '900', fontSize: 12 },
-  muted: { color: appColors.textMuted }
+  danger: { flex: 1, borderColor: appColors.red, borderWidth: 1, borderRadius: 999, alignItems: 'center', paddingVertical: 11 },
+  dangerText: { color: appColors.red, fontWeight: '900', fontSize: 12 }
 });
