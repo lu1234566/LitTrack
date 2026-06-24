@@ -43,7 +43,7 @@ export default function LiteraryProfileScreen() {
           {topGenres.length === 0 ? <Text style={styles.body}>Ainda sem gêneros suficientes para leitura de perfil.</Text> : null}
           {topGenres.map(([genre, count]) => (
             <View key={genre} style={styles.genreRow}>
-              <View style={styles.genreInfo}><Text style={styles.genre}>{genre}</Text><View style={styles.track}><View style={[styles.fill, { width: Math.min(100, count * 25) + '%' }]} /></View></View>
+              <View style={styles.genreInfo}><Text style={styles.genre}>{genre}</Text><View style={styles.track}><View style={[styles.fill, { width: percent(Math.min(100, count * 25)) }]} /></View></View>
               <Text style={styles.count}>{count}</Text>
             </View>
           ))}
@@ -70,6 +70,10 @@ export default function LiteraryProfileScreen() {
   );
 }
 
+function percent(value: number) {
+  return (value + '%') as `${number}%`;
+}
+
 function Metric({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
   return <Card><Text style={styles.metricLabel}>{label}</Text><Text style={[styles.metricValue, accent && styles.accent]} numberOfLines={1}>{value}</Text></Card>;
 }
@@ -89,26 +93,26 @@ function resolveArchetype(genre: string, averageRating: number, sessions: number
 
 const styles = StyleSheet.create({
   stack: { flexDirection: 'column' },
-  hero: { minHeight: 230, borderColor: appColors.borderSoft, borderWidth: 1, borderRadius: 42, backgroundColor: appColors.backgroundSoft, alignItems: 'center', justifyContent: 'center', padding: 34, gap: 10 },
-  kicker: { color: appColors.gold, letterSpacing: 6, fontSize: 11, fontWeight: '900' },
-  title: { color: appColors.text, fontFamily: appFonts.display, fontSize: 52, lineHeight: 58, fontWeight: '900', textAlign: 'center' },
-  subtitle: { color: appColors.textMuted, fontSize: 17, lineHeight: 25, textAlign: 'center', maxWidth: 620 },
+  hero: { gap: 8 },
+  kicker: { color: appColors.gold, fontSize: 12, fontWeight: '900', letterSpacing: 5 },
+  title: { color: appColors.text, fontFamily: appFonts.display, fontSize: 50, lineHeight: 56, fontWeight: '900' },
+  subtitle: { color: appColors.textMuted, fontSize: 18, lineHeight: 27, maxWidth: 680 },
   grid: { flexDirection: 'row', gap: 16 },
-  mainGrid: { flexDirection: 'row', gap: 18 },
+  mainGrid: { flexDirection: 'row', gap: 16 },
   metricLabel: { color: appColors.textDim, fontSize: 10, letterSpacing: 3, fontWeight: '900' },
-  metricValue: { color: appColors.text, fontSize: 28, fontWeight: '900' },
+  metricValue: { color: appColors.text, fontSize: 26, fontWeight: '900' },
   accent: { color: appColors.gold },
-  cardTitle: { color: appColors.gold, fontFamily: appFonts.display, fontSize: 22, fontWeight: '900' },
-  body: { color: appColors.textMuted, lineHeight: 22 },
-  genreRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomColor: appColors.border, borderBottomWidth: 1, paddingVertical: 12 },
-  genreInfo: { flex: 1 },
+  cardTitle: { color: appColors.gold, fontFamily: appFonts.display, fontSize: 24, fontWeight: '900' },
+  body: { color: appColors.textMuted, lineHeight: 22, marginTop: 10 },
+  genreRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 14 },
+  genreInfo: { flex: 1, gap: 6 },
   genre: { color: appColors.text, fontWeight: '900' },
   count: { color: appColors.gold, fontWeight: '900' },
-  track: { height: 7, borderRadius: 999, backgroundColor: appColors.border, overflow: 'hidden', marginTop: 8 },
+  track: { height: 8, borderRadius: 999, backgroundColor: appColors.border, overflow: 'hidden' },
   fill: { height: '100%', backgroundColor: appColors.gold },
-  profileGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 16 },
-  mini: { flexGrow: 1, minWidth: 120, backgroundColor: appColors.background, borderColor: appColors.border, borderWidth: 1, borderRadius: 18, padding: 14 },
+  profileGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 16 },
+  mini: { width: '47%', backgroundColor: appColors.background, borderColor: appColors.border, borderWidth: 1, borderRadius: 16, padding: 14 },
   miniLabel: { color: appColors.textDim, fontSize: 10, letterSpacing: 2, fontWeight: '900' },
-  miniValue: { color: appColors.text, fontSize: 24, fontWeight: '900', marginTop: 6 },
-  quote: { color: appColors.text, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 22, lineHeight: 30 }
+  miniValue: { color: appColors.text, fontSize: 24, fontWeight: '900', marginTop: 4 },
+  quote: { color: appColors.text, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 20, lineHeight: 30, marginTop: 10 }
 });
