@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
@@ -37,11 +37,27 @@ const instantResults: ExternalBook[] = [
 ];
 
 export default function DiscoverScreen() {
-  const { addBook } = useBooks();
+  const { books: libraryBooks, addBook, updateStatus } = useBooks();
   const [query, setQuery] = useState('Eragon');
   const [results, setResults] = useState<ExternalBook[]>(instantResults);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('Resultados iniciais prontos para teste. Clique em Buscar para tentar APIs externas.');
+
+  const duplicateMap = useMemo(() => {
+    const map = new Map<string, boolean>();
+    results.forEach((external) => map.set(external.id, Boolean(findDuplicate(external))));
+    return map;
+  }, [libraryBooks, results]);
+
+  function findDuplicate(book: ExternalBook) {
+    const normalizedTitle = normalize(book.title);
+    const normalizedAuthor = normalize(book.author);
+    return libraryBooks.find((item) => {
+      const sameIsbn = book.isbn && item.isbn && normalize(book.isbn) === normalize(item.isbn);
+      const sameTitleAuthor = normalize(item.title) === normalizedTitle && normalize(item.author) === normalizedAuthor;
+      return sameIsbn || sameTitleAuthor;
+    });
+  }
 
   async function search() {
     setLoading(true);
@@ -58,7 +74,12 @@ export default function DiscoverScreen() {
     }
   }
 
-  async function importBook(book: ExternalBook) {
+  async function importBook(book: ExternalBook, force = false) {
+    const duplicate = findDuplicate(book);
+    if (duplicate && !force) {
+      setMessage('Este livro ja existe na biblioteca: ' + duplicate.title + '. Use Importar mesmo assim para duplicar.');
+      return;
+    }
     await addBook({
       title: book.title,
       author: book.author,
@@ -81,6 +102,16 @@ export default function DiscoverScreen() {
     setMessage('Livro importado para Quero ler: ' + book.title);
   }
 
+  async function startExistingBook(book: ExternalBook) {
+    const duplicate = findDuplicate(book);
+    if (!duplicate) {
+      await importBook(book);
+      return;
+    }
+    await updateStatus(duplicate.id, 'reading');
+    setMessage('Leitura iniciada: ' + duplicate.title);
+  }
+
   return (
     <Screen>
       <Text style={styles.title}>Descobrir livros</Text>
@@ -91,26 +122,37 @@ export default function DiscoverScreen() {
       </View>
       {message ? <Text style={styles.message}>{message}</Text> : null}
 
-      {results.map((book) => (
-        <Card key={book.id}>
-          <View style={styles.resultRow}>
-            <View style={styles.coverBox}>
-              {book.coverUrl ? <Image source={{ uri: book.coverUrl }} style={styles.coverImage} /> : <Text style={styles.coverText}>{book.title.slice(0, 1)}</Text>}
+      {results.map((book) => {
+        const isDuplicate = duplicateMap.get(book.id);
+        return (
+          <Card key={book.id}>
+            <View style={styles.resultRow}>
+              <View style={styles.coverBox}>
+                {book.coverUrl ? <Image source={{ uri: book.coverUrl }} style={styles.coverImage} /> : <Text style={styles.coverText}>{book.title.slice(0, 1)}</Text>}
+              </View>
+              <View style={styles.info}>
+                <Text style={styles.bookTitle}>{book.title}</Text>
+                <Text style={styles.meta}>{book.author}</Text>
+                <Text style={styles.meta}>{book.publisher || 'Editora desconhecida'} • {book.publishedDate || 'sem ano'}</Text>
+                <Text style={styles.meta}>{book.totalPages || 0} paginas • {book.genre}</Text>
+                <Text style={styles.source}>{book.source}{isDuplicate ? ' • ja existe' : ''}</Text>
+              </View>
             </View>
-            <View style={styles.info}>
-              <Text style={styles.bookTitle}>{book.title}</Text>
-              <Text style={styles.meta}>{book.author}</Text>
-              <Text style={styles.meta}>{book.publisher || 'Editora desconhecida'} • {book.publishedDate || 'sem ano'}</Text>
-              <Text style={styles.meta}>{book.totalPages || 0} paginas • {book.genre}</Text>
-              <Text style={styles.source}>{book.source}</Text>
+            {book.description ? <Text style={styles.description} numberOfLines={3}>{book.description}</Text> : null}
+            {isDuplicate ? <Text style={styles.duplicate}>Este livro ja esta na biblioteca.</Text> : null}
+            <View style={styles.actionRow}>
+              <Pressable style={styles.importButton} onPress={() => importBook(book)}><Text style={styles.importText}>{isDuplicate ? 'Bloquear duplicado' : 'Importar'}</Text></Pressable>
+              <Pressable style={styles.secondaryButton} onPress={() => isDuplicate ? startExistingBook(book) : importBook(book, true)}><Text style={styles.secondaryText}>{isDuplicate ? 'Comecar leitura' : 'Importar mesmo assim'}</Text></Pressable>
             </View>
-          </View>
-          {book.description ? <Text style={styles.description} numberOfLines={3}>{book.description}</Text> : null}
-          <Pressable style={styles.importButton} onPress={() => importBook(book)}><Text style={styles.importText}>Importar para Quero ler</Text></Pressable>
-        </Card>
-      ))}
+          </Card>
+        );
+      })}
     </Screen>
   );
+}
+
+function normalize(value?: string) {
+  return String(value || '').trim().toLowerCase();
 }
 
 const styles = StyleSheet.create({
@@ -130,6 +172,10 @@ const styles = StyleSheet.create({
   meta: { color: appColors.textMuted, fontSize: 13 },
   source: { color: appColors.gold, fontSize: 12, fontWeight: '900' },
   description: { color: appColors.textMuted, lineHeight: 20, marginTop: 12 },
-  importButton: { backgroundColor: appColors.gold, borderRadius: 999, paddingVertical: 12, alignItems: 'center', marginTop: 12 },
-  importText: { color: appColors.background, fontWeight: '900' }
+  duplicate: { color: appColors.gold, fontSize: 13, fontWeight: '900', marginTop: 10 },
+  actionRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  importButton: { flex: 1, backgroundColor: appColors.gold, borderRadius: 999, paddingVertical: 12, alignItems: 'center' },
+  importText: { color: appColors.background, fontWeight: '900' },
+  secondaryButton: { flex: 1, borderColor: appColors.gold, borderWidth: 1, borderRadius: 999, paddingVertical: 12, alignItems: 'center' },
+  secondaryText: { color: appColors.gold, fontWeight: '900', fontSize: 12 }
 });
