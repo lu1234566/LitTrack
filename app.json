@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Readora Native",
+    "slug": "readora-native",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "readora",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "android": {
+      "package": "com.readora.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#0a0a0a"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.readora.mobile",
+      "supportsTablet": true
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-splash-screen"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
