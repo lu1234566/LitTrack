@@ -3,6 +3,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { appColors } from '@/theme/tokens';
 
 const menu = [
+  { name: 'Aparencia', path: '/appearance', text: 'Cor, densidade e texto.' },
+  { name: 'Status do produto', path: '/product-status', text: 'Pronto, pendente e proximas fases.' },
   { name: 'Sessao rapida', path: '/quick-session', text: 'Registrar leitura em segundos.' },
   { name: 'Insights', path: '/insights', text: 'Analise avancada dos habitos.' },
   { name: 'Backup', path: '/backup', text: 'Exportar e importar JSON.' },
