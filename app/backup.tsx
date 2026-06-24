@@ -19,13 +19,54 @@ export default function BackupScreen() {
   const { width } = useWindowDimensions();
   const mobile = width < 760;
   const [backupText, setBackupText] = useState('');
+  const [reportText, setReportText] = useState('');
   const [importText, setImportText] = useState('');
   const [message, setMessage] = useState('');
 
   function generateBackup() {
     const backup = createReadoraBackup({ books, quotes, shelves, sessions, preferences });
     setBackupText(stringifyBackup(backup));
-    setMessage('Backup gerado. Copie o JSON para guardar ou migrar.');
+    setMessage('Backup JSON gerado. Copie o texto para guardar ou migrar.');
+  }
+
+  function generateReport() {
+    const lines = [
+      'READORA — RELATÓRIO DA BIBLIOTECA',
+      'Leitor: ' + preferences.readerName,
+      'Gerado em: ' + new Date().toLocaleString('pt-BR'),
+      '',
+      'RESUMO',
+      '- Livros: ' + books.length,
+      '- Livros concluídos: ' + stats.finishedBooks,
+      '- Lendo agora: ' + stats.readingBooks,
+      '- Quero ler: ' + stats.wishlistBooks,
+      '- Páginas registradas: ' + stats.pagesRead,
+      '- Média geral: ' + stats.averageRating.toFixed(1),
+      '- Citações: ' + quotes.length,
+      '- Estantes: ' + shelves.length,
+      '- Sessões: ' + sessions.length,
+      '',
+      'LIVROS',
+      ...books.map((book, index) => (index + 1) + '. ' + book.title + ' — ' + book.author + ' | ' + book.genre + ' | ' + statusLabel(book.status) + ' | ' + (book.rating || 0) + '/5'),
+      '',
+      'CITAÇÕES FAVORITAS',
+      ...quotes.filter((quote) => quote.favorite).map((quote) => '- “' + quote.text + '” — ' + quote.bookTitle),
+      '',
+      'SESSÕES RECENTES',
+      ...sessions.slice(0, 10).map((session) => '- ' + session.bookTitle + ': ' + session.pagesRead + ' páginas em ' + session.minutesRead + ' minutos')
+    ];
+    setReportText(lines.join('\n'));
+    setMessage('Relatório textual gerado. Para PDF, copie este relatório e imprima pelo navegador/sistema.');
+  }
+
+  async function copyReport() {
+    const clipboard = (globalThis as any).navigator?.clipboard;
+    if (clipboard?.writeText && reportText) {
+      await clipboard.writeText(reportText);
+      setMessage('Relatório copiado para a área de transferência.');
+      return;
+    }
+    setMessage('Selecione o relatório gerado e copie manualmente.');
   }
 
   async function importBackup() {
@@ -65,14 +106,14 @@ export default function BackupScreen() {
           <View style={styles.exportIcon}><Text style={styles.exportIconText}>♧</Text></View>
           <Text style={styles.exportTitle}>Exportar JSON</Text>
           <Text style={styles.exportText}>Ideal para backup completo e portabilidade. Inclui todos os metadados, resenhas e configurações.</Text>
-          <Pressable style={styles.downloadButton} onPress={generateBackup}><Text style={styles.downloadText}>⇩ Baixar JSON</Text></Pressable>
+          <Pressable style={styles.downloadButton} onPress={generateBackup}><Text style={styles.downloadText}>⇩ Gerar JSON</Text></Pressable>
         </Card>
 
         <Card>
           <View style={[styles.exportIcon, styles.blueIcon]}><Text style={styles.blueIconText}>▤</Text></View>
-          <Text style={styles.exportTitle}>Relatório PDF</Text>
-          <Text style={styles.exportText}>Um documento elegante e legível com o resumo da sua biblioteca, estatísticas e lista de livros.</Text>
-          <Pressable style={styles.disabledButton}><Text style={styles.disabledText}>⇩ Baixar PDF</Text></Pressable>
+          <Text style={styles.exportTitle}>Relatório de Leitura</Text>
+          <Text style={styles.exportText}>Gera um relatório textual pronto para copiar, imprimir ou converter em PDF pelo navegador.</Text>
+          <Pressable style={styles.pdfButton} onPress={generateReport}><Text style={styles.pdfText}>⇩ Gerar Relatório</Text></Pressable>
         </Card>
       </View>
 
@@ -88,7 +129,7 @@ export default function BackupScreen() {
           <Text style={styles.cardTitle}>⊙ INFORMAÇÕES IMPORTANTES</Text>
           <Text style={styles.bullet}>• Os arquivos gerados contêm apenas seus dados pessoais e de leitura.</Text>
           <Text style={styles.bullet}>• Ao importar, você pode restaurar uma biblioteca inteira pelo JSON.</Text>
-          <Text style={styles.bullet}>• O sistema preserva livros, citações, estantes, sessões e preferências.</Text>
+          <Text style={styles.bullet}>• O relatório textual pode ser copiado e impresso como PDF pelo próprio navegador.</Text>
         </Card>
       </View>
 
@@ -96,6 +137,13 @@ export default function BackupScreen() {
         <Card>
           <Text style={styles.cardTitle}>Backup gerado</Text>
           <TextInput style={styles.textAreaLarge} value={backupText} onChangeText={setBackupText} multiline />
+        </Card>
+      ) : null}
+
+      {reportText ? (
+        <Card>
+          <View style={styles.reportHeader}><Text style={styles.cardTitle}>Relatório gerado</Text><Pressable style={styles.copyButton} onPress={copyReport}><Text style={styles.copyText}>Copiar relatório</Text></Pressable></View>
+          <TextInput style={styles.textAreaLarge} value={reportText} onChangeText={setReportText} multiline />
         </Card>
       ) : null}
 
@@ -116,6 +164,12 @@ export default function BackupScreen() {
       {message ? <Text style={styles.message}>{message}</Text> : null}
     </Screen>
   );
+}
+
+function statusLabel(status: string) {
+  if (status === 'finished') return 'Lido';
+  if (status === 'wishlist') return 'Quero ler';
+  return 'Lendo';
 }
 
 const styles = StyleSheet.create({
@@ -142,13 +196,16 @@ const styles = StyleSheet.create({
   exportText: { color: appColors.textMuted, textAlign: 'center', lineHeight: 20, marginTop: 8 },
   downloadButton: { backgroundColor: appColors.gold, borderRadius: 12, paddingVertical: 13, alignItems: 'center', marginTop: 22 },
   downloadText: { color: appColors.background, fontWeight: '900' },
-  disabledButton: { backgroundColor: appColors.surfaceMuted, borderRadius: 12, paddingVertical: 13, alignItems: 'center', marginTop: 22 },
-  disabledText: { color: appColors.textDim, fontWeight: '900' },
+  pdfButton: { backgroundColor: '#3b82f6', borderRadius: 12, paddingVertical: 13, alignItems: 'center', marginTop: 22 },
+  pdfText: { color: appColors.text, fontWeight: '900' },
   textArea: { backgroundColor: appColors.background, borderColor: appColors.border, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, color: appColors.text, fontSize: 12, minHeight: 120, textAlignVertical: 'top', marginTop: 12 },
   textAreaLarge: { backgroundColor: appColors.background, borderColor: appColors.border, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, color: appColors.text, fontSize: 12, minHeight: 220, textAlignVertical: 'top', marginTop: 12 },
   outlineButton: { borderColor: '#3b82f6', borderWidth: 1, borderRadius: 999, paddingVertical: 13, alignItems: 'center', marginTop: 12 },
   outlineText: { color: '#3b82f6', fontWeight: '900' },
   bullet: { color: appColors.textMuted, lineHeight: 24, marginTop: 10 },
+  reportHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
+  copyButton: { backgroundColor: appColors.surfaceMuted, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10 },
+  copyText: { color: appColors.text, fontWeight: '900' },
   historyTitle: { color: appColors.text, fontFamily: appFonts.display, fontSize: 24, fontWeight: '900' },
   historyItem: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: appColors.background, borderColor: appColors.border, borderWidth: 1, borderRadius: 14, padding: 12, marginTop: 12 },
   historyIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(59,130,246,0.12)', alignItems: 'center', justifyContent: 'center' },
