@@ -24,7 +24,7 @@ export default function GoalsScreen() {
       <Card>
         <Text style={styles.kicker}>Meta anual</Text>
         <Text style={styles.big}>{stats.finishedBooks}/{preferences.yearlyGoal}</Text>
-        <View style={styles.progressTrack}><View style={[styles.progressFill, { width: progress + '%' }]} /></View>
+        <View style={styles.progressTrack}><View style={[styles.progressFill, { width: percent(progress) }]} /></View>
         <Text style={styles.body}>{progress}% concluido. Faltam {Math.max(0, preferences.yearlyGoal - stats.finishedBooks)} livro(s).</Text>
       </Card>
       <Card>
@@ -37,6 +37,10 @@ export default function GoalsScreen() {
       <Pressable style={styles.button} onPress={saveGoals}><Text style={styles.buttonText}>Salvar metas</Text></Pressable>
     </Screen>
   );
+}
+
+function percent(value: number) {
+  return (value + '%') as `${number}%`;
 }
 
 const styles = StyleSheet.create({
