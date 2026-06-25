@@ -5,21 +5,22 @@ import { StatusBar } from 'expo-status-bar';
 import { usePreferences } from '@/contexts/PreferencesContext';
 import { appColors, appFonts } from '@/theme/tokens';
 import { accentColor, densityValue, scaledFont } from '@/services/visualPreferences';
+import { ReadoraIcon, ReadoraIconName } from '@/components/ReadoraIcon';
 
-const menuItems = [
-  { icon: '▦', label: 'Dashboard', href: '/' },
-  { icon: '▥', label: 'Meus Livros', href: '/library' },
-  { icon: '□', label: 'Minhas Estantes', href: '/shelves' },
-  { icon: '⌕', label: 'Pesquisar Livros', href: '/search' },
-  { icon: '”', label: 'Citações', href: '/quotes' },
-  { icon: '◎', label: 'Perfil Literário', href: '/literary-profile' },
-  { icon: '✣', label: 'Cápsula Mensal', href: '/monthly-capsule' },
-  { icon: '↺', label: 'Linha do Tempo', href: '/timeline' },
-  { icon: '▣', label: 'Retrospectiva', href: '/retrospective' },
-  { icon: '✣', label: 'Recomendações', href: '/recommendations' },
-  { icon: '⇩', label: 'Backup e Exportação', href: '/backup' },
-  { icon: '▧', label: 'Galeria', href: '/gallery' },
-  { icon: '+', label: 'Adicionar', href: '/add' }
+const menuItems: { icon: ReadoraIconName; label: string; href: string }[] = [
+  { icon: 'dashboard', label: 'Dashboard', href: '/' },
+  { icon: 'library', label: 'Meus Livros', href: '/library' },
+  { icon: 'shelves', label: 'Minhas Estantes', href: '/shelves' },
+  { icon: 'search', label: 'Pesquisar Livros', href: '/search' },
+  { icon: 'quotes', label: 'Citações', href: '/quotes' },
+  { icon: 'literaryProfile', label: 'Perfil Literário', href: '/literary-profile' },
+  { icon: 'monthlyCapsule', label: 'Cápsula Mensal', href: '/monthly-capsule' },
+  { icon: 'timeline', label: 'Linha do Tempo', href: '/timeline' },
+  { icon: 'retrospective', label: 'Retrospectiva', href: '/retrospective' },
+  { icon: 'recommendations', label: 'Recomendações', href: '/recommendations' },
+  { icon: 'backup', label: 'Backup e Exportação', href: '/backup' },
+  { icon: 'gallery', label: 'Galeria', href: '/gallery' },
+  { icon: 'addBook', label: 'Adicionar', href: '/add' }
 ];
 
 export function Screen({ children, scroll = true }: { children: ReactNode; scroll?: boolean }) {
@@ -48,7 +49,7 @@ export function Screen({ children, scroll = true }: { children: ReactNode; scrol
 function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <View style={styles.brandRow}>
-      <View style={[styles.logoMark, compact && styles.logoMarkSmall]}><Text style={styles.logoBook}>▯</Text></View>
+      <View style={[styles.logoMark, compact && styles.logoMarkSmall]}><ReadoraIcon name="brand" size={compact ? 22 : 24} color={appColors.gold} /></View>
       <View>
         <Text style={[styles.brandName, compact && styles.brandNameSmall]}>Readora</Text>
         <Text style={[styles.brandSub, compact && styles.brandSubSmall]}>DIÁRIO LITERÁRIO</Text>
@@ -65,7 +66,7 @@ function Sidebar({ accent, textScale }: { accent: string; textScale?: string }) 
         {menuItems.map((item, index) => (
           <Link key={item.href + index} href={item.href as never} asChild>
             <Pressable style={({ pressed }) => [styles.sideItem, pressed && styles.sideItemPressed]}>
-              <Text style={[styles.sideIcon, { color: index === 1 ? accent : appColors.textMuted }]}>{item.icon}</Text>
+              <View style={styles.sideIcon}><ReadoraIcon name={item.icon} size={20} color={index === 1 ? accent : appColors.textMuted} /></View>
               <Text style={[styles.sideText, { fontSize: scaledFont(15, textScale) }]}>{item.label}</Text>
             </Pressable>
           </Link>
@@ -79,8 +80,8 @@ function Sidebar({ accent, textScale }: { accent: string; textScale?: string }) 
             <Text style={styles.userEmail}>barcelar34@gmail.com</Text>
           </View>
         </View>
-        <Link href="/settings" asChild><Pressable style={styles.sideItem}><Text style={styles.sideIcon}>⚙</Text><Text style={styles.sideText}>Configurações</Text></Pressable></Link>
-        <Pressable style={styles.sideItem}><Text style={[styles.sideIcon, { color: appColors.rose }]}>↪</Text><Text style={[styles.sideText, { color: appColors.rose }]}>Sair</Text></Pressable>
+        <Link href="/settings" asChild><Pressable style={styles.sideItem}><View style={styles.sideIcon}><ReadoraIcon name="settings" size={20} color={appColors.textMuted} /></View><Text style={styles.sideText}>Configurações</Text></Pressable></Link>
+        <Pressable style={styles.sideItem}><View style={styles.sideIcon}><ReadoraIcon name="logout" size={20} color={appColors.rose} /></View><Text style={[styles.sideText, { color: appColors.rose }]}>Sair</Text></Pressable>
       </View>
     </View>
   );
@@ -89,7 +90,7 @@ function Sidebar({ accent, textScale }: { accent: string; textScale?: string }) 
 function MobileTopbar({ accent, onMenu }: { accent: string; onMenu: () => void }) {
   return (
     <View style={styles.mobileTopbar}>
-      <Pressable onPress={onMenu} style={styles.menuButton}><Text style={styles.menuText}>☰</Text></Pressable>
+      <Pressable onPress={onMenu} style={styles.menuButton}><ReadoraIcon name="menu" size={28} color={appColors.textMuted} /></Pressable>
       <Brand compact />
       <Image source={{ uri: 'https://avatars.githubusercontent.com/u/17485550?v=4' }} style={[styles.mobileAvatar, { borderColor: accent }]} />
     </View>
@@ -102,13 +103,13 @@ function MobileDrawer({ accent, onClose, textScale }: { accent: string; onClose:
       <View style={styles.drawerPanel}>
         <View style={styles.drawerHeader}>
           <Brand />
-          <Pressable onPress={onClose}><Text style={styles.closeText}>×</Text></Pressable>
+          <Pressable onPress={onClose} style={styles.closeButton}><ReadoraIcon name="close" size={28} color={appColors.textMuted} /></Pressable>
         </View>
         <ScrollView contentContainerStyle={styles.drawerList}>
           {menuItems.map((item, index) => (
             <Link key={item.href + index} href={item.href as never} asChild>
               <Pressable style={styles.drawerItem} onPress={onClose}>
-                <Text style={[styles.drawerIcon, { color: index === 0 ? accent : appColors.textMuted }]}>{item.icon}</Text>
+                <View style={styles.drawerIcon}><ReadoraIcon name={item.icon} size={24} color={index === 0 ? accent : appColors.textMuted} /></View>
                 <Text style={[styles.drawerText, { fontSize: scaledFont(20, textScale) }]}>{item.label}</Text>
               </Pressable>
             </Link>
@@ -122,8 +123,8 @@ function MobileDrawer({ accent, onClose, textScale }: { accent: string; onClose:
               <Text style={styles.userEmail}>barcelar34@gmail.com</Text>
             </View>
           </View>
-          <Link href="/settings" asChild><Pressable style={styles.drawerItem} onPress={onClose}><Text style={styles.drawerIcon}>⚙</Text><Text style={styles.drawerText}>Configurações</Text></Pressable></Link>
-          <Pressable style={styles.drawerItem}><Text style={[styles.drawerIcon, { color: appColors.rose }]}>↪</Text><Text style={[styles.drawerText, { color: appColors.rose }]}>Sair</Text></Pressable>
+          <Link href="/settings" asChild><Pressable style={styles.drawerItem} onPress={onClose}><View style={styles.drawerIcon}><ReadoraIcon name="settings" size={24} color={appColors.textMuted} /></View><Text style={styles.drawerText}>Configurações</Text></Pressable></Link>
+          <Pressable style={styles.drawerItem}><View style={styles.drawerIcon}><ReadoraIcon name="logout" size={24} color={appColors.rose} /></View><Text style={[styles.drawerText, { color: appColors.rose }]}>Sair</Text></Pressable>
         </View>
       </View>
       <Pressable style={styles.drawerScrim} onPress={onClose} />
@@ -157,7 +158,7 @@ const styles = StyleSheet.create({
   brandSubSmall: { fontSize: 11, letterSpacing: 3 },
   sideItem: { minHeight: 45, borderRadius: 14, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16 },
   sideItemPressed: { backgroundColor: appColors.goldDeep },
-  sideIcon: { width: 20, color: appColors.textMuted, fontSize: 20, textAlign: 'center' },
+  sideIcon: { width: 20, alignItems: 'center', justifyContent: 'center' },
   sideText: { color: appColors.textMuted, fontWeight: '800' },
   userRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatar: { width: 34, height: 34, borderRadius: 999 },
@@ -167,7 +168,7 @@ const styles = StyleSheet.create({
   userEmail: { color: appColors.textDim, fontSize: 12, marginTop: 2 },
   mobileTopbar: { position: 'absolute', top: 0, left: 0, right: 0, height: 88, zIndex: 10, backgroundColor: appColors.sidebar, borderBottomColor: appColors.border, borderBottomWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 22 },
   menuButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  menuText: { color: appColors.textMuted, fontSize: 32, lineHeight: 34 },
+  closeButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   drawerOverlay: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, zIndex: 50, flexDirection: 'row' },
   drawerPanel: { width: '76%', maxWidth: 430, backgroundColor: appColors.sidebar, borderRightColor: appColors.border, borderRightWidth: 1, paddingTop: 34 },
   drawerScrim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.72)' },
@@ -175,7 +176,7 @@ const styles = StyleSheet.create({
   closeText: { color: appColors.textMuted, fontSize: 40, lineHeight: 42 },
   drawerList: { paddingHorizontal: 24, paddingTop: 42, gap: 14 },
   drawerItem: { minHeight: 58, borderRadius: 16, flexDirection: 'row', alignItems: 'center', gap: 18, paddingHorizontal: 20 },
-  drawerIcon: { width: 24, color: appColors.textMuted, fontSize: 25, textAlign: 'center' },
+  drawerIcon: { width: 24, alignItems: 'center', justifyContent: 'center' },
   drawerText: { color: appColors.textMuted, fontWeight: '800' },
   drawerFooter: { borderTopColor: appColors.border, borderTopWidth: 1, padding: 24, gap: 14 }
 });

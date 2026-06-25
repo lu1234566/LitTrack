@@ -6,6 +6,7 @@ import { BookCard } from '@/components/BookCard';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
 import { BookStatus } from '@/types/book';
+import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors, appFonts } from '@/theme/tokens';
 
 const filters: Array<'all' | BookStatus> = ['all', 'wishlist', 'finished', 'reading'];
@@ -49,8 +50,8 @@ export default function LibraryScreen() {
       </View>
 
       <View style={[styles.topActions, mobile && styles.stack]}>
-        <Link href="/shelves" asChild><Pressable style={styles.createShelf}><Text style={styles.actionIcon}>▦</Text><Text style={styles.createShelfText}>Criar{mobile ? '\n' : ' '}Estante</Text></Pressable></Link>
-        <Link href="/add" asChild><Pressable style={styles.addReading}><Text style={styles.actionIconDark}>▯</Text><Text style={styles.addReadingText}>Adicionar{mobile ? '\n' : ' '}Leitura</Text></Pressable></Link>
+        <Link href="/shelves" asChild><Pressable style={styles.createShelf}><ReadoraIcon name="shelves" size={30} color={appColors.textMuted} /><Text style={styles.createShelfText}>Criar{mobile ? '\n' : ' '}Estante</Text></Pressable></Link>
+        <Link href="/add" asChild><Pressable style={styles.addReading}><ReadoraIcon name="addBook" size={30} color={appColors.background} /><Text style={styles.addReadingText}>Adicionar{mobile ? '\n' : ' '}Leitura</Text></Pressable></Link>
       </View>
 
       <Text style={styles.kicker}>MINHAS ESTANTES</Text>
@@ -62,7 +63,7 @@ export default function LibraryScreen() {
         ))}
         {genres.filter((genre) => genre !== 'all').slice(0, 4).map((genre) => (
           <Pressable key={genre} style={[styles.shelfChip, genreFilter === genre && styles.shelfChipActive]} onPress={() => setGenreFilter(genreFilter === genre ? 'all' : genre)}>
-            <Text style={[styles.shelfChipText, genreFilter === genre && styles.shelfChipTextActive]}>● {genre}</Text>
+            <Text style={[styles.shelfChipText, genreFilter === genre && styles.shelfChipTextActive]}>{genre}</Text>
           </Pressable>
         ))}
       </View>
@@ -81,10 +82,10 @@ export default function LibraryScreen() {
       {loading ? <Text style={styles.muted}>Carregando livros...</Text> : null}
       {!loading && visibleBooks.length === 0 ? (
         <View style={styles.emptyPanel}>
-          <Text style={styles.emptyIcon}>▯</Text>
+          <ReadoraIcon name="library" size={56} color={appColors.textDim} />
           <Text style={styles.emptyTitle}>Nenhum livro encontrado</Text>
           <Text style={styles.emptyText}>Tente ajustar seus filtros ou adicione um novo livro.</Text>
-          <Link href="/add" asChild><Pressable style={styles.emptyButton}><Text style={styles.emptyButtonText}>＋ Adicionar Leitura</Text></Pressable></Link>
+          <Link href="/add" asChild><Pressable style={styles.emptyButton}><ReadoraIcon name="addBook" size={18} color={appColors.background} /><Text style={styles.emptyButtonText}>Adicionar Leitura</Text></Pressable></Link>
         </View>
       ) : null}
       {visibleBooks.map((book) => <BookCard key={book.id} book={book} />)}
@@ -141,7 +142,7 @@ const styles = StyleSheet.create({
   emptyIcon: { color: appColors.textDim, fontSize: 62 },
   emptyTitle: { color: appColors.text, fontFamily: appFonts.display, fontSize: 28, fontWeight: '900', textAlign: 'center' },
   emptyText: { color: appColors.textMuted, fontSize: 17, textAlign: 'center' },
-  emptyButton: { backgroundColor: appColors.gold, borderRadius: 18, paddingVertical: 16, paddingHorizontal: 28, marginTop: 16 },
+  emptyButton: { backgroundColor: appColors.gold, borderRadius: 18, paddingVertical: 16, paddingHorizontal: 28, marginTop: 16, flexDirection: 'row', alignItems: 'center', gap: 9 },
   emptyButtonText: { color: appColors.background, fontWeight: '900', fontSize: 18 },
   muted: { color: appColors.textMuted }
 });
