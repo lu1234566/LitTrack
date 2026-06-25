@@ -121,19 +121,14 @@ export default function BackupScreen() {
     setMessage(ok ? 'Janela de impressão aberta. Use “Salvar como PDF” no navegador.' : 'Impressão disponível apenas no navegador.');
   }
 
-  async function pickBackupFile() {
-    const text = await pickTextFile('.json,application/json,text/plain');
+  async function runImport(rawText: string) {
+    const text = (rawText || '').trim();
     if (!text) {
-      setMessage('Seleção de arquivo disponível apenas no navegador ou nenhum arquivo foi escolhido.');
+      setMessage('Nenhum conteúdo para importar. Selecione um arquivo .json ou cole o JSON abaixo.');
       return;
     }
-    setImportText(text);
-    setMessage('Arquivo carregado. Revise o conteúdo e toque em Importar JSON.');
-  }
-
-  async function importBackup() {
     try {
-      const backup = parseReadoraBackup(importText);
+      const backup = parseReadoraBackup(text);
       await replaceBooks(backup.books);
       await setQuoteList(backup.quotes);
       await setShelfList(backup.shelves);
@@ -141,8 +136,27 @@ export default function BackupScreen() {
       if (backup.preferences) await updatePreferences({ ...preferences, ...backup.preferences });
       setMessage('Backup importado com sucesso: ' + backup.books.length + ' livros, ' + backup.quotes.length + ' citações, ' + backup.shelves.length + ' estantes e ' + backup.sessions.length + ' sessões.');
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Não foi possível importar o backup.');
+      setMessage('Falha ao importar: ' + (error instanceof Error ? error.message : 'erro desconhecido'));
     }
+  }
+
+  async function pickBackupFile() {
+    try {
+      setMessage('Abrindo seletor de arquivos...');
+      const text = await pickTextFile('.json,application/json,text/plain');
+      if (!text) {
+        setMessage('Nenhum arquivo selecionado ou não foi possível ler o conteúdo do arquivo.');
+        return;
+      }
+      setImportText(text);
+      await runImport(text);
+    } catch (error) {
+      setMessage('Erro ao abrir/ler o arquivo: ' + (error instanceof Error ? error.message : 'erro desconhecido'));
+    }
+  }
+
+  async function importBackup() {
+    await runImport(importText);
   }
 
   return (
@@ -185,7 +199,7 @@ export default function BackupScreen() {
         <Card>
           <View style={styles.titleRow}><ReadoraIcon name="import" size={18} color="#3b82f6" /><Text style={[styles.cardTitle, { color: '#3b82f6' }]}>Importar Backup</Text></View>
           <Text style={styles.body}>Restaure sua biblioteca a partir de um arquivo JSON exportado anteriormente.</Text>
-          <View style={[styles.reportButtons, mobile && styles.stack]}><Pressable style={styles.outlineButton} onPress={pickBackupFile}><Text style={styles.outlineText}>Escolher arquivo JSON</Text></Pressable><Pressable style={styles.outlineButton} onPress={importBackup}><Text style={styles.outlineText}>Importar JSON</Text></Pressable></View>
+          <View style={[styles.reportButtons, mobile && styles.stack]}><Pressable style={styles.outlineButton} onPress={pickBackupFile}><Text style={styles.outlineText}>Importar de arquivo</Text></Pressable><Pressable style={styles.outlineButton} onPress={importBackup}><Text style={styles.outlineText}>Importar texto colado</Text></Pressable></View>
           <TextInput style={styles.textArea} placeholder="Ou cole aqui o JSON exportado" placeholderTextColor={appColors.textDim} value={importText} onChangeText={setImportText} multiline />
         </Card>
 
