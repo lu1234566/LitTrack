@@ -50,13 +50,16 @@ export async function pickImageAsDataUrl(): Promise<string | null> {
 export async function pickTextFile(accept = '.json,text/plain,application/json'): Promise<string | null> {
   if (Platform.OS !== 'web') {
     const result = await DocumentPicker.getDocumentAsync({
-      type: ['application/json', 'text/plain', 'text/*', '*/*'],
-      copyToCacheDirectory: true
+      type: '*/*',
+      copyToCacheDirectory: true,
+      multiple: false
     });
     if (result.canceled) return null;
     const uri = result.assets?.[0]?.uri;
-    if (!uri) return null;
-    return await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.UTF8 });
+    if (!uri) throw new Error('O seletor não retornou um arquivo válido.');
+    // Default encoding is UTF-8; avoid referencing EncodingType so a missing
+    // enum at runtime can never break the read.
+    return await FileSystem.readAsStringAsync(uri);
   }
 
   const documentRef = (globalThis as any).document;

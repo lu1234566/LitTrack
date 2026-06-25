@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
@@ -121,10 +121,15 @@ export default function BackupScreen() {
     setMessage(ok ? 'Janela de impressão aberta. Use “Salvar como PDF” no navegador.' : 'Impressão disponível apenas no navegador.');
   }
 
+  function notify(title: string, msg: string) {
+    setMessage(msg);
+    Alert.alert(title, msg);
+  }
+
   async function runImport(rawText: string) {
     const text = (rawText || '').trim();
     if (!text) {
-      setMessage('Nenhum conteúdo para importar. Selecione um arquivo .json ou cole o JSON abaixo.');
+      notify('Importação', 'Nenhum conteúdo para importar. Selecione um arquivo .json ou cole o JSON abaixo.');
       return;
     }
     try {
@@ -134,9 +139,9 @@ export default function BackupScreen() {
       await setShelfList(backup.shelves);
       await setSessionList(backup.sessions);
       if (backup.preferences) await updatePreferences({ ...preferences, ...backup.preferences });
-      setMessage('Backup importado com sucesso: ' + backup.books.length + ' livros, ' + backup.quotes.length + ' citações, ' + backup.shelves.length + ' estantes e ' + backup.sessions.length + ' sessões.');
+      notify('Importação concluída', backup.books.length + ' livros, ' + backup.quotes.length + ' citações, ' + backup.shelves.length + ' estantes e ' + backup.sessions.length + ' sessões importados.');
     } catch (error) {
-      setMessage('Falha ao importar: ' + (error instanceof Error ? error.message : 'erro desconhecido'));
+      notify('Falha ao importar', error instanceof Error ? error.message : 'erro desconhecido ao processar o JSON.');
     }
   }
 
@@ -144,14 +149,18 @@ export default function BackupScreen() {
     try {
       setMessage('Abrindo seletor de arquivos...');
       const text = await pickTextFile('.json,application/json,text/plain');
-      if (!text) {
-        setMessage('Nenhum arquivo selecionado ou não foi possível ler o conteúdo do arquivo.');
+      if (text === null) {
+        setMessage('Seleção cancelada.');
+        return;
+      }
+      if (!text.trim()) {
+        notify('Arquivo vazio', 'O arquivo selecionado não retornou nenhum conteúdo legível.');
         return;
       }
       setImportText(text);
       await runImport(text);
     } catch (error) {
-      setMessage('Erro ao abrir/ler o arquivo: ' + (error instanceof Error ? error.message : 'erro desconhecido'));
+      notify('Erro ao ler o arquivo', error instanceof Error ? error.message : 'erro desconhecido ao abrir/ler o arquivo.');
     }
   }
 
