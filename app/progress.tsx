@@ -7,6 +7,7 @@ import { useQuotes } from '@/contexts/QuoteContext';
 import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { useShelves } from '@/contexts/ShelfContext';
 import { buildAchievements, calculateReadingStreak } from '@/services/readingAchievements';
+import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors } from '@/theme/tokens';
 
 export default function ProgressScreen() {
@@ -46,7 +47,7 @@ export default function ProgressScreen() {
         const progress = Math.min(100, Math.round((achievement.progress / achievement.target) * 100));
         return (
           <Card key={achievement.id}>
-            <Text style={styles.achievementTitle}>{achievement.unlocked ? '✓ ' : '○ '}{achievement.title}</Text>
+            <View style={styles.achievementRow}><ReadoraIcon name={achievement.unlocked ? 'checkCircle' : 'starOutline'} size={18} color={achievement.unlocked ? appColors.emerald : appColors.textDim} /><Text style={styles.achievementTitle}>{achievement.title}</Text></View>
             <Text style={styles.body}>{achievement.description}</Text>
             <View style={styles.track}><View style={[styles.fill, { width: percent(progress) }]} /></View>
             <Text style={styles.label}>{achievement.progress}/{achievement.target}</Text>
@@ -71,6 +72,7 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   section: { color: appColors.text, fontSize: 20, fontWeight: '900', marginTop: 6 },
   achievementTitle: { color: appColors.text, fontSize: 18, fontWeight: '900' },
+  achievementRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   track: { height: 8, borderRadius: 999, backgroundColor: appColors.border, overflow: 'hidden', marginTop: 10 },
   fill: { height: '100%', backgroundColor: appColors.gold }
 });

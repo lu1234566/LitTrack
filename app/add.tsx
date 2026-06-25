@@ -8,6 +8,7 @@ import { searchGoogleBooks } from '@/services/externalBookSearch';
 import { pickImageAsDataUrl, scanBarcodeFromImage } from '@/services/webPlatformTools';
 import { BookStatus } from '@/types/book';
 import { ExternalBook } from '@/types/externalBook';
+import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors, appFonts } from '@/theme/tokens';
 
 const moods = ['Sombrio', 'Tenso', 'Reflexivo', 'Aconchegante', 'Emocional', 'Misterioso', 'Caótico', 'Inspirador', 'Cerebral', 'Mágico'];
@@ -154,27 +155,27 @@ export default function AddBookScreen() {
       </View>
 
       <Card>
-        <View style={styles.sectionHeader}><Text style={styles.sectionIcon}>▥</Text><Text style={styles.sectionTitle}>Importar dados do livro</Text><Text style={styles.chevron}>⌃</Text></View>
+        <View style={styles.sectionHeader}><ReadoraIcon name="import" size={24} color={appColors.gold} /><Text style={styles.sectionTitle}>Importar dados do livro</Text><ReadoraIcon name="chevronUp" size={22} color={appColors.textMuted} style={styles.chevron} /></View>
         <View style={[styles.importRow, mobile && styles.stack]}>
-          <Pressable style={[styles.scanButton, mobile && styles.full]} onPress={scanIsbnFromImage}><Text style={styles.scanText}>▣  Escanear ISBN</Text></Pressable>
+          <Pressable style={[styles.scanButton, styles.btnRow, mobile && styles.full]} onPress={scanIsbnFromImage}><ReadoraIcon name="scanIsbn" size={18} color={appColors.background} /><Text style={styles.scanText}>Escanear ISBN</Text></Pressable>
           <TextInput style={[styles.input, styles.flex, mobile && styles.full]} placeholder="Digite o ISBN do livro" placeholderTextColor={appColors.textDim} value={isbn} onChangeText={setIsbn} />
-          <Pressable style={[styles.darkButton, mobile && styles.full]} onPress={() => handleSearch(isbn, 'isbn')}><Text style={styles.darkButtonText}>{searching ? 'Buscando...' : '⌕  Buscar por ISBN'}</Text></Pressable>
+          <Pressable style={[styles.darkButton, styles.btnRow, mobile && styles.full]} onPress={() => handleSearch(isbn, 'isbn')}><ReadoraIcon name="search" size={16} color={appColors.text} /><Text style={styles.darkButtonText}>{searching ? 'Buscando...' : 'Buscar por ISBN'}</Text></Pressable>
         </View>
         {searchMessage ? <Text style={styles.message}>{searchMessage}</Text> : null}
       </Card>
 
       <Card>
-        <View style={styles.sectionHeader}><Text style={styles.sectionIcon}>▯</Text><Text style={styles.sectionTitle}>Informações Básicas</Text><Text style={styles.chevron}>⌃</Text></View>
+        <View style={styles.sectionHeader}><ReadoraIcon name="bookDetails" size={24} color={appColors.gold} /><Text style={styles.sectionTitle}>Informações Básicas</Text><ReadoraIcon name="chevronUp" size={22} color={appColors.textMuted} style={styles.chevron} /></View>
         <Text style={styles.label}>Título</Text>
         <View style={[styles.titleSearchRow, mobile && styles.stack]}>
           <TextInput style={[styles.input, styles.flex]} placeholder="Ex: O Nome do Vento" placeholderTextColor={appColors.textDim} value={title} onChangeText={setTitle} />
-          <Pressable style={styles.searchButton} onPress={() => handleSearch(title, 'title')}><Text style={styles.darkButtonText}>{mobile ? '⌕' : '⌕  Buscar Online'}</Text></Pressable>
+          <Pressable style={[styles.searchButton, styles.btnRow]} onPress={() => handleSearch(title, 'title')}><ReadoraIcon name="search" size={16} color={appColors.text} />{mobile ? null : <Text style={styles.darkButtonText}>Buscar Online</Text>}</Pressable>
         </View>
         <Text style={styles.label}>Capa do Livro</Text>
-        <View style={styles.coverPlaceholder}>{coverUrl ? <Image source={{ uri: coverUrl }} style={styles.coverImage} /> : <><Text style={styles.coverIcon}>▯</Text><Text style={styles.coverText}>Nenhuma capa{`\n`}encontrada</Text></>}</View>
-        <Pressable style={styles.darkButtonWide} onPress={() => handleSearch(isbn || title, isbn ? 'isbn' : 'title')}><Text style={styles.darkButtonText}>⌕  Tentar buscar novamente</Text></Pressable>
+        <View style={styles.coverPlaceholder}>{coverUrl ? <Image source={{ uri: coverUrl }} style={styles.coverImage} /> : <><ReadoraIcon name="camera" size={42} color={appColors.textDim} /><Text style={styles.coverText}>Nenhuma capa{`\n`}encontrada</Text></>}</View>
+        <Pressable style={[styles.darkButtonWide, styles.btnRow]} onPress={() => handleSearch(isbn || title, isbn ? 'isbn' : 'title')}><ReadoraIcon name="search" size={16} color={appColors.text} /><Text style={styles.darkButtonText}>Tentar buscar novamente</Text></Pressable>
         <TextInput style={styles.input} placeholder="Colar URL da capa" placeholderTextColor={appColors.textDim} value={coverUrl} onChangeText={setCoverUrl} />
-        <Pressable style={styles.outlineButton} onPress={chooseLocalCover}><Text style={styles.outlineText}>▧  Usar imagem local neste dispositivo</Text></Pressable>
+        <Pressable style={[styles.outlineButton, styles.btnRow]} onPress={chooseLocalCover}><ReadoraIcon name="gallery" size={17} color={appColors.gold} /><Text style={styles.outlineText}>Usar imagem local neste dispositivo</Text></Pressable>
         <View style={[styles.row, mobile && styles.stack]}>
           <Field label="Autor" value={author} onChangeText={setAuthor} placeholder="Ex: Patrick Rothfuss" />
           <Field label="Número de Páginas" value={totalPages} onChangeText={setTotalPages} placeholder="Ex: 656" keyboardType="numeric" />
@@ -195,19 +196,19 @@ export default function AddBookScreen() {
       </Card>
 
       <Card>
-        <View style={styles.sectionHeader}><Text style={styles.sectionIcon}>☆</Text><Text style={styles.sectionTitle}>Controle de Qualidade</Text><Text style={styles.chevron}>⌄</Text></View>
+        <View style={styles.sectionHeader}><ReadoraIcon name="starOutline" size={24} color={appColors.gold} /><Text style={styles.sectionTitle}>Controle de Qualidade</Text><ReadoraIcon name="chevronDown" size={22} color={appColors.textMuted} style={styles.chevron} /></View>
         <View style={styles.ratingPill}><Text style={styles.ratingText}>Média: {rating || '0.0'} ★</Text></View>
         <View style={styles.ratingRow}>{[0, 1, 2, 3, 4, 5].map((value) => <Pressable key={value} style={[styles.ratingChip, Number(rating) === value && styles.ratingChipActive]} onPress={() => setRating(String(value))}><Text style={[styles.ratingChipText, Number(rating) === value && styles.ratingChipTextActive]}>{value}★</Text></Pressable>)}</View>
       </Card>
 
       <Card>
-        <View style={styles.sectionHeader}><Text style={[styles.sectionIcon, { color: appColors.purple }]}>↻</Text><Text style={[styles.sectionTitle, { color: appColors.purple }]}>Humor e Atmosfera</Text><Text style={styles.chevron}>⌄</Text></View>
+        <View style={styles.sectionHeader}><ReadoraIcon name="sparkle" size={24} color={appColors.purple} /><Text style={[styles.sectionTitle, { color: appColors.purple }]}>Humor e Atmosfera</Text><ReadoraIcon name="chevronDown" size={22} color={appColors.textMuted} style={styles.chevron} /></View>
         <Text style={styles.subtitle}>Selecione as atmosferas que melhor descrevem esta leitura:</Text>
         <View style={styles.chips}>{moods.map((item) => <Pressable key={item} onPress={() => toggleMood(item)}><Text style={[styles.chip, selectedMoods.includes(item) && styles.chipActive]}>{item}</Text></Pressable>)}</View>
       </Card>
 
       <Card>
-        <View style={styles.sectionHeader}><Text style={styles.sectionIcon}>▯</Text><Text style={styles.sectionTitle}>Diário de Leitura</Text><Text style={styles.chevron}>⌃</Text></View>
+        <View style={styles.sectionHeader}><ReadoraIcon name="editBook" size={24} color={appColors.gold} /><Text style={styles.sectionTitle}>Diário de Leitura</Text><ReadoraIcon name="chevronUp" size={22} color={appColors.textMuted} style={styles.chevron} /></View>
         <Text style={styles.label}>Resenha Completa</Text>
         <TextInput style={styles.textAreaLarge} placeholder="O que você achou da leitura? Quais foram as emoções?" placeholderTextColor={appColors.textDim} value={review} onChangeText={setReview} multiline />
         <View style={[styles.row, mobile && styles.stack]}>
@@ -220,7 +221,7 @@ export default function AddBookScreen() {
 
       <View style={styles.bottomActions}>
         <Pressable style={styles.cancelButton} onPress={() => router.back()}><Text style={styles.cancelText}>Cancelar</Text></Pressable>
-        <Pressable style={styles.saveButton} onPress={handleSave}><Text style={styles.saveText}>▣  Salvar Livro</Text></Pressable>
+        <Pressable style={[styles.saveButton, styles.btnRow]} onPress={handleSave}><ReadoraIcon name="check" size={18} color={appColors.background} /><Text style={styles.saveText}>Salvar Livro</Text></Pressable>
       </View>
     </Screen>
   );
@@ -243,7 +244,8 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
   sectionIcon: { color: appColors.gold, fontSize: 25, fontWeight: '900' },
   sectionTitle: { color: appColors.gold, fontFamily: appFonts.display, fontSize: 28, fontWeight: '900' },
-  chevron: { color: appColors.textMuted, marginLeft: 'auto', fontSize: 24 },
+  chevron: { marginLeft: 'auto' },
+  btnRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 },
   row: { flexDirection: 'row', gap: 24 },
   stack: { flexDirection: 'column' },
   full: { width: '100%' },

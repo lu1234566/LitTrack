@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { useBooks } from '@/contexts/BookContext';
 import { BookStatus } from '@/types/book';
+import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors } from '@/theme/tokens';
 
 export default function EditBookScreen() {
@@ -60,7 +61,7 @@ export default function EditBookScreen() {
   return (
     <Screen>
       <View style={styles.header}>
-        <Text style={styles.title}>Editar livro</Text>
+        <View style={styles.titleRow}><ReadoraIcon name="editBook" size={26} color={appColors.gold} /><Text style={styles.title}>Editar livro</Text></View>
         <Text style={styles.subtitle}>Ajuste dados, capa, origem e progresso sem recriar o registro.</Text>
       </View>
       <TextInput style={styles.input} placeholder="Titulo" placeholderTextColor={appColors.textDim} value={title} onChangeText={setTitle} />
@@ -88,7 +89,7 @@ export default function EditBookScreen() {
       <TextInput style={styles.textArea} placeholder="Motivo de leitura" placeholderTextColor={appColors.textDim} value={reason} onChangeText={setReason} multiline />
       <TextInput style={styles.textArea} placeholder="Citacao favorita" placeholderTextColor={appColors.textDim} value={quote} onChangeText={setQuote} multiline />
       <TextInput style={styles.textArea} placeholder="Resenha" placeholderTextColor={appColors.textDim} value={review} onChangeText={setReview} multiline />
-      <Pressable style={styles.saveButton} onPress={handleSave}><Text style={styles.saveText}>Salvar alteracoes</Text></Pressable>
+      <Pressable style={[styles.saveButton, styles.btnRow]} onPress={handleSave}><ReadoraIcon name="check" size={17} color={appColors.background} /><Text style={styles.saveText}>Salvar alteracoes</Text></Pressable>
     </Screen>
   );
 }
@@ -101,6 +102,8 @@ function label(status: BookStatus) {
 
 const styles = StyleSheet.create({
   header: { gap: 8 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  btnRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   title: { color: appColors.text, fontSize: 30, fontWeight: '900' },
   subtitle: { color: appColors.textMuted, fontSize: 15, lineHeight: 22 },
   row: { flexDirection: 'row', gap: 10 },

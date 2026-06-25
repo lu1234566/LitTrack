@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-na
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useReadingSessions } from '@/contexts/ReadingSessionContext';
+import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors, appFonts } from '@/theme/tokens';
 
 export default function TimelineScreen() {
@@ -26,7 +27,7 @@ export default function TimelineScreen() {
 
       {sessions.length === 0 ? (
         <View style={styles.emptyState}>
-          <View style={styles.emptyCircle}><Text style={styles.emptyIcon}>↺</Text></View>
+          <View style={styles.emptyCircle}><ReadoraIcon name="timeline" size={34} color={appColors.gold} /></View>
           <Text style={styles.emptyTitle}>Nenhum marco registrado</Text>
           <Text style={styles.emptyText}>Registre uma sessão rápida ou atualize o progresso de um livro para criar sua linha do tempo.</Text>
         </View>

@@ -5,6 +5,7 @@ import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
 import { useQuotes } from '@/contexts/QuoteContext';
 import { Quote } from '@/types/quote';
+import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors, appFonts } from '@/theme/tokens';
 
 export default function QuotesScreen() {
@@ -82,7 +83,7 @@ export default function QuotesScreen() {
           <Text style={styles.title}><Text style={styles.titleIcon}>” </Text>Diário de Citações</Text>
           <Text style={styles.subtitle}>Sua biblioteca de memórias e passagens marcantes.</Text>
         </View>
-        <Pressable style={styles.newButton} onPress={() => setShowComposer(!showComposer)}><Text style={styles.newButtonText}>＋ Nova Citação</Text></Pressable>
+        <Pressable style={[styles.newButton, styles.btnRow]} onPress={() => setShowComposer(!showComposer)}><ReadoraIcon name="add" size={17} color={appColors.background} /><Text style={styles.newButtonText}>Nova Citação</Text></Pressable>
       </View>
 
       {showComposer ? (
@@ -106,8 +107,8 @@ export default function QuotesScreen() {
 
       <View style={[styles.filtersRow, mobile && styles.stack]}>
         <TextInput style={styles.searchInput} placeholder="Pesquisar em textos, livros ou notas..." placeholderTextColor={appColors.textDim} value={search} onChangeText={setSearch} />
-        <Pressable style={[styles.selectField, favoritesOnly && styles.selectActive]} onPress={() => setFavoritesOnly(!favoritesOnly)}><Text style={styles.selectText}>♡ {favoritesOnly ? 'Favoritas' : 'Todos os Livros'}</Text></Pressable>
-        <Pressable style={styles.selectField} onPress={() => setTagFilter('all')}><Text style={styles.selectText}>◇ {tagFilter === 'all' ? 'Todos os Sentimentos' : tagFilter}</Text></Pressable>
+        <Pressable style={[styles.selectField, styles.btnRow, favoritesOnly && styles.selectActive]} onPress={() => setFavoritesOnly(!favoritesOnly)}><ReadoraIcon name="heart" size={15} color={appColors.textMuted} /><Text style={styles.selectText}>{favoritesOnly ? 'Favoritas' : 'Todos os Livros'}</Text></Pressable>
+        <Pressable style={[styles.selectField, styles.btnRow]} onPress={() => setTagFilter('all')}><ReadoraIcon name="filter" size={15} color={appColors.textMuted} /><Text style={styles.selectText}>{tagFilter === 'all' ? 'Todos os Sentimentos' : tagFilter}</Text></Pressable>
       </View>
 
       <View style={styles.bookPicker}>
@@ -166,6 +167,7 @@ const styles = StyleSheet.create({
   titleIcon: { color: appColors.gold },
   subtitle: { color: appColors.textMuted, fontSize: 20, lineHeight: 30 },
   newButton: { backgroundColor: appColors.gold, borderRadius: 16, paddingVertical: 16, paddingHorizontal: 28, alignItems: 'center' },
+  btnRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   newButtonText: { color: appColors.background, fontSize: 18, fontWeight: '900' },
   kicker: { color: appColors.gold, fontSize: 12, fontWeight: '900', letterSpacing: 4 },
   filtersRow: { flexDirection: 'row', gap: 14, alignItems: 'center' },

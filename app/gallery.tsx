@@ -6,6 +6,7 @@ import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
 import { statusLabel } from '@/services/bookStorage';
 import { BookStatus } from '@/types/book';
+import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors, appFonts } from '@/theme/tokens';
 
 const filters: Array<'all' | BookStatus> = ['all', 'reading', 'finished', 'wishlist'];
@@ -56,7 +57,7 @@ export default function GalleryScreen() {
 
       {visibleBooks.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>▧</Text>
+          <ReadoraIcon name="gallery" size={54} color={appColors.gold} />
           <Text style={styles.emptyTitle}>Nenhum livro nesta seleção</Text>
           <Text style={styles.emptyText}>Troque o filtro ou adicione uma nova leitura para montar sua parede visual.</Text>
           <Link href="/add" asChild><Pressable style={styles.primaryButton}><Text style={styles.primaryText}>Adicionar leitura</Text></Pressable></Link>
