@@ -1,5 +1,5 @@
 import { ReactNode, useState } from 'react';
-import { Link } from 'expo-router';
+import { Link, usePathname } from 'expo-router';
 import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { usePreferences } from '@/contexts/PreferencesContext';
@@ -23,6 +23,14 @@ const menuItems: { icon: ReadoraIconName; label: string; href: string }[] = [
   { icon: 'addBook', label: 'Adicionar', href: '/add' }
 ];
 
+const bottomTabs: { icon: ReadoraIconName; label: string; href: string }[] = [
+  { icon: 'dashboard', label: 'Dashboard', href: '/' },
+  { icon: 'library', label: 'Livros', href: '/library' },
+  { icon: 'shelves', label: 'Estantes', href: '/shelves' },
+  { icon: 'quotes', label: 'Citações', href: '/quotes' },
+  { icon: 'literaryProfile', label: 'Perfil', href: '/literary-profile' }
+];
+
 export function Screen({ children, scroll = true }: { children: ReactNode; scroll?: boolean }) {
   const { preferences } = usePreferences();
   const density = densityValue(preferences.visualDensity);
@@ -41,6 +49,7 @@ export function Screen({ children, scroll = true }: { children: ReactNode; scrol
           {scroll ? <ScrollView contentContainerStyle={[styles.scroll, isDesktop ? styles.scrollDesktop : styles.scrollMobile]}>{content}</ScrollView> : content}
         </View>
       </View>
+      {!isDesktop ? <MobileBottomBar accent={accent} /> : null}
       {!isDesktop && drawerOpen ? <MobileDrawer accent={accent} onClose={() => setDrawerOpen(false)} textScale={preferences.textScale} /> : null}
     </SafeAreaView>
   );
@@ -132,6 +141,26 @@ function MobileDrawer({ accent, onClose, textScale }: { accent: string; onClose:
   );
 }
 
+function MobileBottomBar({ accent }: { accent: string }) {
+  const pathname = usePathname();
+  return (
+    <View style={styles.bottomBar}>
+      {bottomTabs.map((tab) => {
+        const active = tab.href === '/' ? pathname === '/' : pathname.startsWith(tab.href);
+        const color = active ? accent : appColors.textDim;
+        return (
+          <Link key={tab.href} href={tab.href as never} asChild>
+            <Pressable style={styles.bottomItem}>
+              <ReadoraIcon name={tab.icon} size={23} color={color} />
+              <Text style={[styles.bottomLabel, { color }]} numberOfLines={1}>{tab.label}</Text>
+            </Pressable>
+          </Link>
+        );
+      })}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: appColors.background },
   shell: { flex: 1, flexDirection: 'row', backgroundColor: appColors.background },
@@ -140,7 +169,10 @@ const styles = StyleSheet.create({
   mainMobile: { paddingTop: 88 },
   scroll: { flexGrow: 1 },
   scrollDesktop: { paddingBottom: 56 },
-  scrollMobile: { paddingBottom: 44 },
+  scrollMobile: { paddingBottom: 104 },
+  bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 20, flexDirection: 'row', backgroundColor: appColors.sidebar, borderTopColor: appColors.border, borderTopWidth: 1, paddingTop: 10, paddingBottom: 22, paddingHorizontal: 6 },
+  bottomItem: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 2 },
+  bottomLabel: { fontSize: 11, fontWeight: '800' },
   content: { flex: 1 },
   desktopContent: { width: '100%', maxWidth: 1040, alignSelf: 'center', paddingHorizontal: 36, paddingTop: 54, paddingBottom: 56 },
   mobileContent: { width: '100%', paddingHorizontal: 16, paddingTop: 28, paddingBottom: 32 },
