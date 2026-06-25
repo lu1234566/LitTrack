@@ -9,6 +9,7 @@ import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { useShelves } from '@/contexts/ShelfContext';
 import { createReadoraBackup, parseReadoraBackup, stringifyBackup } from '@/services/readoraBackup';
 import { downloadTextFile, pickTextFile, printTextDocument } from '@/services/webPlatformTools';
+import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors, appFonts } from '@/theme/tokens';
 import type { Book, BookStatus } from '@/types/book';
 
@@ -153,7 +154,7 @@ export default function BackupScreen() {
 
       <View style={[styles.topGrid, mobile && styles.stack]}>
         <Card>
-          <Text style={styles.cardTitle}>▽ Filtros de Exportação</Text>
+          <View style={styles.titleRow}><ReadoraIcon name="filter" size={18} color={appColors.gold} /><Text style={styles.cardTitle}>Filtros de Exportação</Text></View>
           <Text style={styles.kicker}>ESCOPO</Text>
           <View style={styles.filterRow}>{scopes.map((item) => <Pressable key={item} onPress={() => setScope(item)}><Text style={scope === item ? styles.filterActive : styles.filter}>{labelForScope(item)}</Text></Pressable>)}</View>
           <Text style={styles.kicker}>GÊNERO</Text>
@@ -164,32 +165,32 @@ export default function BackupScreen() {
         </Card>
 
         <Card>
-          <View style={styles.exportIcon}><Text style={styles.exportIconText}>♧</Text></View>
+          <View style={styles.exportIcon}><ReadoraIcon name="json" size={28} color={appColors.gold} /></View>
           <Text style={styles.exportTitle}>Exportar JSON</Text>
           <Text style={styles.exportText}>Gera backup filtrado e permite baixar o arquivo .json no navegador.</Text>
-          <Pressable style={styles.downloadButton} onPress={downloadBackup}><Text style={styles.downloadText}>⇩ Baixar JSON</Text></Pressable>
+          <Pressable style={styles.downloadButton} onPress={downloadBackup}><ReadoraIcon name="export" size={17} color={appColors.background} /><Text style={styles.downloadText}>Baixar JSON</Text></Pressable>
           <Pressable style={styles.secondaryMiniButton} onPress={generateBackup}><Text style={styles.secondaryMiniText}>Gerar e revisar</Text></Pressable>
         </Card>
 
         <Card>
-          <View style={[styles.exportIcon, styles.blueIcon]}><Text style={styles.blueIconText}>▤</Text></View>
+          <View style={[styles.exportIcon, styles.blueIcon]}><ReadoraIcon name="pdf" size={28} color="#3b82f6" /></View>
           <Text style={styles.exportTitle}>Relatório / PDF</Text>
           <Text style={styles.exportText}>Baixe .txt ou use a impressão do navegador para salvar como PDF.</Text>
-          <Pressable style={styles.pdfButton} onPress={printReport}><Text style={styles.pdfText}>⇩ Imprimir / PDF</Text></Pressable>
+          <Pressable style={styles.pdfButton} onPress={printReport}><ReadoraIcon name="pdf" size={17} color={appColors.text} /><Text style={styles.pdfText}>Imprimir / PDF</Text></Pressable>
           <Pressable style={styles.secondaryMiniButton} onPress={downloadReport}><Text style={styles.secondaryMiniText}>Baixar .txt</Text></Pressable>
         </Card>
       </View>
 
       <View style={[styles.midGrid, mobile && styles.stack]}>
         <Card>
-          <Text style={[styles.cardTitle, { color: '#3b82f6' }]}>⇧ Importar Backup</Text>
+          <View style={styles.titleRow}><ReadoraIcon name="import" size={18} color="#3b82f6" /><Text style={[styles.cardTitle, { color: '#3b82f6' }]}>Importar Backup</Text></View>
           <Text style={styles.body}>Restaure sua biblioteca a partir de um arquivo JSON exportado anteriormente.</Text>
           <View style={[styles.reportButtons, mobile && styles.stack]}><Pressable style={styles.outlineButton} onPress={pickBackupFile}><Text style={styles.outlineText}>Escolher arquivo JSON</Text></Pressable><Pressable style={styles.outlineButton} onPress={importBackup}><Text style={styles.outlineText}>Importar JSON</Text></Pressable></View>
           <TextInput style={styles.textArea} placeholder="Ou cole aqui o JSON exportado" placeholderTextColor={appColors.textDim} value={importText} onChangeText={setImportText} multiline />
         </Card>
 
         <Card>
-          <Text style={styles.cardTitle}>⊙ INFORMAÇÕES IMPORTANTES</Text>
+          <View style={styles.titleRow}><ReadoraIcon name="info" size={18} color={appColors.gold} /><Text style={styles.cardTitle}>INFORMAÇÕES IMPORTANTES</Text></View>
           <Text style={styles.bullet}>• O JSON respeita os filtros de status, gênero e avaliação mínima.</Text>
           <Text style={styles.bullet}>• O botão Baixar JSON cria um arquivo .json no navegador.</Text>
           <Text style={styles.bullet}>• O relatório pode ser baixado em .txt ou salvo como PDF pela impressão.</Text>
@@ -211,10 +212,10 @@ export default function BackupScreen() {
       ) : null}
 
       <Card>
-        <Text style={styles.historyTitle}>↻ Histórico de Backups</Text>
+        <View style={styles.titleRow}><ReadoraIcon name="cloudSync" size={22} color={appColors.text} /><Text style={styles.historyTitle}>Histórico de Backups</Text></View>
         {[1, 2, 3].map((item) => (
           <View key={item} style={styles.historyItem}>
-            <View style={styles.historyIcon}><Text style={styles.historyIconText}>⇧</Text></View>
+            <View style={styles.historyIcon}><ReadoraIcon name="import" size={18} color="#3b82f6" /></View>
             <View style={styles.historyTextBox}>
               <Text style={styles.historyName}>Importação JSON</Text>
               <Text style={styles.historyMeta}>23/06/2026, 21:57:33 · {books.length} livros importados</Text>
@@ -254,6 +255,7 @@ const styles = StyleSheet.create({
   topGrid: { flexDirection: 'row', gap: 18 },
   midGrid: { flexDirection: 'row', gap: 18 },
   cardTitle: { color: appColors.gold, fontFamily: appFonts.display, fontSize: 18, fontWeight: '900' },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   kicker: { color: appColors.textDim, fontSize: 10, letterSpacing: 3, fontWeight: '900', marginTop: 14 },
   filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
   filter: { color: appColors.textMuted, borderColor: appColors.border, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, overflow: 'hidden', fontWeight: '800' },
@@ -269,9 +271,9 @@ const styles = StyleSheet.create({
   blueIconText: { color: '#3b82f6', fontSize: 28 },
   exportTitle: { color: appColors.text, fontFamily: appFonts.display, fontSize: 20, fontWeight: '900', textAlign: 'center', marginTop: 18 },
   exportText: { color: appColors.textMuted, textAlign: 'center', lineHeight: 20, marginTop: 8 },
-  downloadButton: { backgroundColor: appColors.gold, borderRadius: 12, paddingVertical: 13, alignItems: 'center', marginTop: 22 },
+  downloadButton: { backgroundColor: appColors.gold, borderRadius: 12, paddingVertical: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 22 },
   downloadText: { color: appColors.background, fontWeight: '900' },
-  pdfButton: { backgroundColor: '#3b82f6', borderRadius: 12, paddingVertical: 13, alignItems: 'center', marginTop: 22 },
+  pdfButton: { backgroundColor: '#3b82f6', borderRadius: 12, paddingVertical: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 22 },
   pdfText: { color: appColors.text, fontWeight: '900' },
   secondaryMiniButton: { borderColor: appColors.border, borderWidth: 1, borderRadius: 999, paddingVertical: 10, alignItems: 'center', marginTop: 10 },
   secondaryMiniText: { color: appColors.textMuted, fontWeight: '900', fontSize: 12 },
