@@ -1,4 +1,8 @@
 import { Stack } from 'expo-router';
+import { View } from 'react-native';
+import { useFonts } from 'expo-font';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { AutoSyncBridge } from '@/components/AutoSyncBridge';
 import { BookProvider } from '@/contexts/BookContext';
 import { PreferencesProvider } from '@/contexts/PreferencesContext';
@@ -9,6 +13,15 @@ import { SessionProvider } from '@/contexts/SessionContext';
 import { appColors } from '@/theme/tokens';
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    ...Ionicons.font,
+    ...MaterialCommunityIcons.font
+  });
+
+  if (!fontsLoaded) {
+    return <View style={{ flex: 1, backgroundColor: appColors.background }} />;
+  }
+
   return (
     <PreferencesProvider>
       <SessionProvider>
