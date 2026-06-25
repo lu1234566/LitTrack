@@ -19,6 +19,7 @@ type LegacyReadoraBook = Record<string, unknown>;
 
 type LegacyReadoraBackup = {
   user?: { name?: string; email?: string; exportDate?: string; stats?: { totalBooks?: number; totalPages?: number } };
+  userGoal?: { booksGoal?: number; pagesGoal?: number; year?: number };
   books?: LegacyReadoraBook[];
   quotes?: unknown[];
   shelves?: unknown[];
@@ -76,14 +77,34 @@ export function parseReadoraBackup(raw: string): ReadoraBackup {
 
 function parseLegacyReadoraBackup(parsed: LegacyReadoraBackup): ReadoraBackup {
   const books = (parsed.books || []).map(normalizeLegacyBook).filter(Boolean) as Book[];
-  const preferences = parsed.user?.name ? { readerName: parsed.user.name } as Partial<ReaderPreferences> as ReaderPreferences : undefined;
+
+  const prefs: Partial<ReaderPreferences> = {};
+  if (parsed.user?.name) prefs.readerName = parsed.user.name;
+  if (parsed.userGoal?.booksGoal !== undefined) prefs.yearlyGoal = numberValue(parsed.userGoal.booksGoal);
+  if (parsed.userGoal?.pagesGoal !== undefined) prefs.dailyPageGoal = numberValue(parsed.userGoal.pagesGoal);
+  const preferences = Object.keys(prefs).length ? (prefs as ReaderPreferences) : undefined;
+
+  const quotes: Quote[] = books
+    .filter((book) => stringValue(book.favoriteQuote))
+    .map((book) => ({
+      id: 'legacy-quote-' + book.id,
+      bookId: book.id,
+      bookTitle: book.title,
+      author: book.author,
+      text: stringValue(book.favoriteQuote),
+      tags: [],
+      favorite: true,
+      createdAt: book.createdAt,
+      updatedAt: book.updatedAt
+    }));
+
   return {
     app: 'Readora',
     version: 1,
     exportedAt: parsed.user?.exportDate || new Date().toISOString(),
     preferences,
     books,
-    quotes: [],
+    quotes,
     shelves: [],
     sessions: []
   };
@@ -109,7 +130,7 @@ function normalizeLegacyBook(input: LegacyReadoraBook): Book | null {
     author,
     genre: stringValue(input.genero || input.genre) || 'A definir',
     status: normalizeStatus(stringValue(input.status)),
-    rating: numberValue(input.notaGeral || input.rating),
+    rating: legacyRating(input),
     totalPages: numberValue(input.totalPages) || numberValue(input.pageCount),
     currentPage: numberValue(input.currentPage),
     review: reviewParts.join('\n\n'),
@@ -127,6 +148,20 @@ function normalizeLegacyBook(input: LegacyReadoraBook): Book | null {
     createdAt,
     updatedAt
   };
+}
+
+function legacyRating(input: LegacyReadoraBook): number {
+  // Legacy backups score on a 0-10 scale (notaGeral); the app uses 0-5.
+  if (input.notaGeral !== undefined && input.notaGeral !== null && input.notaGeral !== '') {
+    return clampRating(numberValue(input.notaGeral) / 2);
+  }
+  // Other formats already use a 0-5 `rating`.
+  return clampRating(numberValue(input.rating));
+}
+
+function clampRating(value: number): number {
+  const rounded = Math.round(value * 10) / 10;
+  return Math.max(0, Math.min(5, rounded));
 }
 
 function normalizeStatus(value: string): BookStatus {
