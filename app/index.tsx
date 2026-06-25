@@ -24,7 +24,7 @@ export default function DashboardScreen() {
     <Screen>
       <View style={styles.heroCard}>
         <Text style={styles.heroKicker}>READORA — LITERARY JOURNAL</Text>
-        <Text style={styles.heroTitle}>Readora</Text>
+        <Text style={[styles.heroTitle, mobile && styles.heroTitleMobile]}>Readora</Text>
         <Text style={styles.heroQuote}>“Os livros são uma forma única de magia portátil.” — Stephen King</Text>
         <View style={[styles.heroActions, mobile && styles.stack]}>
           <Link href="/add" asChild><Pressable style={styles.primaryPill}><ReadoraIcon name="addBook" size={16} color={appColors.background} /><Text style={styles.primaryText}>NOVA JORNADA</Text></Pressable></Link>
@@ -125,6 +125,7 @@ const styles = StyleSheet.create({
   heroCard: { minHeight: 330, borderColor: appColors.borderSoft, borderWidth: 1, borderRadius: 54, padding: 42, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', backgroundColor: appColors.backgroundSoft, gap: 14 },
   heroKicker: { color: appColors.textDim, letterSpacing: 8, fontSize: 11, fontWeight: '900' },
   heroTitle: { color: appColors.text, fontFamily: appFonts.display, fontSize: 72, lineHeight: 80, fontWeight: '900' },
+  heroTitleMobile: { fontSize: 44, lineHeight: 50 },
   heroQuote: { color: appColors.text, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 18, textAlign: 'center', maxWidth: 520 },
   heroWatermark: { position: 'absolute', right: 26, top: 8, color: 'rgba(255,255,255,0.025)', fontFamily: appFonts.display, fontSize: 350, fontWeight: '900' },
   heroActions: { flexDirection: 'row', gap: 16, marginTop: 22 },

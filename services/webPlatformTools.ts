@@ -1,5 +1,7 @@
 import { Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 
 export type CapsulePngData = {
   readerName: string;
@@ -46,6 +48,17 @@ export async function pickImageAsDataUrl(): Promise<string | null> {
 }
 
 export async function pickTextFile(accept = '.json,text/plain,application/json'): Promise<string | null> {
+  if (Platform.OS !== 'web') {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: ['application/json', 'text/plain', 'text/*', '*/*'],
+      copyToCacheDirectory: true
+    });
+    if (result.canceled) return null;
+    const uri = result.assets?.[0]?.uri;
+    if (!uri) return null;
+    return await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.UTF8 });
+  }
+
   const documentRef = (globalThis as any).document;
   if (!documentRef?.createElement) return null;
 
