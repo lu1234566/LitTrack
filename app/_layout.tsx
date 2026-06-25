@@ -1,5 +1,4 @@
 import { Stack } from 'expo-router';
-import { View } from 'react-native';
 import { useFonts } from 'expo-font';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -13,14 +12,13 @@ import { SessionProvider } from '@/contexts/SessionContext';
 import { appColors } from '@/theme/tokens';
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  // Kick off icon-font preload, but never block rendering on it: gating the
+  // whole app on font loading risks a permanent black screen if the load
+  // stalls. The icon glyphs paint as soon as the font resolves.
+  useFonts({
     ...Ionicons.font,
     ...MaterialCommunityIcons.font
   });
-
-  if (!fontsLoaded) {
-    return <View style={{ flex: 1, backgroundColor: appColors.background }} />;
-  }
 
   return (
     <PreferencesProvider>
