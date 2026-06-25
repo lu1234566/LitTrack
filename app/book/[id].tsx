@@ -6,6 +6,7 @@ import { Card } from '@/components/Card';
 import { calculateProgress, useBooks } from '@/contexts/BookContext';
 import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { statusLabel } from '@/services/bookStorage';
+import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors } from '@/theme/tokens';
 
 export default function BookDetailsScreen() {
@@ -77,10 +78,10 @@ export default function BookDetailsScreen() {
       </View>
 
       <View style={styles.actionsTop}>
-        <Link href={{ pathname: '/edit/[id]', params: { id: currentBook.id } }} asChild><Pressable style={styles.editButton}><Text style={styles.editText}>Editar livro</Text></Pressable></Link>
-        <Link href="/quotes" asChild><Pressable style={styles.editButton}><Text style={styles.editText}>Citacoes</Text></Pressable></Link>
+        <Link href={{ pathname: '/edit/[id]', params: { id: currentBook.id } }} asChild><Pressable style={[styles.editButton, styles.btnRow]}><ReadoraIcon name="editBook" size={16} color={appColors.gold} /><Text style={styles.editText}>Editar livro</Text></Pressable></Link>
+        <Link href="/quotes" asChild><Pressable style={[styles.editButton, styles.btnRow]}><ReadoraIcon name="quotes" size={16} color={appColors.gold} /><Text style={styles.editText}>Citacoes</Text></Pressable></Link>
       </View>
-      {currentBook.status === 'wishlist' ? <Pressable style={styles.startButton} onPress={() => updateStatus(currentBook.id, 'reading')}><Text style={styles.startText}>Comecar leitura</Text></Pressable> : null}
+      {currentBook.status === 'wishlist' ? <Pressable style={[styles.startButton, styles.btnRow]} onPress={() => updateStatus(currentBook.id, 'reading')}><ReadoraIcon name="bookDetails" size={17} color={appColors.background} /><Text style={styles.startText}>Comecar leitura</Text></Pressable> : null}
 
       <Card>
         <Text style={styles.cardTitle}>Progresso</Text>
@@ -104,7 +105,7 @@ export default function BookDetailsScreen() {
       </Card>
 
       <TextInput style={styles.input} placeholder="Pagina atual" placeholderTextColor={appColors.textDim} value={page} onChangeText={setPage} keyboardType="numeric" />
-      <Pressable style={styles.primaryButton} onPress={handleProgress}><Text style={styles.primaryText}>Atualizar progresso</Text></Pressable>
+      <Pressable style={[styles.primaryButton, styles.btnRow]} onPress={handleProgress}><ReadoraIcon name="trendingUp" size={17} color={appColors.background} /><Text style={styles.primaryText}>Atualizar progresso</Text></Pressable>
 
       <Card>
         <Text style={styles.cardTitle}>Registrar sessao</Text>
@@ -114,7 +115,7 @@ export default function BookDetailsScreen() {
         </View>
         <TextInput style={styles.input} placeholder="Humor da leitura" placeholderTextColor={appColors.textDim} value={sessionMood} onChangeText={setSessionMood} />
         <TextInput style={styles.textArea} placeholder="Nota da sessao" placeholderTextColor={appColors.textDim} value={sessionNote} onChangeText={setSessionNote} multiline />
-        <Pressable style={styles.primaryButton} onPress={handleSession}><Text style={styles.primaryText}>Salvar sessao</Text></Pressable>
+        <Pressable style={[styles.primaryButton, styles.btnRow]} onPress={handleSession}><ReadoraIcon name="check" size={17} color={appColors.background} /><Text style={styles.primaryText}>Salvar sessao</Text></Pressable>
       </Card>
 
       <View style={styles.statusRow}>
@@ -137,7 +138,7 @@ export default function BookDetailsScreen() {
       {currentBook.review ? <Card><Text style={styles.cardTitle}>Resenha</Text><Text style={styles.body}>{currentBook.review}</Text></Card> : null}
       {currentBook.notes ? <Card><Text style={styles.cardTitle}>Notas</Text><Text style={styles.body}>{currentBook.notes}</Text></Card> : null}
 
-      <Pressable style={styles.deleteButton} onPress={handleDelete}><Text style={styles.deleteText}>Remover da biblioteca local</Text></Pressable>
+      <Pressable style={[styles.deleteButton, styles.btnRow]} onPress={handleDelete}><ReadoraIcon name="trash" size={16} color={appColors.red} /><Text style={styles.deleteText}>Remover da biblioteca local</Text></Pressable>
     </Screen>
   );
 }
@@ -156,6 +157,7 @@ const styles = StyleSheet.create({
   title: { color: appColors.text, fontSize: 32, fontWeight: '900' },
   author: { color: appColors.textMuted, fontSize: 16 },
   actionsTop: { flexDirection: 'row', gap: 10 },
+  btnRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   editButton: { flex: 1, borderColor: appColors.gold, borderWidth: 1, borderRadius: 999, paddingVertical: 12, alignItems: 'center' },
   editText: { color: appColors.gold, fontWeight: '900' },
   startButton: { backgroundColor: appColors.gold, borderRadius: 999, paddingVertical: 14, alignItems: 'center' },

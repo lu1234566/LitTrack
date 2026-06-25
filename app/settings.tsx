@@ -9,13 +9,14 @@ import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { useShelves } from '@/contexts/ShelfContext';
 import { isNativeFirebaseConfigured, pullReadoraBundle, pushReadoraBundle } from '@/services/firebaseNative';
 import { cancelReadingReminders, scheduleReadingReminder } from '@/services/notificationScheduler';
+import { ReadoraIcon, ReadoraIconName } from '@/components/ReadoraIcon';
 import { appColors, appFonts } from '@/theme/tokens';
 import type { LayoutMode, ReminderFrequency } from '@/types/preferences';
 
-const layoutOptions: Array<{ value: LayoutMode; title: string; text: string }> = [
-  { value: 'auto', title: 'Automático', text: 'Adapta-se ao tamanho da tela' },
-  { value: 'desktop', title: 'Desktop', text: 'Força o layout de computador' },
-  { value: 'mobile', title: 'Mobile', text: 'Força o layout de celular' }
+const layoutOptions: Array<{ value: LayoutMode; title: string; text: string; icon: ReadoraIconName }> = [
+  { value: 'auto', title: 'Automático', text: 'Adapta-se ao tamanho da tela', icon: 'layoutAuto' },
+  { value: 'desktop', title: 'Desktop', text: 'Força o layout de computador', icon: 'desktop' },
+  { value: 'mobile', title: 'Mobile', text: 'Força o layout de celular', icon: 'mobile' }
 ];
 
 const frequencies: Array<{ value: ReminderFrequency; label: string }> = [
@@ -124,28 +125,28 @@ export default function SettingsScreen() {
   return (
     <Screen>
       <View style={styles.header}>
-        <Text style={styles.title}><Text style={styles.titleIcon}>⚙ </Text>Configurações</Text>
+        <View style={styles.titleRow}><ReadoraIcon name="settings" size={32} color={appColors.gold} /><Text style={styles.title}>Configurações</Text></View>
         <Text style={styles.subtitle}>Personalize sua experiência no Readora.</Text>
       </View>
 
       <Card>
-        <Text style={styles.cardTitle}>◎ Metas de Leitura {new Date().getFullYear()}</Text>
+        <View style={styles.titleRow}><ReadoraIcon name="goals" size={20} color={appColors.gold} /><Text style={styles.cardTitle}>Metas de Leitura {new Date().getFullYear()}</Text></View>
         <View style={[styles.row, mobile && styles.stack]}>
           <Field label="Meta de Livros" value={yearlyGoal} onChangeText={setYearlyGoal} placeholder="50" />
           <Field label="Meta de Páginas" value={dailyPageGoal} onChangeText={setDailyPageGoal} placeholder="20000" />
         </View>
-        <Pressable style={styles.saveButton} onPress={() => save()}><Text style={styles.saveText}>▣ Salvar Metas</Text></Pressable>
+        <Pressable style={[styles.saveButton, styles.btnRow]} onPress={() => save()}><ReadoraIcon name="check" size={16} color={appColors.background} /><Text style={styles.saveText}>Salvar Metas</Text></Pressable>
       </Card>
 
       <Card>
         <Text style={styles.cardTitle}>Layout da Interface</Text>
         <View style={[styles.layoutGrid, mobile && styles.stack]}>
-          {layoutOptions.map((option) => <LayoutOption key={option.value} title={option.title} text={option.text} active={layoutMode === option.value} onPress={() => chooseLayout(option.value)} />)}
+          {layoutOptions.map((option) => <LayoutOption key={option.value} title={option.title} text={option.text} icon={option.icon} active={layoutMode === option.value} onPress={() => chooseLayout(option.value)} />)}
         </View>
       </Card>
 
       <Card>
-        <View style={styles.inlineHeader}><Text style={styles.cardTitle}>♧ Lembretes Literários</Text><Pressable style={[styles.toggle, !reminderEnabled && styles.toggleOff]} onPress={toggleReminder}><Text style={styles.toggleText}>{reminderEnabled ? 'Ativado' : 'Desativado'}</Text></Pressable></View>
+        <View style={styles.inlineHeader}><View style={styles.titleRow}><ReadoraIcon name="bell" size={20} color={appColors.gold} /><Text style={styles.cardTitle}>Lembretes Literários</Text></View><Pressable style={[styles.toggle, !reminderEnabled && styles.toggleOff]} onPress={toggleReminder}><Text style={styles.toggleText}>{reminderEnabled ? 'Ativado' : 'Desativado'}</Text></Pressable></View>
         <Text style={styles.kicker}>FREQUÊNCIA E HORÁRIO</Text>
         <View style={styles.chips}>{frequencies.map((item) => <Pressable key={item.value} onPress={() => chooseFrequency(item.value)}><Text style={reminderFrequency === item.value ? styles.chipActive : styles.chip}>{item.label}</Text></Pressable>)}</View>
         <TextInput style={styles.input} placeholder="20:00" placeholderTextColor={appColors.textDim} value={reminderText} onChangeText={setReminderText} />
@@ -156,25 +157,25 @@ export default function SettingsScreen() {
           <Reminder label="Registrar Sessão" text="Lembrete para documentar seu progresso diário." />
           <Reminder label="Atualizar Status" text="Para livros que você não atualiza há algum tempo." />
         </View>
-        <Pressable style={styles.saveButton} onPress={saveReminders}><Text style={styles.saveText}>▣ Salvar e Agendar</Text></Pressable>
+        <Pressable style={[styles.saveButton, styles.btnRow]} onPress={saveReminders}><ReadoraIcon name="check" size={16} color={appColors.background} /><Text style={styles.saveText}>Salvar e Agendar</Text></Pressable>
       </Card>
 
       <Card>
-        <Text style={styles.cardTitle}>☻ Perfil Literário</Text>
+        <View style={styles.titleRow}><ReadoraIcon name="literaryProfile" size={20} color={appColors.gold} /><Text style={styles.cardTitle}>Perfil Literário</Text></View>
         <Text style={styles.label}>Biografia de Leitor</Text>
         <TextInput style={styles.textArea} placeholder="Conte um pouco sobre seus gostos literários..." placeholderTextColor={appColors.textDim} value={favoriteFormat} onChangeText={setFavoriteFormat} multiline />
         <TextInput style={styles.input} placeholder="Nome do leitor" placeholderTextColor={appColors.textDim} value={readerName} onChangeText={setReaderName} />
-        <Pressable style={styles.saveButton} onPress={() => save()}><Text style={styles.saveText}>▣ Salvar Perfil</Text></Pressable>
+        <Pressable style={[styles.saveButton, styles.btnRow]} onPress={() => save()}><ReadoraIcon name="check" size={16} color={appColors.background} /><Text style={styles.saveText}>Salvar Perfil</Text></Pressable>
       </Card>
 
       <Card>
-        <Text style={styles.cardTitle}>Firebase e Sincronização</Text>
+        <View style={styles.titleRow}><ReadoraIcon name="cloudSync" size={20} color={appColors.gold} /><Text style={styles.cardTitle}>Firebase e Sincronização</Text></View>
         <Text style={styles.value}>{isNativeFirebaseConfigured ? 'Configurado' : 'Pendente'}</Text>
         <Text style={styles.body}>Use EXPO_PUBLIC_FIREBASE_* no ambiente Expo para ativar sincronização.</Text>
         <TextInput style={styles.input} placeholder="ID local de sincronização" placeholderTextColor={appColors.textDim} value={syncUserId} onChangeText={setSyncUserId} />
         <View style={[styles.actionRow, mobile && styles.stack]}>
-          <Pressable style={styles.secondaryButton} onPress={pushAll}><Text style={styles.secondaryText}>Enviar tudo</Text></Pressable>
-          <Pressable style={styles.secondaryButton} onPress={pullAll}><Text style={styles.secondaryText}>Receber tudo</Text></Pressable>
+          <Pressable style={[styles.secondaryButton, styles.btnRow]} onPress={pushAll}><ReadoraIcon name="export" size={15} color={appColors.gold} /><Text style={styles.secondaryText}>Enviar tudo</Text></Pressable>
+          <Pressable style={[styles.secondaryButton, styles.btnRow]} onPress={pullAll}><ReadoraIcon name="import" size={15} color={appColors.gold} /><Text style={styles.secondaryText}>Receber tudo</Text></Pressable>
         </View>
         {syncMessage ? <Text style={styles.message}>{syncMessage}</Text> : null}
       </Card>
@@ -186,12 +187,12 @@ function Field({ label, ...props }: { label: string; value: string; onChangeText
   return <View style={styles.fieldBox}><Text style={styles.label}>{label}</Text><TextInput style={styles.input} placeholderTextColor={appColors.textDim} keyboardType="numeric" {...props} /></View>;
 }
 
-function LayoutOption({ title, text, active = false, onPress }: { title: string; text: string; active?: boolean; onPress: () => void }) {
-  return <Pressable style={[styles.layoutOption, active && styles.layoutOptionActive]} onPress={onPress}><Text style={styles.layoutIcon}>▱</Text><Text style={styles.layoutTitle}>{title}</Text><Text style={styles.layoutText}>{text}</Text></Pressable>;
+function LayoutOption({ title, text, active = false, onPress, icon }: { title: string; text: string; active?: boolean; onPress: () => void; icon: ReadoraIconName }) {
+  return <Pressable style={[styles.layoutOption, active && styles.layoutOptionActive]} onPress={onPress}><ReadoraIcon name={icon} size={28} color={appColors.gold} /><Text style={styles.layoutTitle}>{title}</Text><Text style={styles.layoutText}>{text}</Text></Pressable>;
 }
 
 function Reminder({ label, text }: { label: string; text: string }) {
-  return <View style={styles.reminder}><Text style={styles.check}>☑</Text><View style={styles.reminderTextBox}><Text style={styles.reminderTitle}>{label}</Text><Text style={styles.reminderText}>{text}</Text></View></View>;
+  return <View style={styles.reminder}><ReadoraIcon name="checkCircle" size={16} color="#3b82f6" /><View style={styles.reminderTextBox}><Text style={styles.reminderTitle}>{label}</Text><Text style={styles.reminderText}>{text}</Text></View></View>;
 }
 
 const styles = StyleSheet.create({
@@ -200,6 +201,8 @@ const styles = StyleSheet.create({
   titleIcon: { color: appColors.gold },
   subtitle: { color: appColors.textMuted, fontSize: 18, lineHeight: 26 },
   cardTitle: { color: appColors.gold, fontFamily: appFonts.display, fontSize: 22, fontWeight: '900' },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  btnRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   row: { flexDirection: 'row', gap: 18 },
   stack: { flexDirection: 'column' },
   fieldBox: { flex: 1, gap: 8 },

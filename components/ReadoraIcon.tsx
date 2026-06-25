@@ -82,6 +82,9 @@ const ICONS = {
   bell: ['ion', 'notifications-outline'],
   quoteOfDay: ['mci', 'format-quote-close'],
   account: ['ion', 'person-outline'],
+  layoutAuto: ['mci', 'monitor-cellphone'],
+  desktop: ['mci', 'monitor'],
+  mobile: ['mci', 'cellphone'],
 
   // ----- UI genérica -----
   menu: ['ion', 'menu-outline'],
@@ -103,6 +106,7 @@ const ICONS = {
   brand: ['mci', 'book-open-page-variant-outline'],
   camera: ['ion', 'camera-outline'],
   trash: ['ion', 'trash-outline'],
+  copy: ['mci', 'content-copy'],
   dot: ['mci', 'circle-small'],
 } satisfies Record<string, IconDef>;
 

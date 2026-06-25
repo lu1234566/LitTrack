@@ -5,6 +5,7 @@ import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
 import { useShelves } from '@/contexts/ShelfContext';
+import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors } from '@/theme/tokens';
 
 export default function ShelvesScreen() {
@@ -29,7 +30,7 @@ export default function ShelvesScreen() {
         <Text style={styles.kicker}>Nova estante</Text>
         <TextInput style={styles.input} placeholder="Nome da estante" placeholderTextColor={appColors.textDim} value={name} onChangeText={setName} />
         <TextInput style={styles.input} placeholder="Descricao" placeholderTextColor={appColors.textDim} value={description} onChangeText={setDescription} />
-        <Pressable style={styles.button} onPress={handleAdd}><Text style={styles.buttonText}>Criar estante</Text></Pressable>
+        <Pressable style={[styles.button, styles.btnRow]} onPress={handleAdd}><ReadoraIcon name="shelves" size={17} color={appColors.background} /><Text style={styles.buttonText}>Criar estante</Text></Pressable>
       </Card>
 
       {shelves.map((shelf) => {
@@ -54,9 +55,9 @@ export default function ShelvesScreen() {
             </View>
             <View style={styles.actionRow}>
               <Link href={{ pathname: '/shelf/[id]', params: { id: shelf.id } }} asChild>
-                <Pressable style={styles.openButton}><Text style={styles.openText}>Abrir estante</Text></Pressable>
+                <Pressable style={[styles.openButton, styles.btnRow]}><ReadoraIcon name="forward" size={15} color={appColors.gold} /><Text style={styles.openText}>Abrir estante</Text></Pressable>
               </Link>
-              <Pressable style={styles.danger} onPress={() => deleteShelf(shelf.id)}><Text style={styles.dangerText}>Remover</Text></Pressable>
+              <Pressable style={[styles.danger, styles.btnRow]} onPress={() => deleteShelf(shelf.id)}><ReadoraIcon name="trash" size={15} color={appColors.red} /><Text style={styles.dangerText}>Remover</Text></Pressable>
             </View>
           </Card>
         );
@@ -71,6 +72,7 @@ const styles = StyleSheet.create({
   kicker: { color: appColors.gold, fontSize: 13, fontWeight: '900', letterSpacing: 1 },
   input: { backgroundColor: appColors.surfaceSoft, borderColor: appColors.border, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, color: appColors.text, fontSize: 16, marginTop: 10 },
   button: { backgroundColor: appColors.gold, borderRadius: 999, paddingVertical: 14, alignItems: 'center', marginTop: 12 },
+  btnRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   buttonText: { color: appColors.background, fontWeight: '900' },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   shelfName: { color: appColors.text, fontSize: 18, fontWeight: '900' },

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import { Screen } from '@/components/Screen';
+import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors, appFonts } from '@/theme/tokens';
 
 export default function ScanIsbnScreen() {
@@ -25,7 +26,7 @@ export default function ScanIsbnScreen() {
     return (
       <Screen>
         <View style={styles.center}>
-          <Text style={styles.icon}>▣</Text>
+          <ReadoraIcon name="scanIsbn" size={54} color={appColors.gold} />
           <Text style={styles.title}>Permissão de câmera</Text>
           <Text style={styles.subtitle}>O Readora precisa da câmera para escanear o código de barras ISBN do livro.</Text>
           <Pressable style={styles.button} onPress={requestPermission}><Text style={styles.buttonText}>Permitir câmera</Text></Pressable>

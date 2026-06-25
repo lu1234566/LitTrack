@@ -6,6 +6,7 @@ import { useBooks } from '@/contexts/BookContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
 import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { downloadCapsulePng } from '@/services/webPlatformTools';
+import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors, appFonts } from '@/theme/tokens';
 
 export default function MonthlyCapsuleScreen() {
@@ -63,17 +64,17 @@ export default function MonthlyCapsuleScreen() {
     <Screen>
       <View style={[styles.headerRow, mobile && styles.stack]}>
         <View style={styles.headerText}>
-          <Text style={styles.kicker}>✣ RESUMO MENSAL V1.2</Text>
+          <View style={styles.kickerRow}><ReadoraIcon name="monthlyCapsule" size={14} color={appColors.gold} /><Text style={styles.kicker}>RESUMO MENSAL V1.2</Text></View>
           <Text style={styles.title}>Cápsula Literária</Text>
           <Text style={styles.subtitle}>Um resumo visual e poético da sua jornada literária mês a mês. Perfeito para compartilhar suas conquistas.</Text>
         </View>
         <Card>
           <Text style={styles.periodLabel}>PERÍODO</Text>
-          <Text style={styles.period}>‹  {capitalize(month)}  ›</Text>
+          <View style={styles.periodRow}><ReadoraIcon name="back" size={16} color={appColors.textMuted} /><Text style={styles.period}>{capitalize(month)}</Text><ReadoraIcon name="forward" size={16} color={appColors.textMuted} /></View>
         </Card>
       </View>
 
-      <View style={styles.segmented}><Pressable style={styles.segmentActive}><Text style={styles.segmentTextActive}>▣ App Capsule</Text></Pressable><Pressable style={styles.segment}><Text style={styles.segmentText}>▧ Instagram</Text></Pressable></View>
+      <View style={styles.segmented}><Pressable style={[styles.segmentActive, styles.btnRow]}><ReadoraIcon name="sparkle" size={16} color={appColors.background} /><Text style={styles.segmentTextActive}>App Capsule</Text></Pressable><Pressable style={[styles.segment, styles.btnRow]}><ReadoraIcon name="share" size={16} color={appColors.textMuted} /><Text style={styles.segmentText}>Instagram</Text></Pressable></View>
 
       <View style={[styles.mainGrid, mobile && styles.stack]}>
         <View style={styles.phoneFrame}>
@@ -99,7 +100,7 @@ export default function MonthlyCapsuleScreen() {
           <EssenceLine value={String(monthPages)} label="PÁGINAS PERCORRIDAS" text="A distância mística que seus olhos atravessaram este mês." />
           <EssenceLine value={String(stats.finishedBooks)} label="HISTÓRIAS CONCLUÍDAS" text="O número de universos que agora fazem parte da sua história." />
           <EssenceLine value={vibe} label="ATMOSFERA DOMINANTE" text="O sentimento que guiou suas escolhas e momentos de leitura." />
-          <Pressable style={styles.downloadButton} onPress={handleDownloadPng}><Text style={styles.downloadText}>⇩ Baixar Cápsula PNG</Text></Pressable>
+          <Pressable style={[styles.downloadButton, styles.btnRow]} onPress={handleDownloadPng}><ReadoraIcon name="export" size={17} color={appColors.background} /><Text style={styles.downloadText}>Baixar Cápsula PNG</Text></Pressable>
         </View>
       </View>
 
@@ -107,7 +108,7 @@ export default function MonthlyCapsuleScreen() {
       <Card>
         <View style={[styles.captionHeader, mobile && styles.stack]}>
           <Text style={styles.captionTitle}>Pronta para copiar e colar no seu post.</Text>
-          <Pressable style={styles.copyButton} onPress={copyCaption}><Text style={styles.copyText}>▧ Copiar Legenda</Text></Pressable>
+          <Pressable style={[styles.copyButton, styles.btnRow]} onPress={copyCaption}><ReadoraIcon name="copy" size={17} color={appColors.background} /><Text style={styles.copyText}>Copiar Legenda</Text></Pressable>
         </View>
         {message ? <Text style={styles.message}>{message}</Text> : null}
         <Text selectable style={styles.caption}>{caption}</Text>
@@ -133,6 +134,9 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 28 },
   headerText: { flex: 1 },
   kicker: { color: appColors.gold, fontSize: 12, letterSpacing: 4, fontWeight: '900' },
+  kickerRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  periodRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 4 },
+  btnRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   title: { color: appColors.text, fontFamily: appFonts.display, fontSize: 56, lineHeight: 64, fontWeight: '900' },
   subtitle: { color: appColors.textMuted, fontSize: 18, lineHeight: 27, maxWidth: 560 },
   periodLabel: { color: appColors.textDim, letterSpacing: 4, fontSize: 11, textAlign: 'center' },

@@ -7,6 +7,7 @@ import { useBooks } from '@/contexts/BookContext';
 import { useQuotes } from '@/contexts/QuoteContext';
 import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { useShelves } from '@/contexts/ShelfContext';
+import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors, appFonts } from '@/theme/tokens';
 import type { Book } from '@/types/book';
 
@@ -44,7 +45,7 @@ export default function RecommendationsScreen() {
 
       {recommendations.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>✣</Text>
+          <ReadoraIcon name="recommendations" size={52} color={appColors.gold} />
           <Text style={styles.emptyTitle}>Ainda não há dados suficientes</Text>
           <Text style={styles.emptyText}>Adicione livros à lista “Quero ler”, registre notas, sessões e citações favoritas para destravar recomendações mais precisas.</Text>
           <Link href="/add" asChild><Pressable style={styles.primaryButton}><Text style={styles.primaryText}>Adicionar leitura</Text></Pressable></Link>
