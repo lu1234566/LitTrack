@@ -70,12 +70,12 @@ export default function DashboardScreen() {
             <MiniBox label="VASTIDÃO" value={String(stats.totalBooks)} />
           </View>
         </Card>
-        <Card>
+        <View style={styles.capsuleCardGold}>
           <View style={styles.capsuleIcon}><ReadoraIcon name="monthlyCapsule" size={24} color={appColors.gold} /></View>
           <Text style={styles.capsuleTitle}>Cápsula Mensal</Text>
           <Text style={styles.capsuleText}>Reviva suas memórias deste ciclo em uma composição única.</Text>
           <Link href="/monthly-capsule" asChild><Pressable style={styles.blackButton}><Text style={styles.blackButtonText}>GERAR CÁPSULA</Text><ReadoraIcon name="forward" size={14} color={appColors.text} /></Pressable></Link>
-        </Card>
+        </View>
       </View>
 
       <View style={[styles.bottomStats, mobile && styles.stack]}>
@@ -158,6 +158,7 @@ const styles = StyleSheet.create({
   miniBox: { flexGrow: 1, minWidth: 180, backgroundColor: appColors.background, borderColor: appColors.borderSoft, borderWidth: 1, borderRadius: 24, padding: 22 },
   miniLabel: { color: appColors.textDim, fontSize: 10, letterSpacing: 3, fontWeight: '900' },
   miniValue: { color: appColors.text, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 18, fontWeight: '900', marginTop: 10 },
+  capsuleCardGold: { flex: 1, backgroundColor: appColors.gold, borderRadius: 28, padding: 28, gap: 16 },
   capsuleIcon: { width: 44, height: 44, borderRadius: 14, backgroundColor: appColors.background, alignItems: 'center', justifyContent: 'center' },
   capsuleIconText: { color: appColors.gold, fontSize: 24 },
   capsuleTitle: { color: appColors.background, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 32, fontWeight: '900' },
