@@ -38,7 +38,7 @@ export const appRadius = {
 };
 
 export const appFonts = {
-  display: 'serif',
-  body: 'system',
+  display: 'Playfair Display',
+  body: 'Inter',
   mono: 'monospace'
 };

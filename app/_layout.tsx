@@ -1,4 +1,5 @@
 import { Stack } from 'expo-router';
+import { Text as RNText, TextInput as RNTextInput } from 'react-native';
 import { useFonts } from 'expo-font';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -9,7 +10,20 @@ import { QuoteProvider } from '@/contexts/QuoteContext';
 import { ShelfProvider } from '@/contexts/ShelfContext';
 import { ReadingSessionProvider } from '@/contexts/ReadingSessionContext';
 import { SessionProvider } from '@/contexts/SessionContext';
-import { appColors } from '@/theme/tokens';
+import { appColors, appFonts } from '@/theme/tokens';
+
+// Match the web build: ignore the OS font-scale setting so native text sizes
+// equal the design (the website ignores it too), and default all body text to
+// Inter. Headings override fontFamily to Playfair Display in their own styles.
+const textDefaults = { allowFontScaling: false, style: { fontFamily: appFonts.body } };
+(RNText as unknown as { defaultProps?: object }).defaultProps = {
+  ...((RNText as unknown as { defaultProps?: object }).defaultProps || {}),
+  ...textDefaults
+};
+(RNTextInput as unknown as { defaultProps?: object }).defaultProps = {
+  ...((RNTextInput as unknown as { defaultProps?: object }).defaultProps || {}),
+  ...textDefaults
+};
 
 export default function RootLayout() {
   // Kick off icon-font preload, but never block rendering on it: gating the
