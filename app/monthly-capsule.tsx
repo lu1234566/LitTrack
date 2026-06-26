@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
@@ -17,23 +17,38 @@ export default function MonthlyCapsuleScreen() {
   const mobile = width < 760;
   const [message, setMessage] = useState('');
   const [tab, setTab] = useState<'app' | 'instagram'>('app');
-  const month = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-  const now = new Date();
-  const monthBooks = books.filter((book) => {
+  const [monthOffset, setMonthOffset] = useState(0);
+
+  const selected = useMemo(() => {
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() + monthOffset);
+    return d;
+  }, [monthOffset]);
+  const selMonth = selected.getMonth();
+  const selYear = selected.getFullYear();
+
+  const monthBooks = useMemo(() => books.filter((book) => {
     const d = new Date(book.updatedAt || book.createdAt);
-    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-  });
-  const monthSessions = sessions.filter((session) => {
+    return d.getMonth() === selMonth && d.getFullYear() === selYear;
+  }), [books, selMonth, selYear]);
+  const monthSessions = useMemo(() => sessions.filter((session) => {
     const d = new Date(session.createdAt);
-    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-  });
-  const monthPages = monthSessions.reduce((sum, session) => sum + session.pagesRead, 0);
+    return d.getMonth() === selMonth && d.getFullYear() === selYear;
+  }), [sessions, selMonth, selYear]);
+
+  const monthFinished = monthBooks.filter((book) => book.status === 'finished').length;
   const monthMinutes = monthSessions.reduce((sum, session) => sum + session.minutesRead, 0);
-  const monthName = new Date().toLocaleDateString('pt-BR', { month: 'long' });
-  const vibe = monthSessions[0]?.mood || 'Sereno';
+  const monthPages = monthSessions.reduce((sum, session) => sum + session.pagesRead, 0)
+    || monthBooks.reduce((sum, book) => sum + (book.totalPages || 0), 0);
+  const ratedBooks = monthBooks.filter((book) => (book.rating || 0) > 0);
+  const monthAverage = ratedBooks.length ? ratedBooks.reduce((sum, book) => sum + (book.rating || 0), 0) / ratedBooks.length : 0;
+  const month = selected.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  const monthName = selected.toLocaleDateString('pt-BR', { month: 'long' });
+  const vibe = monthSessions[0]?.mood || monthBooks.find((book) => book.mood)?.mood || 'Sereno';
   const minutesLabel = Math.floor(monthMinutes / 60) + 'h ' + (monthMinutes % 60) + 'm';
 
-  const caption = useMemo(() => 'Minha cápsula literária de ' + monthName + ' no Readora 📚✨\n\n📖 Livros concluídos: ' + stats.finishedBooks + '\n📄 Páginas lidas: ' + monthPages + '\n⭐ Média do mês: ' + stats.averageRating.toFixed(1) + '\n🎭 Vibe: ' + vibe + '\n\nGerado automaticamente pelo @readora.app 📱\n#Readora #CapsulaLiteraria #Leitura #Books #MonthlyWrapUp', [monthName, monthPages, stats.averageRating, stats.finishedBooks, vibe]);
+  const caption = useMemo(() => 'Minha cápsula literária de ' + monthName + ' no Readora 📚✨\n\n📖 Livros concluídos: ' + monthFinished + '\n📄 Páginas lidas: ' + monthPages + '\n⭐ Média do mês: ' + monthAverage.toFixed(1) + '\n🎭 Vibe: ' + vibe + '\n\nGerado automaticamente pelo @readora.app 📱\n#Readora #CapsulaLiteraria #Leitura #Books #MonthlyWrapUp', [monthName, monthPages, monthAverage, monthFinished, vibe]);
 
   async function copyCaption() {
     const clipboard = (globalThis as any).navigator?.clipboard;
@@ -49,11 +64,11 @@ export default function MonthlyCapsuleScreen() {
     const ok = downloadCapsulePng({
       readerName: preferences.readerName || 'Lucas Barcelar',
       monthName,
-      year: String(now.getFullYear()),
-      finishedBooks: stats.finishedBooks,
+      year: String(selYear),
+      finishedBooks: monthFinished,
       pages: monthPages,
       minutesLabel,
-      averageRating: stats.averageRating.toFixed(1),
+      averageRating: monthAverage.toFixed(1),
       vibe,
       genre: stats.favoriteGenre || 'Diverso',
       bookCount: monthBooks.length
@@ -71,7 +86,11 @@ export default function MonthlyCapsuleScreen() {
         </View>
         <Card>
           <Text style={styles.periodLabel}>PERÍODO</Text>
-          <View style={styles.periodRow}><ReadoraIcon name="back" size={16} color={appColors.textMuted} /><Text style={styles.period}>{capitalize(month)}</Text><ReadoraIcon name="forward" size={16} color={appColors.textMuted} /></View>
+          <View style={styles.periodRow}>
+            <Pressable onPress={() => setMonthOffset((o) => o - 1)} hitSlop={10}><ReadoraIcon name="back" size={18} color={appColors.gold} /></Pressable>
+            <Text style={styles.period}>{capitalize(month)}</Text>
+            <Pressable onPress={() => setMonthOffset((o) => Math.min(0, o + 1))} hitSlop={10}><ReadoraIcon name="forward" size={18} color={monthOffset < 0 ? appColors.gold : appColors.textDim} /></Pressable>
+          </View>
         </Card>
       </View>
 
@@ -91,17 +110,27 @@ export default function MonthlyCapsuleScreen() {
           <View style={styles.phoneFrame}>
             <View style={styles.capsuleCard}>
               <Text style={styles.cardKicker}>READORA • MEMÓRIAS LITERÁRIAS</Text>
-              <Text style={styles.cardTitle}>Cápsula de {monthName}</Text>
-              <Text style={styles.cardSubtitle}>Jornada de {preferences.readerName || 'Lucas Barcelar'} • {now.getFullYear()}</Text>
-              <Text style={styles.poem}>“{monthName} foi um período de pausa e reflexão silenciosa entre as páginas.”</Text>
+              <Text style={styles.cardTitle}>Cápsula de {capitalize(monthName)}</Text>
+              <Text style={styles.cardSubtitle}>Jornada de {preferences.readerName || 'Lucas Barcelar'} • {selYear}</Text>
+              <Text style={styles.poem}>“{capitalize(monthName)} foi um período de pausa e reflexão silenciosa entre as páginas.”</Text>
               <View style={styles.miniGrid}>
-                <MiniStat label="LIVROS LIDOS" value={String(stats.finishedBooks)} />
+                <MiniStat label="LIVROS LIDOS" value={String(monthFinished)} />
                 <MiniStat label="PÁGINAS" value={String(monthPages)} />
                 <MiniStat label="TEMPO DE FOCO" value={minutesLabel} />
-                <MiniStat label="MÉDIA DO MÊS" value={stats.averageRating.toFixed(1)} />
+                <MiniStat label="MÉDIA DO MÊS" value={monthAverage.toFixed(1)} />
               </View>
-              <Text style={styles.acervo}>ACERVO CONCLUÍDO ({monthBooks.length})</Text>
-              <View style={styles.ghostBox}><Text style={styles.ghostText}>Páginas em branco aguardando o despertar da próxima história do mês.</Text></View>
+              <Text style={styles.acervo}>ACERVO DO MÊS ({monthBooks.length})</Text>
+              {monthBooks.length > 0 ? (
+                <View style={styles.bookRow}>
+                  {monthBooks.slice(0, 8).map((book) => (
+                    book.coverUrl
+                      ? <Image key={book.id} source={{ uri: book.coverUrl }} style={styles.bookCover} />
+                      : <View key={book.id} style={[styles.bookCover, styles.bookCoverFallback]}><Text style={styles.bookCoverInitial}>{book.title.slice(0, 1).toUpperCase()}</Text></View>
+                  ))}
+                </View>
+              ) : (
+                <View style={styles.ghostBox}><Text style={styles.ghostText}>Nenhum livro registrado em {capitalize(monthName)} ainda.</Text></View>
+              )}
               <View style={styles.cardFooter}><Text style={styles.footerText}>ATMOSFERA{`\n`}{vibe}</Text><Text style={styles.footerText}>UNIVERSO DE FOCO{`\n`}{stats.favoriteGenre || 'Diverso'}</Text></View>
             </View>
           </View>
@@ -109,7 +138,7 @@ export default function MonthlyCapsuleScreen() {
           <View style={styles.essence}>
             <Text style={styles.essenceTitle}>Sua Essência de {monthName}</Text>
             <EssenceLine value={String(monthPages)} label="PÁGINAS PERCORRIDAS" text="A distância mística que seus olhos atravessaram este mês." />
-            <EssenceLine value={String(stats.finishedBooks)} label="HISTÓRIAS CONCLUÍDAS" text="O número de universos que agora fazem parte da sua história." />
+            <EssenceLine value={String(monthFinished)} label="HISTÓRIAS CONCLUÍDAS" text="O número de universos que agora fazem parte da sua história." />
             <EssenceLine value={vibe} label="ATMOSFERA DOMINANTE" text="O sentimento que guiou suas escolhas e momentos de leitura." />
             <Pressable style={[styles.downloadButton, styles.btnRow]} onPress={handleDownloadPng}><ReadoraIcon name="export" size={17} color={appColors.background} /><Text style={styles.downloadText}>Baixar Cápsula PNG</Text></Pressable>
           </View>
@@ -176,6 +205,10 @@ const styles = StyleSheet.create({
   acervo: { backgroundColor: appColors.background, color: appColors.textMuted, letterSpacing: 3, fontSize: 10, fontWeight: '900', padding: 8, marginTop: 12 },
   ghostBox: { minHeight: 70, borderColor: appColors.border, borderStyle: 'dashed', borderWidth: 1, borderRadius: 8, alignItems: 'center', justifyContent: 'center', padding: 12 },
   ghostText: { color: appColors.textDim, fontFamily: appFonts.display, fontStyle: 'italic', textAlign: 'center', fontSize: 12 },
+  bookRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  bookCover: { width: 44, height: 64, borderRadius: 6, backgroundColor: appColors.background, borderColor: appColors.borderSoft, borderWidth: 1 },
+  bookCoverFallback: { alignItems: 'center', justifyContent: 'center' },
+  bookCoverInitial: { color: appColors.gold, fontFamily: appFonts.display, fontSize: 20, fontWeight: '900' },
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 'auto' },
   footerText: { color: appColors.textMuted, fontSize: 10, fontWeight: '900' },
   essence: { flex: 1, gap: 24 },

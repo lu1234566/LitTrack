@@ -110,12 +110,28 @@ function parseLegacyReadoraBackup(parsed: LegacyReadoraBackup): ReadoraBackup {
   };
 }
 
+const MONTHS_PT: Record<string, number> = {
+  janeiro: 0, fevereiro: 1, 'março': 2, marco: 2, abril: 3, maio: 4, junho: 5,
+  julho: 6, agosto: 7, setembro: 8, outubro: 9, novembro: 10, dezembro: 11
+};
+
+function readingMonthDate(input: LegacyReadoraBook): number | null {
+  const year = numberValue(input.anoLeitura);
+  const month = MONTHS_PT[stringValue(input.mesLeitura).toLowerCase()];
+  if (!year || month === undefined) return null;
+  return new Date(year, month, 15).getTime();
+}
+
 function normalizeLegacyBook(input: LegacyReadoraBook): Book | null {
   const title = stringValue(input.titulo || input.title || input.nome);
   const author = stringValue(input.autor || input.author);
   if (!title || !author) return null;
-  const createdAt = dateValue(input.dataCadastro || input.addedAt || input.createdAt || Date.now());
-  const updatedAt = dateValue(input.finishedAt || input.startedAt || input.dataCadastro || input.createdAt || createdAt);
+  // Anchor the book to its reading month (anoLeitura/mesLeitura) so the
+  // Monthly Capsule, Timeline and Retrospective group it correctly. Fall back
+  // to registration timestamps when the reading month is absent.
+  const reading = readingMonthDate(input);
+  const createdAt = reading ?? dateValue(input.dataCadastro || input.addedAt || input.createdAt || Date.now());
+  const updatedAt = reading ?? dateValue(input.finishedAt || input.startedAt || input.dataCadastro || input.createdAt || createdAt);
   const reviewParts = [
     stringValue(input.resenha || input.review),
     stringValue(input.pontosFortes) ? 'Pontos fortes: ' + stringValue(input.pontosFortes) : '',
