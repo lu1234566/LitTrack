@@ -25,10 +25,12 @@ export type FeedCapsuleArtProps = {
   totalPages: number;
   ratingOutOf10: number;
   dominantMood: string;
-  top5Books: FeedCapsuleBook[];
+  books: FeedCapsuleBook[];
   bestBook: FeedCapsuleBook | null;
   literaryCopy: string;
 };
+
+const MAX_ITEMS = 10;
 
 // Web (Tailwind) palette used by the original card.
 const C = {
@@ -76,10 +78,11 @@ function Cover({ book, w, h, u }: { book: FeedCapsuleBook; w: number; h: number;
 }
 
 export const FeedCapsuleArt = forwardRef<View, FeedCapsuleArtProps>(function FeedCapsuleArt(
-  { scale = 1, monthName, year, totalBooks, totalPages, ratingOutOf10, dominantMood, top5Books, bestBook, literaryCopy },
+  { scale = 1, monthName, year, totalBooks, totalPages, ratingOutOf10, dominantMood, books, bestBook, literaryCopy },
   ref
 ) {
   const u = (n: number) => n * scale;
+  const shown = books.slice(0, MAX_ITEMS);
   const labelStyle = { color: C.n500, fontFamily: appFonts.body as string, fontWeight: '700' as const, textTransform: 'uppercase' as const, letterSpacing: u(1.6) };
 
   return (
@@ -142,34 +145,36 @@ export const FeedCapsuleArt = forwardRef<View, FeedCapsuleArtProps>(function Fee
         </View>
 
         {/* Right column */}
-        <View style={{ flex: 7, gap: u(20) }}>
+        <View style={{ flex: 7, gap: u(18) }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: u(22) }}>
-            <Text style={[labelStyle, { fontSize: u(24), letterSpacing: u(7) }]}>Top 5 Livros</Text>
+            <Text style={[labelStyle, { fontSize: u(24), letterSpacing: u(7) }]}>Top {shown.length || 10} Livros</Text>
             <View style={{ height: 1, backgroundColor: C.border, flex: 1 }} />
           </View>
-          <View style={{ gap: u(16) }}>
-            {top5Books.length === 0 ? (
-              <View style={{ borderColor: C.border, borderWidth: 1, borderStyle: 'dashed', borderRadius: u(32), padding: u(40), alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: C.n500, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: u(22), textAlign: 'center' }}>Nenhum livro concluído neste mês ainda.</Text>
-              </View>
-            ) : top5Books.map((book, idx) => (
-              <View key={book.id} style={{ flexDirection: 'row', alignItems: 'center', gap: u(22), backgroundColor: C.cardSoft, borderColor: C.border, borderWidth: 1, borderRadius: u(32), padding: u(24) }}>
-                <Text style={{ color: C.amber30, fontFamily: appFonts.display, fontStyle: 'italic', fontWeight: '900', fontSize: u(34), minWidth: u(40) }}>{idx + 1}</Text>
-                <Cover book={book} w={u(64)} h={u(96)} u={u} />
-                <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: u(10), marginBottom: u(6) }}>
-                    <Text numberOfLines={1} style={{ color: C.n50, fontFamily: appFonts.body, fontWeight: '700', fontSize: u(24), flex: 1 }}>{book.title}</Text>
-                    <View style={{ paddingTop: u(4) }}><Stars rating={book.rating} u={u} /></View>
-                  </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: u(12) }}>
-                    <Text numberOfLines={1} style={{ color: C.n500, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: u(18), flexShrink: 1 }}>by {book.author}</Text>
-                    <Text style={{ color: C.n800, fontFamily: appFonts.mono, fontSize: u(18) }}>/</Text>
-                    <Text style={{ color: C.n600, fontFamily: appFonts.mono, fontSize: u(18) }}>{book.pageCount} pgs</Text>
+          {shown.length === 0 ? (
+            <View style={{ flex: 1, borderColor: C.border, borderWidth: 1, borderStyle: 'dashed', borderRadius: u(32), padding: u(40), alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ color: C.n500, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: u(22), textAlign: 'center' }}>Nenhum livro concluído neste mês ainda.</Text>
+            </View>
+          ) : (
+            <View style={{ flex: 1, gap: u(10) }}>
+              {shown.map((book, idx) => (
+                <View key={book.id} style={{ flex: 1, maxHeight: u(140), flexDirection: 'row', alignItems: 'center', gap: u(18), backgroundColor: C.cardSoft, borderColor: C.border, borderWidth: 1, borderRadius: u(22), paddingHorizontal: u(20), paddingVertical: u(10) }}>
+                  <Text style={{ color: C.amber30, fontFamily: appFonts.display, fontStyle: 'italic', fontWeight: '900', fontSize: u(30), minWidth: u(34) }}>{idx + 1}</Text>
+                  <Cover book={book} w={u(54)} h={u(76)} u={u} />
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: u(10), marginBottom: u(4) }}>
+                      <Text numberOfLines={1} style={{ color: C.n50, fontFamily: appFonts.body, fontWeight: '700', fontSize: u(22), flex: 1 }}>{book.title}</Text>
+                      <View style={{ paddingTop: u(3) }}><Stars rating={book.rating} u={u} /></View>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: u(10) }}>
+                      <Text numberOfLines={1} style={{ color: C.n500, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: u(16), flexShrink: 1 }}>by {book.author}</Text>
+                      <Text style={{ color: C.n800, fontFamily: appFonts.mono, fontSize: u(16) }}>/</Text>
+                      <Text style={{ color: C.n600, fontFamily: appFonts.mono, fontSize: u(16) }}>{book.pageCount} pgs</Text>
+                    </View>
                   </View>
                 </View>
-              </View>
-            ))}
-          </View>
+              ))}
+            </View>
+          )}
         </View>
       </View>
 

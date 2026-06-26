@@ -56,18 +56,18 @@ export default function MonthlyCapsuleScreen() {
   const vibe = monthSessions[0]?.mood || monthBooks.find((book) => book.mood)?.mood || 'Sereno';
   const minutesLabel = Math.floor(monthMinutes / 60) + 'h ' + (monthMinutes % 60) + 'm';
 
-  // Top 5: maior nota, mais páginas, ordem alfabética — igual à web.
-  const top5Books: FeedCapsuleBook[] = useMemo(() => (
+  // Top 10: maior nota, mais páginas, ordem alfabética — igual à web.
+  const rankedBooks: FeedCapsuleBook[] = useMemo(() => (
     [...monthBooks]
       .sort((a, b) => {
         if ((b.rating || 0) !== (a.rating || 0)) return (b.rating || 0) - (a.rating || 0);
         if ((b.totalPages || 0) !== (a.totalPages || 0)) return (b.totalPages || 0) - (a.totalPages || 0);
         return a.title.localeCompare(b.title);
       })
-      .slice(0, 5)
+      .slice(0, 10)
       .map((book) => ({ id: book.id, title: book.title, author: book.author, pageCount: book.totalPages || 0, rating: book.rating || 0, coverUrl: book.coverUrl }))
   ), [monthBooks]);
-  const bestBook = top5Books[0] || null;
+  const bestBook = rankedBooks[0] || null;
 
   const literaryCopy = useMemo(() => {
     if (monthFinished === 0) return monthName + ' foi um período de pausa e reflexão silenciosa entre as páginas.';
@@ -83,7 +83,7 @@ export default function MonthlyCapsuleScreen() {
     totalPages: monthPages,
     ratingOutOf10,
     dominantMood: vibe,
-    top5Books,
+    books: rankedBooks,
     bestBook,
     literaryCopy
   };

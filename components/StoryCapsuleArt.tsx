@@ -63,12 +63,11 @@ function HeroStat({ label, value, subtext, u }: { label: string; value: string; 
 }
 
 export const StoryCapsuleArt = forwardRef<View, FeedCapsuleArtProps>(function StoryCapsuleArt(
-  { scale = 1, monthName, year, totalBooks, totalPages, ratingOutOf10, dominantMood, top5Books, bestBook, literaryCopy },
+  { scale = 1, monthName, year, totalBooks, totalPages, ratingOutOf10, dominantMood, books, bestBook, literaryCopy },
   ref
 ) {
   const u = (n: number) => n * scale;
-  const featured = top5Books.slice(0, 3);
-  const remaining = Math.max(0, totalBooks - featured.length);
+  const featured = books.slice(0, 10);
   const fav = bestBook || featured[0] || null;
   const cap = (v: string) => v.slice(0, 1).toUpperCase() + v.slice(1);
 
@@ -95,15 +94,15 @@ export const StoryCapsuleArt = forwardRef<View, FeedCapsuleArtProps>(function St
 
       {/* Favorite */}
       {fav ? (
-        <View style={{ backgroundColor: C.card, borderColor: C.amberBorder, borderWidth: 1, borderRadius: u(42), padding: u(28), flexDirection: 'row', alignItems: 'center', gap: u(32), marginTop: u(34) }}>
-          <Cover book={fav} w={u(140)} h={u(200)} u={u} big />
+        <View style={{ backgroundColor: C.card, borderColor: C.amberBorder, borderWidth: 1, borderRadius: u(38), padding: u(24), flexDirection: 'row', alignItems: 'center', gap: u(28), marginTop: u(30) }}>
+          <Cover book={fav} w={u(100)} h={u(146)} u={u} big />
           <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignSelf: 'flex-start', alignItems: 'center', gap: u(10), backgroundColor: C.amber, paddingHorizontal: u(22), paddingVertical: u(12), borderRadius: u(999) }}>
-              <ReadoraIcon name="progress" size={u(24)} color={C.bg} />
-              <Text style={{ color: C.bg, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(18), textTransform: 'uppercase', letterSpacing: u(1.6) }}>Favorito do mês</Text>
+            <View style={{ flexDirection: 'row', alignSelf: 'flex-start', alignItems: 'center', gap: u(10), backgroundColor: C.amber, paddingHorizontal: u(20), paddingVertical: u(10), borderRadius: u(999) }}>
+              <ReadoraIcon name="progress" size={u(22)} color={C.bg} />
+              <Text style={{ color: C.bg, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(17), textTransform: 'uppercase', letterSpacing: u(1.6) }}>Favorito do mês</Text>
             </View>
-            <Text numberOfLines={2} style={{ color: '#fff', fontFamily: appFonts.body, fontWeight: '900', fontSize: u(50), lineHeight: u(52), letterSpacing: u(-2), marginTop: u(16) }}>{fav.title}</Text>
-            <Text numberOfLines={1} style={{ color: C.n400, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: u(28), marginTop: u(6) }}>{fav.author}</Text>
+            <Text numberOfLines={2} style={{ color: '#fff', fontFamily: appFonts.body, fontWeight: '900', fontSize: u(40), lineHeight: u(42), letterSpacing: u(-1.5), marginTop: u(12) }}>{fav.title}</Text>
+            <Text numberOfLines={1} style={{ color: C.n400, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: u(24), marginTop: u(4) }}>{fav.author}</Text>
           </View>
         </View>
       ) : null}
@@ -115,28 +114,23 @@ export const StoryCapsuleArt = forwardRef<View, FeedCapsuleArtProps>(function St
           <Text style={{ color: C.n500, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(25), textTransform: 'uppercase', letterSpacing: u(8) }}>Top do mês</Text>
           <View style={{ height: u(2), backgroundColor: C.amberLine, flex: 1 }} />
         </View>
-        <View style={{ gap: u(20) }}>
+        <View style={{ flex: 1, gap: u(12) }}>
           {featured.map((book, idx) => (
-            <View key={book.id} style={{ height: u(150), backgroundColor: C.cardSoft, borderColor: C.border, borderWidth: 1, borderRadius: u(30), padding: u(20), flexDirection: 'row', alignItems: 'center', gap: u(24) }}>
-              <View style={{ width: u(44), height: u(44), borderRadius: u(16), backgroundColor: C.amberSoft, borderColor: C.amberBorder, borderWidth: 1, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: C.amber, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(24) }}>{idx + 1}</Text>
+            <View key={book.id} style={{ flex: 1, maxHeight: u(128), backgroundColor: C.cardSoft, borderColor: C.border, borderWidth: 1, borderRadius: u(26), paddingHorizontal: u(18), paddingVertical: u(12), flexDirection: 'row', alignItems: 'center', gap: u(20) }}>
+              <View style={{ width: u(40), height: u(40), borderRadius: u(14), backgroundColor: C.amberSoft, borderColor: C.amberBorder, borderWidth: 1, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: C.amber, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(22) }}>{idx + 1}</Text>
               </View>
-              <Cover book={book} w={u(74)} h={u(112)} u={u} />
+              <Cover book={book} w={u(46)} h={u(66)} u={u} />
               <View style={{ flex: 1 }}>
-                <Text numberOfLines={1} style={{ color: C.n100, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(32), letterSpacing: u(-1) }}>{book.title}</Text>
-                <Text numberOfLines={1} style={{ color: C.n500, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: u(21), marginTop: u(2), marginBottom: u(12) }}>{book.author}</Text>
+                <Text numberOfLines={1} style={{ color: C.n100, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(26), letterSpacing: u(-1) }}>{book.title}</Text>
+                <Text numberOfLines={1} style={{ color: C.n500, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: u(17), marginTop: u(2), marginBottom: u(8) }}>{book.author}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: u(16) }}>
-                  <Text style={{ color: C.n500, fontFamily: appFonts.mono, fontSize: u(18) }}>{book.pageCount || 0} pág.</Text>
+                  <Text style={{ color: C.n500, fontFamily: appFonts.mono, fontSize: u(16) }}>{book.pageCount || 0} pág.</Text>
                   <Stars rating={book.rating} u={u} />
                 </View>
               </View>
             </View>
           ))}
-          {remaining > 0 ? (
-            <View style={{ height: u(86), borderRadius: u(26), borderColor: C.amberBorder, borderWidth: 1, borderStyle: 'dashed', backgroundColor: 'rgba(245,158,11,0.04)', alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: C.amber, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(22), textTransform: 'uppercase', letterSpacing: u(5) }}>+ {remaining} leituras no mês</Text>
-            </View>
-          ) : null}
         </View>
       </View>
 
