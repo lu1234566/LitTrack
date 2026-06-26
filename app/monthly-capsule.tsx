@@ -5,6 +5,7 @@ import * as Sharing from 'expo-sharing';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { FeedCapsuleArt, FeedCapsuleBook } from '@/components/FeedCapsuleArt';
+import { StoryCapsuleArt } from '@/components/StoryCapsuleArt';
 import { useBooks } from '@/contexts/BookContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
 import { useReadingSessions } from '@/contexts/ReadingSessionContext';
@@ -21,6 +22,7 @@ export default function MonthlyCapsuleScreen() {
   const mobile = width < 760;
   const [message, setMessage] = useState('');
   const [tab, setTab] = useState<'app' | 'instagram'>('app');
+  const [format, setFormat] = useState<'feed' | 'story'>('feed');
   const [monthOffset, setMonthOffset] = useState(0);
   const shotRef = useRef<View>(null);
 
@@ -173,8 +175,14 @@ export default function MonthlyCapsuleScreen() {
       {tab === 'app' ? (
         <View style={[styles.mainGrid, mobile && styles.stack]}>
           <View style={styles.previewCol}>
+            <View style={styles.formatRow}>
+              <Pressable onPress={() => setFormat('feed')} style={[styles.formatBtn, format === 'feed' && styles.formatBtnActive]}><Text style={format === 'feed' ? styles.formatTextActive : styles.formatText}>Feed (4:5)</Text></Pressable>
+              <Pressable onPress={() => setFormat('story')} style={[styles.formatBtn, format === 'story' && styles.formatBtnActive]}><Text style={format === 'story' ? styles.formatTextActive : styles.formatText}>Story (9:16)</Text></Pressable>
+            </View>
             <View style={[styles.previewFrame, { width: previewWidth + 24 }]}>
-              <FeedCapsuleArt scale={previewScale} {...feedData} />
+              {format === 'feed'
+                ? <FeedCapsuleArt scale={previewScale} {...feedData} />
+                : <StoryCapsuleArt scale={previewScale} {...feedData} />}
             </View>
           </View>
 
@@ -202,10 +210,12 @@ export default function MonthlyCapsuleScreen() {
 
       {message ? <Text style={styles.message}>{message}</Text> : null}
 
-      {/* Fonte de captura em alta resolução (1080×1350), fora da tela. */}
+      {/* Fonte de captura em alta resolução (Feed 1080×1350 / Story 1080×1920), fora da tela. */}
       {Platform.OS !== 'web' ? (
         <View style={styles.offscreen} pointerEvents="none">
-          <FeedCapsuleArt ref={shotRef} scale={1} {...feedData} />
+          {format === 'feed'
+            ? <FeedCapsuleArt ref={shotRef} scale={1} {...feedData} />
+            : <StoryCapsuleArt ref={shotRef} scale={1} {...feedData} />}
         </View>
       ) : null}
     </Screen>
@@ -238,7 +248,12 @@ const styles = StyleSheet.create({
   segmentTextActive: { color: appColors.background, fontWeight: '900' },
   segmentText: { color: appColors.textMuted, fontWeight: '900' },
   mainGrid: { flexDirection: 'row', gap: 36, alignItems: 'center' },
-  previewCol: { alignItems: 'center', justifyContent: 'center' },
+  previewCol: { alignItems: 'center', justifyContent: 'center', gap: 14 },
+  formatRow: { flexDirection: 'row', gap: 8, backgroundColor: appColors.surface, borderColor: appColors.border, borderWidth: 1, borderRadius: 14, padding: 4 },
+  formatBtn: { borderRadius: 10, paddingVertical: 9, paddingHorizontal: 18 },
+  formatBtnActive: { backgroundColor: appColors.gold },
+  formatText: { color: appColors.textMuted, fontWeight: '900', fontSize: 13 },
+  formatTextActive: { color: appColors.background, fontWeight: '900', fontSize: 13 },
   previewFrame: { backgroundColor: appColors.surface, borderColor: appColors.borderSoft, borderWidth: 1, borderRadius: 28, padding: 12, alignItems: 'center' },
   offscreen: { position: 'absolute', left: -20000, top: 0 },
   essence: { flex: 1, gap: 24 },
