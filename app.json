@@ -9,7 +9,7 @@
     "icon": "./assets/icon.png",
     "newArchEnabled": true,
     "android": {
-      "package": "com.readora.mobile",
+      "package": "com.readora.app",
       "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -23,7 +23,7 @@
       ]
     },
     "ios": {
-      "bundleIdentifier": "com.readora.mobile",
+      "bundleIdentifier": "com.readora.app",
       "supportsTablet": true
     },
     "plugins": [
