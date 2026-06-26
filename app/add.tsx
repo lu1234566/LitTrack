@@ -9,6 +9,7 @@ import { pickImageAsDataUrl, scanBarcodeFromImage } from '@/services/webPlatform
 import { BookStatus } from '@/types/book';
 import { ExternalBook } from '@/types/externalBook';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
+import { haptic } from '@/services/feedback';
 import { appColors, appFonts } from '@/theme/tokens';
 
 const moods = ['Sombrio', 'Tenso', 'Reflexivo', 'Aconchegante', 'Emocional', 'Misterioso', 'Caótico', 'Inspirador', 'Cerebral', 'Mágico'];
@@ -114,6 +115,7 @@ export default function AddBookScreen() {
 
   async function handleSave() {
     if (!title.trim() || !author.trim()) {
+      haptic('warning');
       Alert.alert('Campos obrigatórios', 'Informe pelo menos título e autor.');
       return;
     }
@@ -144,6 +146,7 @@ export default function AddBookScreen() {
       coverUrl: coverUrl.trim()
     });
 
+    haptic('success');
     router.replace('/library');
   }
 

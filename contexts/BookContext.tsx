@@ -12,6 +12,7 @@ interface BookContextValue {
   updateBook: (bookId: string, patch: Partial<Book>) => Promise<void>;
   deleteBook: (bookId: string) => Promise<void>;
   replaceBooks: (nextBooks: Book[]) => Promise<void>;
+  reload: () => Promise<void>;
   updateProgress: (bookId: string, currentPage: number) => Promise<void>;
   updateStatus: (bookId: string, status: BookStatus) => Promise<void>;
   getBook: (bookId: string) => Book | undefined;
@@ -37,6 +38,7 @@ const fallbackContext: BookContextValue = {
   updateBook: async () => {},
   deleteBook: async () => {},
   replaceBooks: async () => {},
+  reload: async () => {},
   updateProgress: async () => {},
   updateStatus: async () => {},
   getBook: () => undefined
@@ -68,6 +70,16 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
 
   async function replaceBooks(nextBooks: Book[]) {
     await persist(nextBooks);
+  }
+
+  async function reload() {
+    setLoading(true);
+    try {
+      const next = await loadBooks();
+      setBooks(next);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function addBook(input: BookInput) {
@@ -124,7 +136,7 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
     return { totalBooks, finishedBooks, readingBooks, wishlistBooks, averageRating, pagesRead, completionRate, favoriteGenre: favoriteGenreFrom(books), currentProgress };
   }, [books]);
 
-  const value = useMemo(() => ({ books, loading, stats, addBook, updateBook, deleteBook, replaceBooks, updateProgress, updateStatus, getBook }), [books, loading, stats]);
+  const value = useMemo(() => ({ books, loading, stats, addBook, updateBook, deleteBook, replaceBooks, reload, updateProgress, updateStatus, getBook }), [books, loading, stats]);
 
   return <BookContext.Provider value={value}>{children}</BookContext.Provider>;
 }

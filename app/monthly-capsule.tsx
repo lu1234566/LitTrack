@@ -1,13 +1,66 @@
-import { useMemo, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { forwardRef, useMemo, useRef, useState } from 'react';
+import { Image, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { captureRef } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
 import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { downloadCapsulePng } from '@/services/webPlatformTools';
+import { copyText, haptic } from '@/services/feedback';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors, appFonts } from '@/theme/tokens';
+
+type CapsuleArtBook = { id: string; coverUrl?: string; title: string };
+type CapsuleArtProps = {
+  monthName: string;
+  readerName: string;
+  year: number;
+  finished: number;
+  pages: number;
+  minutesLabel: string;
+  average: string;
+  books: CapsuleArtBook[];
+  vibe: string;
+  genre: string;
+};
+
+// The shareable card, isolated as a forwardRef view so react-native-view-shot
+// can snapshot exactly this node as a PNG. The same component renders the
+// visible preview inside the phone frame, so what you share matches the screen.
+const CapsuleArt = forwardRef<View, CapsuleArtProps>(function CapsuleArt(
+  { monthName, readerName, year, finished, pages, minutesLabel, average, books, vibe, genre },
+  ref
+) {
+  return (
+    <View ref={ref} collapsable={false} style={styles.capsuleCard}>
+      <Text style={styles.cardKicker}>READORA • MEMÓRIAS LITERÁRIAS</Text>
+      <Text style={styles.cardTitle}>Cápsula de {capitalize(monthName)}</Text>
+      <Text style={styles.cardSubtitle}>Jornada de {readerName} • {year}</Text>
+      <Text style={styles.poem}>“{capitalize(monthName)} foi um período de pausa e reflexão silenciosa entre as páginas.”</Text>
+      <View style={styles.miniGrid}>
+        <MiniStat label="LIVROS LIDOS" value={String(finished)} />
+        <MiniStat label="PÁGINAS" value={String(pages)} />
+        <MiniStat label="TEMPO DE FOCO" value={minutesLabel} />
+        <MiniStat label="MÉDIA DO MÊS" value={average} />
+      </View>
+      <Text style={styles.acervo}>ACERVO DO MÊS ({books.length})</Text>
+      {books.length > 0 ? (
+        <View style={styles.bookRow}>
+          {books.slice(0, 8).map((book) => (
+            book.coverUrl
+              ? <Image key={book.id} source={{ uri: book.coverUrl }} style={styles.bookCover} />
+              : <View key={book.id} style={[styles.bookCover, styles.bookCoverFallback]}><Text style={styles.bookCoverInitial}>{book.title.slice(0, 1).toUpperCase()}</Text></View>
+          ))}
+        </View>
+      ) : (
+        <View style={styles.ghostBox}><Text style={styles.ghostText}>Nenhum livro registrado em {capitalize(monthName)} ainda.</Text></View>
+      )}
+      <View style={styles.cardFooter}><Text style={styles.footerText}>ATMOSFERA{`\n`}{vibe}</Text><Text style={styles.footerText}>UNIVERSO DE FOCO{`\n`}{genre}</Text></View>
+    </View>
+  );
+});
 
 export default function MonthlyCapsuleScreen() {
   const { books, stats } = useBooks();
@@ -18,6 +71,7 @@ export default function MonthlyCapsuleScreen() {
   const [message, setMessage] = useState('');
   const [tab, setTab] = useState<'app' | 'instagram'>('app');
   const [monthOffset, setMonthOffset] = useState(0);
+  const shotRef = useRef<View>(null);
 
   const selected = useMemo(() => {
     const d = new Date();
@@ -50,17 +104,28 @@ export default function MonthlyCapsuleScreen() {
 
   const caption = useMemo(() => 'Minha cápsula literária de ' + monthName + ' no Readora 📚✨\n\n📖 Livros concluídos: ' + monthFinished + '\n📄 Páginas lidas: ' + monthPages + '\n⭐ Média do mês: ' + monthAverage.toFixed(1) + '\n🎭 Vibe: ' + vibe + '\n\nGerado automaticamente pelo @readora.app 📱\n#Readora #CapsulaLiteraria #Leitura #Books #MonthlyWrapUp', [monthName, monthPages, monthAverage, monthFinished, vibe]);
 
+  const art: CapsuleArtProps = {
+    monthName,
+    readerName: preferences.readerName || 'Lucas Barcelar',
+    year: selYear,
+    finished: monthFinished,
+    pages: monthPages,
+    minutesLabel,
+    average: monthAverage.toFixed(1),
+    books: monthBooks,
+    vibe,
+    genre: stats.favoriteGenre || 'Diverso'
+  };
+
   async function copyCaption() {
-    const clipboard = (globalThis as any).navigator?.clipboard;
-    if (clipboard?.writeText) {
-      await clipboard.writeText(caption);
-      setMessage('Legenda copiada para a área de transferência.');
-      return;
-    }
-    setMessage('Seu dispositivo não liberou cópia automática. Selecione a legenda abaixo e copie manualmente.');
+    const ok = await copyText(caption);
+    haptic(ok ? 'success' : 'warning');
+    setMessage(ok
+      ? 'Legenda copiada para a área de transferência.'
+      : 'Não foi possível copiar automaticamente. Selecione a legenda abaixo e copie manualmente.');
   }
 
-  function handleDownloadPng() {
+  function downloadOnWeb() {
     const ok = downloadCapsulePng({
       readerName: preferences.readerName || 'Lucas Barcelar',
       monthName,
@@ -74,6 +139,32 @@ export default function MonthlyCapsuleScreen() {
       bookCount: monthBooks.length
     });
     setMessage(ok ? 'Cápsula PNG baixada pelo navegador.' : 'Download PNG disponível apenas no navegador com suporte a Canvas.');
+  }
+
+  // Native: snapshot the card and open the OS share sheet (Instagram, WhatsApp,
+  // salvar na galeria…). Web: keep the canvas-based PNG download.
+  async function handleShareImage() {
+    if (Platform.OS === 'web') {
+      downloadOnWeb();
+      return;
+    }
+    try {
+      if (!shotRef.current) {
+        setMessage('A imagem da cápsula ainda está sendo preparada. Tente novamente em instantes.');
+        return;
+      }
+      const uri = await captureRef(shotRef, { format: 'png', quality: 1, result: 'tmpfile' });
+      haptic('success');
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Compartilhar Cápsula Literária' });
+        setMessage('Cápsula pronta para compartilhar.');
+      } else {
+        setMessage('Compartilhamento não está disponível neste dispositivo.');
+      }
+    } catch {
+      haptic('error');
+      setMessage('Não foi possível gerar a imagem da cápsula. Tente novamente.');
+    }
   }
 
   return (
@@ -108,39 +199,15 @@ export default function MonthlyCapsuleScreen() {
       {tab === 'app' ? (
         <View style={[styles.mainGrid, mobile && styles.stack]}>
           <View style={styles.phoneFrame}>
-            <View style={styles.capsuleCard}>
-              <Text style={styles.cardKicker}>READORA • MEMÓRIAS LITERÁRIAS</Text>
-              <Text style={styles.cardTitle}>Cápsula de {capitalize(monthName)}</Text>
-              <Text style={styles.cardSubtitle}>Jornada de {preferences.readerName || 'Lucas Barcelar'} • {selYear}</Text>
-              <Text style={styles.poem}>“{capitalize(monthName)} foi um período de pausa e reflexão silenciosa entre as páginas.”</Text>
-              <View style={styles.miniGrid}>
-                <MiniStat label="LIVROS LIDOS" value={String(monthFinished)} />
-                <MiniStat label="PÁGINAS" value={String(monthPages)} />
-                <MiniStat label="TEMPO DE FOCO" value={minutesLabel} />
-                <MiniStat label="MÉDIA DO MÊS" value={monthAverage.toFixed(1)} />
-              </View>
-              <Text style={styles.acervo}>ACERVO DO MÊS ({monthBooks.length})</Text>
-              {monthBooks.length > 0 ? (
-                <View style={styles.bookRow}>
-                  {monthBooks.slice(0, 8).map((book) => (
-                    book.coverUrl
-                      ? <Image key={book.id} source={{ uri: book.coverUrl }} style={styles.bookCover} />
-                      : <View key={book.id} style={[styles.bookCover, styles.bookCoverFallback]}><Text style={styles.bookCoverInitial}>{book.title.slice(0, 1).toUpperCase()}</Text></View>
-                  ))}
-                </View>
-              ) : (
-                <View style={styles.ghostBox}><Text style={styles.ghostText}>Nenhum livro registrado em {capitalize(monthName)} ainda.</Text></View>
-              )}
-              <View style={styles.cardFooter}><Text style={styles.footerText}>ATMOSFERA{`\n`}{vibe}</Text><Text style={styles.footerText}>UNIVERSO DE FOCO{`\n`}{stats.favoriteGenre || 'Diverso'}</Text></View>
-            </View>
+            <CapsuleArt {...art} />
           </View>
 
           <View style={styles.essence}>
-            <Text style={styles.essenceTitle}>Sua Essência de {monthName}</Text>
+            <Text style={styles.essenceTitle}>Sua Essência de {month}</Text>
             <EssenceLine value={String(monthPages)} label="PÁGINAS PERCORRIDAS" text="A distância mística que seus olhos atravessaram este mês." />
             <EssenceLine value={String(monthFinished)} label="HISTÓRIAS CONCLUÍDAS" text="O número de universos que agora fazem parte da sua história." />
             <EssenceLine value={vibe} label="ATMOSFERA DOMINANTE" text="O sentimento que guiou suas escolhas e momentos de leitura." />
-            <Pressable style={[styles.downloadButton, styles.btnRow]} onPress={handleDownloadPng}><ReadoraIcon name="export" size={17} color={appColors.background} /><Text style={styles.downloadText}>Baixar Cápsula PNG</Text></Pressable>
+            <Pressable style={[styles.downloadButton, styles.btnRow]} onPress={handleShareImage}><ReadoraIcon name="share" size={17} color={appColors.background} /><Text style={styles.downloadText}>{Platform.OS === 'web' ? 'Baixar Cápsula PNG' : 'Compartilhar Cápsula'}</Text></Pressable>
           </View>
         </View>
       ) : (
@@ -153,11 +220,18 @@ export default function MonthlyCapsuleScreen() {
             </View>
             <Text selectable style={styles.caption}>{caption}</Text>
           </Card>
-          <Pressable style={[styles.downloadButton, styles.btnRow]} onPress={handleDownloadPng}><ReadoraIcon name="export" size={17} color={appColors.background} /><Text style={styles.downloadText}>Baixar imagem para o Instagram</Text></Pressable>
+          <Pressable style={[styles.downloadButton, styles.btnRow]} onPress={handleShareImage}><ReadoraIcon name="share" size={17} color={appColors.background} /><Text style={styles.downloadText}>{Platform.OS === 'web' ? 'Baixar imagem para o Instagram' : 'Compartilhar imagem da cápsula'}</Text></Pressable>
         </>
       )}
 
       {message ? <Text style={styles.message}>{message}</Text> : null}
+
+      {/* Off-screen capture source so the share sheet works from either tab. */}
+      {Platform.OS !== 'web' ? (
+        <View style={styles.offscreen} pointerEvents="none">
+          <CapsuleArt ref={shotRef} {...art} />
+        </View>
+      ) : null}
     </Screen>
   );
 }
@@ -193,6 +267,7 @@ const styles = StyleSheet.create({
   segmentText: { color: appColors.textMuted, fontWeight: '900' },
   mainGrid: { flexDirection: 'row', gap: 36, alignItems: 'center' },
   phoneFrame: { flex: 1, backgroundColor: appColors.surface, borderColor: appColors.borderSoft, borderWidth: 1, borderRadius: 42, padding: 48, alignItems: 'center' },
+  offscreen: { position: 'absolute', left: -10000, top: 0, width: 330 },
   capsuleCard: { width: '100%', maxWidth: 330, minHeight: 560, backgroundColor: 'rgb(25,23,20)', borderColor: appColors.borderSoft, borderWidth: 1, padding: 26, gap: 14 },
   cardKicker: { color: appColors.gold, letterSpacing: 5, fontSize: 10, fontWeight: '900' },
   cardTitle: { color: appColors.text, fontFamily: appFonts.display, fontSize: 36, lineHeight: 40, fontWeight: '900' },

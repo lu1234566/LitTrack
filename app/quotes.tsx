@@ -6,6 +6,7 @@ import { useBooks } from '@/contexts/BookContext';
 import { useQuotes } from '@/contexts/QuoteContext';
 import { Quote } from '@/types/quote';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
+import { copyText, haptic } from '@/services/feedback';
 import { appColors, appFonts } from '@/theme/tokens';
 
 export default function QuotesScreen() {
@@ -54,6 +55,13 @@ export default function QuotesScreen() {
     setPage('');
     setTags('');
     setShowComposer(false);
+    haptic('success');
+  }
+
+  async function copyQuote(quote: Quote) {
+    const attribution = [quote.author, quote.bookTitle].filter(Boolean).join(', ');
+    const ok = await copyText('“' + quote.text + '”' + (attribution ? '\n— ' + attribution : ''));
+    haptic(ok ? 'success' : 'warning');
   }
 
   function startEditing(quote: Quote) {
@@ -149,7 +157,8 @@ export default function QuotesScreen() {
             )}
             <View style={[styles.actions, mobile && styles.stack]}>
               {editing ? <Pressable style={styles.secondary} onPress={() => saveEditing(quote)}><Text style={styles.secondaryText}>Salvar</Text></Pressable> : <Pressable style={styles.secondary} onPress={() => startEditing(quote)}><Text style={styles.secondaryText}>Editar</Text></Pressable>}
-              <Pressable style={styles.secondary} onPress={() => toggleFavoriteQuote(quote.id)}><Text style={styles.secondaryText}>{quote.favorite ? 'Favorita' : 'Favoritar'}</Text></Pressable>
+              {editing ? null : <Pressable style={styles.secondary} onPress={() => copyQuote(quote)}><Text style={styles.secondaryText}>Copiar</Text></Pressable>}
+              <Pressable style={styles.secondary} onPress={() => { haptic('light'); toggleFavoriteQuote(quote.id); }}><Text style={styles.secondaryText}>{quote.favorite ? 'Favorita' : 'Favoritar'}</Text></Pressable>
               <Pressable style={styles.danger} onPress={() => deleteQuote(quote.id)}><Text style={styles.dangerText}>Remover</Text></Pressable>
             </View>
           </Card>

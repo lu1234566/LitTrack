@@ -1,5 +1,5 @@
 import { Link } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { BookCard } from '@/components/BookCard';
@@ -15,13 +15,23 @@ const sortOptions = ['recentes', 'nota', 'titulo', 'paginas'] as const;
 type SortOption = typeof sortOptions[number];
 
 export default function LibraryScreen() {
-  const { books, loading } = useBooks();
+  const { books, loading, reload } = useBooks();
   const { width } = useWindowDimensions();
   const mobile = width < 760;
   const [text, setText] = useState('');
   const [filter, setFilter] = useState<'all' | BookStatus>('all');
   const [genreFilter, setGenreFilter] = useState('all');
   const [sortBy, setSortBy] = useState<SortOption>('recentes');
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await reload();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [reload]);
 
   const genres = useMemo(() => ['all', ...Array.from(new Set(books.map((book) => book.genre).filter(Boolean)))], [books]);
 
@@ -43,7 +53,7 @@ export default function LibraryScreen() {
   }, [books, filter, genreFilter, sortBy, text]);
 
   return (
-    <Screen>
+    <Screen refreshing={refreshing} onRefresh={onRefresh}>
       <View style={styles.header}>
         <Text style={styles.title}>Meus Livros</Text>
         <Text style={styles.subtitle}>Sua biblioteca pessoal.</Text>

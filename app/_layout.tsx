@@ -4,6 +4,7 @@ import { useFonts } from 'expo-font';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { AutoSyncBridge } from '@/components/AutoSyncBridge';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { BookProvider } from '@/contexts/BookContext';
 import { PreferencesProvider } from '@/contexts/PreferencesContext';
 import { QuoteProvider } from '@/contexts/QuoteContext';
@@ -35,6 +36,7 @@ export default function RootLayout() {
   });
 
   return (
+    <ErrorBoundary>
     <PreferencesProvider>
       <SessionProvider>
         <BookProvider>
@@ -74,5 +76,6 @@ export default function RootLayout() {
         </BookProvider>
       </SessionProvider>
     </PreferencesProvider>
+    </ErrorBoundary>
   );
 }
