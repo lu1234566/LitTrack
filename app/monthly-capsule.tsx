@@ -16,6 +16,7 @@ export default function MonthlyCapsuleScreen() {
   const { width } = useWindowDimensions();
   const mobile = width < 760;
   const [message, setMessage] = useState('');
+  const [tab, setTab] = useState<'app' | 'instagram'>('app');
   const month = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
   const now = new Date();
   const monthBooks = books.filter((book) => {
@@ -74,45 +75,60 @@ export default function MonthlyCapsuleScreen() {
         </Card>
       </View>
 
-      <View style={styles.segmented}><Pressable style={[styles.segmentActive, styles.btnRow]}><ReadoraIcon name="sparkle" size={16} color={appColors.background} /><Text style={styles.segmentTextActive}>App Capsule</Text></Pressable><Pressable style={[styles.segment, styles.btnRow]}><ReadoraIcon name="share" size={16} color={appColors.textMuted} /><Text style={styles.segmentText}>Instagram</Text></Pressable></View>
-
-      <View style={[styles.mainGrid, mobile && styles.stack]}>
-        <View style={styles.phoneFrame}>
-          <View style={styles.capsuleCard}>
-            <Text style={styles.cardKicker}>READORA • MEMÓRIAS LITERÁRIAS</Text>
-            <Text style={styles.cardTitle}>Cápsula de {monthName}</Text>
-            <Text style={styles.cardSubtitle}>Jornada de {preferences.readerName || 'Lucas Barcelar'} • {now.getFullYear()}</Text>
-            <Text style={styles.poem}>“{monthName} foi um período de pausa e reflexão silenciosa entre as páginas.”</Text>
-            <View style={styles.miniGrid}>
-              <MiniStat label="LIVROS LIDOS" value={String(stats.finishedBooks)} />
-              <MiniStat label="PÁGINAS" value={String(monthPages)} />
-              <MiniStat label="TEMPO DE FOCO" value={minutesLabel} />
-              <MiniStat label="MÉDIA DO MÊS" value={stats.averageRating.toFixed(1)} />
-            </View>
-            <Text style={styles.acervo}>ACERVO CONCLUÍDO ({monthBooks.length})</Text>
-            <View style={styles.ghostBox}><Text style={styles.ghostText}>Páginas em branco aguardando o despertar da próxima história do mês.</Text></View>
-            <View style={styles.cardFooter}><Text style={styles.footerText}>ATMOSFERA{`\n`}{vibe}</Text><Text style={styles.footerText}>UNIVERSO DE FOCO{`\n`}{stats.favoriteGenre || 'Diverso'}</Text></View>
-          </View>
-        </View>
-
-        <View style={styles.essence}>
-          <Text style={styles.essenceTitle}>Sua Essência de {monthName}</Text>
-          <EssenceLine value={String(monthPages)} label="PÁGINAS PERCORRIDAS" text="A distância mística que seus olhos atravessaram este mês." />
-          <EssenceLine value={String(stats.finishedBooks)} label="HISTÓRIAS CONCLUÍDAS" text="O número de universos que agora fazem parte da sua história." />
-          <EssenceLine value={vibe} label="ATMOSFERA DOMINANTE" text="O sentimento que guiou suas escolhas e momentos de leitura." />
-          <Pressable style={[styles.downloadButton, styles.btnRow]} onPress={handleDownloadPng}><ReadoraIcon name="export" size={17} color={appColors.background} /><Text style={styles.downloadText}>Baixar Cápsula PNG</Text></Pressable>
-        </View>
+      <View style={styles.segmented}>
+        <Pressable onPress={() => setTab('app')} style={[tab === 'app' ? styles.segmentActive : styles.segment, styles.btnRow]}>
+          <ReadoraIcon name="sparkle" size={16} color={tab === 'app' ? appColors.background : appColors.textMuted} />
+          <Text style={tab === 'app' ? styles.segmentTextActive : styles.segmentText}>App Capsule</Text>
+        </Pressable>
+        <Pressable onPress={() => setTab('instagram')} style={[tab === 'instagram' ? styles.segmentActive : styles.segment, styles.btnRow]}>
+          <ReadoraIcon name="share" size={16} color={tab === 'instagram' ? appColors.background : appColors.textMuted} />
+          <Text style={tab === 'instagram' ? styles.segmentTextActive : styles.segmentText}>Instagram</Text>
+        </Pressable>
       </View>
 
-      <Text style={styles.shareTitle}>Legenda Sugerida</Text>
-      <Card>
-        <View style={[styles.captionHeader, mobile && styles.stack]}>
-          <Text style={styles.captionTitle}>Pronta para copiar e colar no seu post.</Text>
-          <Pressable style={[styles.copyButton, styles.btnRow]} onPress={copyCaption}><ReadoraIcon name="copy" size={17} color={appColors.background} /><Text style={styles.copyText}>Copiar Legenda</Text></Pressable>
+      {tab === 'app' ? (
+        <View style={[styles.mainGrid, mobile && styles.stack]}>
+          <View style={styles.phoneFrame}>
+            <View style={styles.capsuleCard}>
+              <Text style={styles.cardKicker}>READORA • MEMÓRIAS LITERÁRIAS</Text>
+              <Text style={styles.cardTitle}>Cápsula de {monthName}</Text>
+              <Text style={styles.cardSubtitle}>Jornada de {preferences.readerName || 'Lucas Barcelar'} • {now.getFullYear()}</Text>
+              <Text style={styles.poem}>“{monthName} foi um período de pausa e reflexão silenciosa entre as páginas.”</Text>
+              <View style={styles.miniGrid}>
+                <MiniStat label="LIVROS LIDOS" value={String(stats.finishedBooks)} />
+                <MiniStat label="PÁGINAS" value={String(monthPages)} />
+                <MiniStat label="TEMPO DE FOCO" value={minutesLabel} />
+                <MiniStat label="MÉDIA DO MÊS" value={stats.averageRating.toFixed(1)} />
+              </View>
+              <Text style={styles.acervo}>ACERVO CONCLUÍDO ({monthBooks.length})</Text>
+              <View style={styles.ghostBox}><Text style={styles.ghostText}>Páginas em branco aguardando o despertar da próxima história do mês.</Text></View>
+              <View style={styles.cardFooter}><Text style={styles.footerText}>ATMOSFERA{`\n`}{vibe}</Text><Text style={styles.footerText}>UNIVERSO DE FOCO{`\n`}{stats.favoriteGenre || 'Diverso'}</Text></View>
+            </View>
+          </View>
+
+          <View style={styles.essence}>
+            <Text style={styles.essenceTitle}>Sua Essência de {monthName}</Text>
+            <EssenceLine value={String(monthPages)} label="PÁGINAS PERCORRIDAS" text="A distância mística que seus olhos atravessaram este mês." />
+            <EssenceLine value={String(stats.finishedBooks)} label="HISTÓRIAS CONCLUÍDAS" text="O número de universos que agora fazem parte da sua história." />
+            <EssenceLine value={vibe} label="ATMOSFERA DOMINANTE" text="O sentimento que guiou suas escolhas e momentos de leitura." />
+            <Pressable style={[styles.downloadButton, styles.btnRow]} onPress={handleDownloadPng}><ReadoraIcon name="export" size={17} color={appColors.background} /><Text style={styles.downloadText}>Baixar Cápsula PNG</Text></Pressable>
+          </View>
         </View>
-        {message ? <Text style={styles.message}>{message}</Text> : null}
-        <Text selectable style={styles.caption}>{caption}</Text>
-      </Card>
+      ) : (
+        <>
+          <Text style={styles.shareTitle}>Legenda Sugerida</Text>
+          <Card>
+            <View style={[styles.captionHeader, mobile && styles.stack]}>
+              <Text style={styles.captionTitle}>Pronta para copiar e colar no seu post.</Text>
+              <Pressable style={[styles.copyButton, styles.btnRow]} onPress={copyCaption}><ReadoraIcon name="copy" size={17} color={appColors.background} /><Text style={styles.copyText}>Copiar Legenda</Text></Pressable>
+            </View>
+            <Text selectable style={styles.caption}>{caption}</Text>
+          </Card>
+          <Pressable style={[styles.downloadButton, styles.btnRow]} onPress={handleDownloadPng}><ReadoraIcon name="export" size={17} color={appColors.background} /><Text style={styles.downloadText}>Baixar imagem para o Instagram</Text></Pressable>
+        </>
+      )}
+
+      {message ? <Text style={styles.message}>{message}</Text> : null}
     </Screen>
   );
 }
