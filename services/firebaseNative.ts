@@ -1,6 +1,9 @@
-import { initializeApp, getApp, getApps } from 'firebase/app';
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { initializeApp, getApp, getApps, type FirebaseApp } from 'firebase/app';
 import { collection, doc, getDoc, getDocs, getFirestore, setDoc } from 'firebase/firestore';
-import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithCredential, signOut as firebaseSignOut, type User } from 'firebase/auth';
+import { getAuth, initializeAuth, GoogleAuthProvider, onAuthStateChanged, signInWithCredential, signOut as firebaseSignOut, type Auth, type Persistence, type User } from 'firebase/auth';
+import * as FirebaseAuthModule from 'firebase/auth';
 import { Book } from '@/types/book';
 import { Quote } from '@/types/quote';
 import { Shelf } from '@/types/shelf';
@@ -21,7 +24,27 @@ export const isNativeFirebaseConfigured = Boolean(firebaseConfig.apiKey && fireb
 
 export const nativeFirebaseApp = isNativeFirebaseConfigured ? getApps().length > 0 ? getApp() : initializeApp(firebaseConfig) : null;
 export const nativeDb = nativeFirebaseApp ? getFirestore(nativeFirebaseApp) : null;
-export const nativeAuth = nativeFirebaseApp ? getAuth(nativeFirebaseApp) : null;
+
+// On React Native, persist the auth session with AsyncStorage so the user
+// stays logged in across app restarts (getAuth defaults to in-memory there).
+// getReactNativePersistence only exists in firebase/auth's RN build, so access
+// it defensively; fall back to getAuth if anything is unavailable.
+function resolveNativeAuth(app: FirebaseApp): Auth {
+  if (Platform.OS === 'web') return getAuth(app);
+  const rnPersistence = (FirebaseAuthModule as unknown as {
+    getReactNativePersistence?: (storage: unknown) => Persistence;
+  }).getReactNativePersistence;
+  try {
+    if (rnPersistence) {
+      return initializeAuth(app, { persistence: rnPersistence(AsyncStorage) });
+    }
+    return initializeAuth(app);
+  } catch {
+    return getAuth(app);
+  }
+}
+
+export const nativeAuth = nativeFirebaseApp ? resolveNativeAuth(nativeFirebaseApp) : null;
 
 type SyncBundle = {
   books: Book[];
