@@ -1,9 +1,10 @@
-import { forwardRef, useMemo, useRef, useState } from 'react';
-import { Image, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
+import { FeedCapsuleArt, FeedCapsuleBook } from '@/components/FeedCapsuleArt';
 import { useBooks } from '@/contexts/BookContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
 import { useReadingSessions } from '@/contexts/ReadingSessionContext';
@@ -11,56 +12,6 @@ import { downloadCapsulePng } from '@/services/webPlatformTools';
 import { copyText, haptic } from '@/services/feedback';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors, appFonts } from '@/theme/tokens';
-
-type CapsuleArtBook = { id: string; coverUrl?: string; title: string };
-type CapsuleArtProps = {
-  monthName: string;
-  readerName: string;
-  year: number;
-  finished: number;
-  pages: number;
-  minutesLabel: string;
-  average: string;
-  books: CapsuleArtBook[];
-  vibe: string;
-  genre: string;
-};
-
-// The shareable card, isolated as a forwardRef view so react-native-view-shot
-// can snapshot exactly this node as a PNG. The same component renders the
-// visible preview inside the phone frame, so what you share matches the screen.
-const CapsuleArt = forwardRef<View, CapsuleArtProps>(function CapsuleArt(
-  { monthName, readerName, year, finished, pages, minutesLabel, average, books, vibe, genre },
-  ref
-) {
-  return (
-    <View ref={ref} collapsable={false} style={styles.capsuleCard}>
-      <Text style={styles.cardKicker}>READORA • MEMÓRIAS LITERÁRIAS</Text>
-      <Text style={styles.cardTitle}>Cápsula de {capitalize(monthName)}</Text>
-      <Text style={styles.cardSubtitle}>Jornada de {readerName} • {year}</Text>
-      <Text style={styles.poem}>“{capitalize(monthName)} foi um período de pausa e reflexão silenciosa entre as páginas.”</Text>
-      <View style={styles.miniGrid}>
-        <MiniStat label="LIVROS LIDOS" value={String(finished)} />
-        <MiniStat label="PÁGINAS" value={String(pages)} />
-        <MiniStat label="TEMPO DE FOCO" value={minutesLabel} />
-        <MiniStat label="MÉDIA DO MÊS" value={average} />
-      </View>
-      <Text style={styles.acervo}>ACERVO DO MÊS ({books.length})</Text>
-      {books.length > 0 ? (
-        <View style={styles.bookRow}>
-          {books.slice(0, 8).map((book) => (
-            book.coverUrl
-              ? <Image key={book.id} source={{ uri: book.coverUrl }} style={styles.bookCover} />
-              : <View key={book.id} style={[styles.bookCover, styles.bookCoverFallback]}><Text style={styles.bookCoverInitial}>{book.title.slice(0, 1).toUpperCase()}</Text></View>
-          ))}
-        </View>
-      ) : (
-        <View style={styles.ghostBox}><Text style={styles.ghostText}>Nenhum livro registrado em {capitalize(monthName)} ainda.</Text></View>
-      )}
-      <View style={styles.cardFooter}><Text style={styles.footerText}>ATMOSFERA{`\n`}{vibe}</Text><Text style={styles.footerText}>UNIVERSO DE FOCO{`\n`}{genre}</Text></View>
-    </View>
-  );
-});
 
 export default function MonthlyCapsuleScreen() {
   const { books, stats } = useBooks();
@@ -97,25 +48,48 @@ export default function MonthlyCapsuleScreen() {
     || monthBooks.reduce((sum, book) => sum + (book.totalPages || 0), 0);
   const ratedBooks = monthBooks.filter((book) => (book.rating || 0) > 0);
   const monthAverage = ratedBooks.length ? ratedBooks.reduce((sum, book) => sum + (book.rating || 0), 0) / ratedBooks.length : 0;
+  const ratingOutOf10 = monthAverage * 2;
   const month = selected.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
   const monthName = selected.toLocaleDateString('pt-BR', { month: 'long' });
   const vibe = monthSessions[0]?.mood || monthBooks.find((book) => book.mood)?.mood || 'Sereno';
   const minutesLabel = Math.floor(monthMinutes / 60) + 'h ' + (monthMinutes % 60) + 'm';
 
-  const caption = useMemo(() => 'Minha cápsula literária de ' + monthName + ' no Readora 📚✨\n\n📖 Livros concluídos: ' + monthFinished + '\n📄 Páginas lidas: ' + monthPages + '\n⭐ Média do mês: ' + monthAverage.toFixed(1) + '\n🎭 Vibe: ' + vibe + '\n\nGerado automaticamente pelo @readora.app 📱\n#Readora #CapsulaLiteraria #Leitura #Books #MonthlyWrapUp', [monthName, monthPages, monthAverage, monthFinished, vibe]);
+  // Top 5: maior nota, mais páginas, ordem alfabética — igual à web.
+  const top5Books: FeedCapsuleBook[] = useMemo(() => (
+    [...monthBooks]
+      .sort((a, b) => {
+        if ((b.rating || 0) !== (a.rating || 0)) return (b.rating || 0) - (a.rating || 0);
+        if ((b.totalPages || 0) !== (a.totalPages || 0)) return (b.totalPages || 0) - (a.totalPages || 0);
+        return a.title.localeCompare(b.title);
+      })
+      .slice(0, 5)
+      .map((book) => ({ id: book.id, title: book.title, author: book.author, pageCount: book.totalPages || 0, rating: book.rating || 0, coverUrl: book.coverUrl }))
+  ), [monthBooks]);
+  const bestBook = top5Books[0] || null;
 
-  const art: CapsuleArtProps = {
+  const literaryCopy = useMemo(() => {
+    if (monthFinished === 0) return monthName + ' foi um período de pausa e reflexão silenciosa entre as páginas.';
+    if (ratingOutOf10 >= 8) return 'Sua jornada em ' + monthName + ' foi marcada por encontros sublimes e histórias que ecoaram profundamente.';
+    if (monthPages > 500) return 'Em ' + monthName + ', você mergulhou intensamente em novos mundos, percorrendo caminhos de papel e tinta.';
+    return 'Um mês de descobertas e novos começos literários. ' + monthName + ' deixou sua marca em sua estante.';
+  }, [monthFinished, ratingOutOf10, monthPages, monthName]);
+
+  const feedData = {
     monthName,
-    readerName: preferences.readerName || 'Lucas Barcelar',
     year: selYear,
-    finished: monthFinished,
-    pages: monthPages,
-    minutesLabel,
-    average: monthAverage.toFixed(1),
-    books: monthBooks,
-    vibe,
-    genre: stats.favoriteGenre || 'Diverso'
+    totalBooks: monthFinished || monthBooks.length,
+    totalPages: monthPages,
+    ratingOutOf10,
+    dominantMood: vibe,
+    top5Books,
+    bestBook,
+    literaryCopy
   };
+
+  const previewWidth = mobile ? width - 40 : Math.min(width * 0.46, 540);
+  const previewScale = previewWidth / 1080;
+
+  const caption = useMemo(() => 'Minha cápsula literária de ' + monthName + ' no Readora 📚✨\n\n📖 Livros concluídos: ' + monthFinished + '\n📄 Páginas lidas: ' + monthPages + '\n⭐ Média do mês: ' + ratingOutOf10.toFixed(1) + '/10\n🎭 Vibe: ' + vibe + '\n\nGerado automaticamente pelo @readora.app 📱\n#Readora #CapsulaLiteraria #Leitura #Books #MonthlyWrapUp', [monthName, monthPages, ratingOutOf10, monthFinished, vibe]);
 
   async function copyCaption() {
     const ok = await copyText(caption);
@@ -133,7 +107,7 @@ export default function MonthlyCapsuleScreen() {
       finishedBooks: monthFinished,
       pages: monthPages,
       minutesLabel,
-      averageRating: monthAverage.toFixed(1),
+      averageRating: ratingOutOf10.toFixed(1),
       vibe,
       genre: stats.favoriteGenre || 'Diverso',
       bookCount: monthBooks.length
@@ -141,8 +115,8 @@ export default function MonthlyCapsuleScreen() {
     setMessage(ok ? 'Cápsula PNG baixada pelo navegador.' : 'Download PNG disponível apenas no navegador com suporte a Canvas.');
   }
 
-  // Native: snapshot the card and open the OS share sheet (Instagram, WhatsApp,
-  // salvar na galeria…). Web: keep the canvas-based PNG download.
+  // Native: snapshot do card em alta resolução (1080×1350) e abre a folha de
+  // compartilhamento nativa. Web: mantém o download via Canvas.
   async function handleShareImage() {
     if (Platform.OS === 'web') {
       downloadOnWeb();
@@ -198,8 +172,10 @@ export default function MonthlyCapsuleScreen() {
 
       {tab === 'app' ? (
         <View style={[styles.mainGrid, mobile && styles.stack]}>
-          <View style={styles.phoneFrame}>
-            <CapsuleArt {...art} />
+          <View style={styles.previewCol}>
+            <View style={[styles.previewFrame, { width: previewWidth + 24 }]}>
+              <FeedCapsuleArt scale={previewScale} {...feedData} />
+            </View>
           </View>
 
           <View style={styles.essence}>
@@ -226,18 +202,14 @@ export default function MonthlyCapsuleScreen() {
 
       {message ? <Text style={styles.message}>{message}</Text> : null}
 
-      {/* Off-screen capture source so the share sheet works from either tab. */}
+      {/* Fonte de captura em alta resolução (1080×1350), fora da tela. */}
       {Platform.OS !== 'web' ? (
         <View style={styles.offscreen} pointerEvents="none">
-          <CapsuleArt ref={shotRef} {...art} />
+          <FeedCapsuleArt ref={shotRef} scale={1} {...feedData} />
         </View>
       ) : null}
     </Screen>
   );
-}
-
-function MiniStat({ label, value }: { label: string; value: string }) {
-  return <View style={styles.miniStat}><Text style={styles.miniLabel}>{label}</Text><Text style={styles.miniValue}>{value}</Text></View>;
 }
 
 function EssenceLine({ value, label, text }: { value: string; label: string; text: string }) {
@@ -266,26 +238,9 @@ const styles = StyleSheet.create({
   segmentTextActive: { color: appColors.background, fontWeight: '900' },
   segmentText: { color: appColors.textMuted, fontWeight: '900' },
   mainGrid: { flexDirection: 'row', gap: 36, alignItems: 'center' },
-  phoneFrame: { flex: 1, backgroundColor: appColors.surface, borderColor: appColors.borderSoft, borderWidth: 1, borderRadius: 42, padding: 48, alignItems: 'center' },
-  offscreen: { position: 'absolute', left: -10000, top: 0, width: 330 },
-  capsuleCard: { width: '100%', maxWidth: 330, minHeight: 560, backgroundColor: 'rgb(25,23,20)', borderColor: appColors.borderSoft, borderWidth: 1, padding: 26, gap: 14 },
-  cardKicker: { color: appColors.gold, letterSpacing: 5, fontSize: 10, fontWeight: '900' },
-  cardTitle: { color: appColors.text, fontFamily: appFonts.display, fontSize: 36, lineHeight: 40, fontWeight: '900' },
-  cardSubtitle: { color: appColors.textMuted, fontSize: 13 },
-  poem: { color: appColors.text, fontFamily: appFonts.display, fontStyle: 'italic', textAlign: 'center', marginVertical: 24, lineHeight: 22 },
-  miniGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  miniStat: { width: '47%', backgroundColor: appColors.surface, borderColor: appColors.borderSoft, borderWidth: 1, borderRadius: 10, padding: 12 },
-  miniLabel: { color: appColors.textDim, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
-  miniValue: { color: appColors.text, fontSize: 18, fontWeight: '900', marginTop: 4 },
-  acervo: { backgroundColor: appColors.background, color: appColors.textMuted, letterSpacing: 3, fontSize: 10, fontWeight: '900', padding: 8, marginTop: 12 },
-  ghostBox: { minHeight: 70, borderColor: appColors.border, borderStyle: 'dashed', borderWidth: 1, borderRadius: 8, alignItems: 'center', justifyContent: 'center', padding: 12 },
-  ghostText: { color: appColors.textDim, fontFamily: appFonts.display, fontStyle: 'italic', textAlign: 'center', fontSize: 12 },
-  bookRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  bookCover: { width: 44, height: 64, borderRadius: 6, backgroundColor: appColors.background, borderColor: appColors.borderSoft, borderWidth: 1 },
-  bookCoverFallback: { alignItems: 'center', justifyContent: 'center' },
-  bookCoverInitial: { color: appColors.gold, fontFamily: appFonts.display, fontSize: 20, fontWeight: '900' },
-  cardFooter: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 'auto' },
-  footerText: { color: appColors.textMuted, fontSize: 10, fontWeight: '900' },
+  previewCol: { alignItems: 'center', justifyContent: 'center' },
+  previewFrame: { backgroundColor: appColors.surface, borderColor: appColors.borderSoft, borderWidth: 1, borderRadius: 28, padding: 12, alignItems: 'center' },
+  offscreen: { position: 'absolute', left: -20000, top: 0 },
   essence: { flex: 1, gap: 24 },
   essenceTitle: { color: appColors.text, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 30, fontWeight: '900' },
   essenceLine: { flexDirection: 'row', gap: 14, alignItems: 'flex-start' },
