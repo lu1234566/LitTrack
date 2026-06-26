@@ -24,7 +24,13 @@
     },
     "ios": {
       "bundleIdentifier": "com.readora.app",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "O Readora usa a câmera para escanear o código ISBN dos seus livros e capturar capas.",
+        "NSPhotoLibraryUsageDescription": "O Readora acessa suas fotos para definir capas de livros e importar imagens da sua biblioteca.",
+        "NSPhotoLibraryAddUsageDescription": "O Readora salva a imagem da sua Cápsula Literária na galeria para você compartilhar.",
+        "NSMicrophoneUsageDescription": "O Readora pode acessar o microfone durante a captura com a câmera."
+      }
     },
     "plugins": [
       "expo-router",

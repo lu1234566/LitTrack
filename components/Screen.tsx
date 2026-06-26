@@ -1,6 +1,6 @@
 import { ReactNode, useState } from 'react';
 import { Link, usePathname } from 'expo-router';
-import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Image, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { usePreferences } from '@/contexts/PreferencesContext';
 import { appColors, appFonts } from '@/theme/tokens';
@@ -31,7 +31,17 @@ const bottomTabs: { icon: ReadoraIconName; label: string; href: string }[] = [
   { icon: 'literaryProfile', label: 'Perfil', href: '/literary-profile' }
 ];
 
-export function Screen({ children, scroll = true }: { children: ReactNode; scroll?: boolean }) {
+export function Screen({
+  children,
+  scroll = true,
+  refreshing,
+  onRefresh
+}: {
+  children: ReactNode;
+  scroll?: boolean;
+  refreshing?: boolean;
+  onRefresh?: () => void;
+}) {
   const { preferences } = usePreferences();
   const density = densityValue(preferences.visualDensity);
   const accent = accentColor(preferences.visualAccent);
@@ -46,7 +56,22 @@ export function Screen({ children, scroll = true }: { children: ReactNode; scrol
       <View style={styles.shell}>
         {isDesktop ? <Sidebar accent={accent} textScale={preferences.textScale} /> : <MobileTopbar accent={accent} onMenu={() => setDrawerOpen(true)} />}
         <View style={[styles.main, isDesktop ? styles.mainDesktop : styles.mainMobile]}>
-          {scroll ? <ScrollView contentContainerStyle={[styles.scroll, isDesktop ? styles.scrollDesktop : styles.scrollMobile]}>{content}</ScrollView> : content}
+          {scroll ? (
+            <ScrollView
+              contentContainerStyle={[styles.scroll, isDesktop ? styles.scrollDesktop : styles.scrollMobile]}
+              refreshControl={onRefresh ? (
+                <RefreshControl
+                  refreshing={Boolean(refreshing)}
+                  onRefresh={onRefresh}
+                  tintColor={appColors.gold}
+                  colors={[appColors.gold]}
+                  progressBackgroundColor={appColors.surface}
+                />
+              ) : undefined}
+            >
+              {content}
+            </ScrollView>
+          ) : content}
         </View>
       </View>
       {!isDesktop ? <MobileBottomBar accent={accent} /> : null}

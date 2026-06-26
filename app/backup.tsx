@@ -9,6 +9,7 @@ import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { useShelves } from '@/contexts/ShelfContext';
 import { createReadoraBackup, parseReadoraBackup, stringifyBackup } from '@/services/readoraBackup';
 import { downloadTextFile, pickTextFile, printTextDocument } from '@/services/webPlatformTools';
+import { copyText, haptic } from '@/services/feedback';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors, appFonts } from '@/theme/tokens';
 import type { Book, BookStatus } from '@/types/book';
@@ -105,12 +106,12 @@ export default function BackupScreen() {
   }
 
   async function copyReport() {
-    const clipboard = (globalThis as any).navigator?.clipboard;
-    if (clipboard?.writeText && reportText) {
-      await clipboard.writeText(reportText);
+    if (reportText && await copyText(reportText)) {
+      haptic('success');
       setMessage('Relatório copiado para a área de transferência.');
       return;
     }
+    haptic('warning');
     setMessage('Selecione o relatório gerado e copie manualmente.');
   }
 
@@ -139,8 +140,10 @@ export default function BackupScreen() {
       await setShelfList(backup.shelves);
       await setSessionList(backup.sessions);
       if (backup.preferences) await updatePreferences({ ...preferences, ...backup.preferences });
+      haptic('success');
       notify('Importação concluída', backup.books.length + ' livros, ' + backup.quotes.length + ' citações, ' + backup.shelves.length + ' estantes e ' + backup.sessions.length + ' sessões importados.');
     } catch (error) {
+      haptic('error');
       notify('Falha ao importar', error instanceof Error ? error.message : 'erro desconhecido ao processar o JSON.');
     }
   }
