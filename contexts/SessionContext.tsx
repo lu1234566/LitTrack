@@ -1,16 +1,10 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import * as AuthSession from 'expo-auth-session';
+import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import { SessionUser } from '@/types/sessionUser';
 import { isNativeFirebaseConfigured, listenToFirebaseUser, signInFirebaseWithGoogleIdToken, signOutFirebaseUser } from '@/services/firebaseNative';
 
 WebBrowser.maybeCompleteAuthSession();
-
-const discovery = {
-  authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
-  tokenEndpoint: 'https://oauth2.googleapis.com/token',
-  revocationEndpoint: 'https://oauth2.googleapis.com/revoke'
-};
 
 type SessionContextValue = {
   user: SessionUser | null;
@@ -19,8 +13,10 @@ type SessionContextValue = {
   signOut: () => Promise<void>;
 };
 
-const googleClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || '';
-const hasGoogleClientId = Boolean(googleClientId);
+const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+const hasGoogleClientId = Boolean(webClientId || androidClientId || iosClientId);
 
 const SessionContext = createContext<SessionContextValue>({
   user: null,
@@ -31,31 +27,34 @@ const SessionContext = createContext<SessionContextValue>({
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
-  const nonce = useMemo(() => Math.random().toString(36).slice(2), []);
-  const redirectUri = useMemo(() => AuthSession.makeRedirectUri({ scheme: 'readora' }), []);
   const isGoogleLoginPrepared = Boolean(isNativeFirebaseConfigured && hasGoogleClientId);
-  const requestConfig = useMemo(() => ({
-    clientId: googleClientId || 'readora-placeholder-client-id',
-    scopes: ['openid', 'profile', 'email'],
-    redirectUri,
-    responseType: AuthSession.ResponseType.IdToken,
-    extraParams: { nonce }
-  }), [nonce, redirectUri]);
-  const [request, , promptAsync] = AuthSession.useAuthRequest(requestConfig, discovery);
+
+  // Official Google provider: handles native redirect URIs (reverse client id),
+  // PKCE and the correct id_token audience per platform.
+  const [request, , promptAsync] = Google.useAuthRequest({
+    webClientId,
+    androidClientId,
+    iosClientId,
+    scopes: ['openid', 'profile', 'email']
+  });
 
   useEffect(() => listenToFirebaseUser(setUser), []);
 
   async function signInWithGoogle() {
-    if (!isNativeFirebaseConfigured) return 'Configure as variáveis EXPO_PUBLIC_FIREBASE_* para ativar Firebase.';
-    if (!hasGoogleClientId) return 'Configure EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ou client IDs Android/iOS.';
+    if (!isNativeFirebaseConfigured) return 'Configure as variáveis EXPO_PUBLIC_FIREBASE_* para ativar o Firebase.';
+    if (!hasGoogleClientId) return 'Configure EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (e o Android/iOS client id).';
     if (!request) return 'Login Google ainda está preparando a sessão. Tente novamente em instantes.';
-    const result = await promptAsync();
-    if (result.type !== 'success') return 'Login cancelado ou não concluído.';
-    const idToken = result.params?.id_token;
-    if (!idToken) return 'O Google não retornou id_token. Verifique o Client ID e redirect URI.';
-    const loggedUser = await signInFirebaseWithGoogleIdToken(idToken);
-    setUser(loggedUser);
-    return loggedUser?.email ? 'Login concluído: ' + loggedUser.email : 'Login concluído.';
+    try {
+      const result = await promptAsync();
+      if (result.type !== 'success') return 'Login cancelado ou não concluído.';
+      const idToken = result.params?.id_token ?? result.authentication?.idToken;
+      if (!idToken) return 'O Google não retornou um id_token. Verifique os Client IDs e a SHA-1.';
+      const loggedUser = await signInFirebaseWithGoogleIdToken(idToken);
+      setUser(loggedUser);
+      return loggedUser?.email ? 'Login concluído: ' + loggedUser.email : 'Login concluído.';
+    } catch (error) {
+      return error instanceof Error ? 'Falha no login Google: ' + error.message : 'Falha no login Google.';
+    }
   }
 
   async function signOut() {
@@ -63,7 +62,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }
 
-  const value = useMemo(() => ({ user, isGoogleLoginPrepared, signInWithGoogle, signOut }), [user, isGoogleLoginPrepared, request]);
+  const value = useMemo(
+    () => ({ user, isGoogleLoginPrepared, signInWithGoogle, signOut }),
+    [user, isGoogleLoginPrepared, request]
+  );
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
 
