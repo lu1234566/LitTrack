@@ -4,6 +4,8 @@ import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
 import { useQuotes } from '@/contexts/QuoteContext';
 import { useReadingSessions } from '@/contexts/ReadingSessionContext';
+import { StreakCard } from '@/components/StreakCard';
+import { ReadingHeatmap } from '@/components/ReadingHeatmap';
 import { appColors, appFonts } from '@/theme/tokens';
 
 export default function LiteraryProfileScreen() {
@@ -60,6 +62,16 @@ export default function LiteraryProfileScreen() {
           </View>
         </Card>
       </View>
+
+      <StreakCard sessions={sessions} />
+
+      <Card>
+        <Text style={styles.cardTitle}>Mapa de leitura do ano</Text>
+        <Text style={styles.body}>Cada quadrado é um dia; a intensidade reflete as páginas lidas nas suas sessões.</Text>
+        <View style={{ marginTop: 16 }}>
+          <ReadingHeatmap sessions={sessions} />
+        </View>
+      </Card>
 
       <Card>
         <Text style={styles.cardTitle}>Memória literária</Text>
