@@ -6,10 +6,11 @@ import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
 import { searchGoogleBooks } from '@/services/externalBookSearch';
 import { pickImageAsDataUrl, scanBarcodeFromImage } from '@/services/webPlatformTools';
-import { BookStatus } from '@/types/book';
+import { Book, BookStatus } from '@/types/book';
 import { ExternalBook } from '@/types/externalBook';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { haptic } from '@/services/feedback';
+import { bookNeedsEnrichment, enrichBookPatch } from '@/services/bookEnrichment';
 import { appColors, appFonts } from '@/theme/tokens';
 
 const moods = ['Sombrio', 'Tenso', 'Reflexivo', 'Aconchegante', 'Emocional', 'Misterioso', 'Caótico', 'Inspirador', 'Cerebral', 'Mágico'];
@@ -126,7 +127,7 @@ export default function AddBookScreen() {
       weaknesses.trim() ? 'Pontos fracos: ' + weaknesses.trim() : ''
     ].filter(Boolean).join('\n\n');
 
-    await addBook({
+    const draft = {
       title: title.trim(),
       author: author.trim(),
       genre: genre.trim() || 'A definir',
@@ -144,7 +145,21 @@ export default function AddBookScreen() {
       notes: isbn ? 'ISBN: ' + isbn : '',
       isbn: isbn.trim(),
       coverUrl: coverUrl.trim()
-    });
+    };
+
+    // Fill in missing pages/cover/genre automatically (e.g. manual entries),
+    // without overwriting anything the user typed. Stays quiet if offline.
+    let enriched = draft;
+    if (bookNeedsEnrichment(draft as Book)) {
+      try {
+        const patch = await enrichBookPatch(draft as Book);
+        if (patch) enriched = { ...draft, ...patch };
+      } catch {
+        /* keep the draft as-is */
+      }
+    }
+
+    await addBook(enriched);
 
     haptic('success');
     router.replace('/library');

@@ -10,6 +10,7 @@ import { useShelves } from '@/contexts/ShelfContext';
 import { createReadoraBackup, parseReadoraBackup, stringifyBackup } from '@/services/readoraBackup';
 import { downloadTextFile, pickTextFile, printTextDocument } from '@/services/webPlatformTools';
 import { copyText, haptic } from '@/services/feedback';
+import { bookNeedsEnrichment, enrichLibrary } from '@/services/bookEnrichment';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors, appFonts } from '@/theme/tokens';
 import type { Book, BookStatus } from '@/types/book';
@@ -18,7 +19,7 @@ const scopes: Array<'all' | BookStatus> = ['all', 'finished', 'reading', 'wishli
 const ratings = [0, 1, 2, 3, 4, 5];
 
 export default function BackupScreen() {
-  const { books, replaceBooks } = useBooks();
+  const { books, replaceBooks, updateBook } = useBooks();
   const { preferences, updatePreferences } = usePreferences();
   const { quotes, setQuoteList } = useQuotes();
   const { shelves, setShelfList } = useShelves();
@@ -32,6 +33,33 @@ export default function BackupScreen() {
   const [reportText, setReportText] = useState('');
   const [importText, setImportText] = useState('');
   const [message, setMessage] = useState('');
+  const [enriching, setEnriching] = useState(false);
+
+  const missingCount = useMemo(() => books.filter(bookNeedsEnrichment).length, [books]);
+
+  async function runEnrich() {
+    if (enriching) return;
+    if (missingCount === 0) {
+      notify('Tudo completo', 'Todos os livros já têm páginas, capa e gênero preenchidos.');
+      return;
+    }
+    setEnriching(true);
+    setMessage('Completando dados... 0/' + missingCount);
+    try {
+      const result = await enrichLibrary(
+        books,
+        updateBook,
+        (p) => setMessage('Completando dados... ' + p.done + '/' + p.total + ' (' + p.updated + ' atualizados)')
+      );
+      haptic(result.updated > 0 ? 'success' : 'warning');
+      notify('Dados completados', result.updated + ' de ' + result.checked + ' livro(s) atualizados a partir do Google Books / Open Library.');
+    } catch {
+      haptic('error');
+      notify('Falha ao completar', 'Não foi possível completar os dados agora. Verifique a conexão e tente novamente.');
+    } finally {
+      setEnriching(false);
+    }
+  }
 
   const genres = useMemo(() => ['all', ...Array.from(new Set(books.map((book) => book.genre).filter(Boolean)))], [books]);
   const selectedBooks = useMemo(() => filterBooks(books, scope, genre, minRating), [books, genre, minRating, scope]);
@@ -223,6 +251,16 @@ export default function BackupScreen() {
         </Card>
       </View>
 
+      <Card>
+        <View style={styles.titleRow}><ReadoraIcon name="sparkle" size={18} color={appColors.gold} /><Text style={styles.cardTitle}>Completar dados faltantes</Text></View>
+        <Text style={styles.body}>Busca automaticamente páginas, capa e gênero que faltam nos seus livros (via Google Books / Open Library) — sem sobrescrever o que você já preencheu.</Text>
+        <Text style={styles.body}>Livros incompletos no momento: <Text style={styles.white}>{missingCount}</Text></Text>
+        <Pressable style={[styles.downloadButton, enriching && styles.buttonDisabled]} onPress={runEnrich} disabled={enriching}>
+          <ReadoraIcon name="cloudDownload" size={17} color={appColors.background} />
+          <Text style={styles.downloadText}>{enriching ? 'Completando...' : 'Completar dados agora'}</Text>
+        </Pressable>
+      </Card>
+
       {backupText ? (
         <Card>
           <View style={styles.reportHeader}><Text style={styles.cardTitle}>Backup gerado</Text><Pressable style={styles.copyButton} onPress={downloadBackup}><Text style={styles.copyText}>Baixar</Text></Pressable></View>
@@ -299,6 +337,7 @@ const styles = StyleSheet.create({
   exportText: { color: appColors.textMuted, textAlign: 'center', lineHeight: 20, marginTop: 8 },
   downloadButton: { backgroundColor: appColors.gold, borderRadius: 12, paddingVertical: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 22 },
   downloadText: { color: appColors.background, fontWeight: '900' },
+  buttonDisabled: { opacity: 0.6 },
   pdfButton: { backgroundColor: '#3b82f6', borderRadius: 12, paddingVertical: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 22 },
   pdfText: { color: appColors.text, fontWeight: '900' },
   secondaryMiniButton: { borderColor: appColors.border, borderWidth: 1, borderRadius: 999, paddingVertical: 10, alignItems: 'center', marginTop: 10 },
