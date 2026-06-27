@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
+import * as MediaLibrary from 'expo-media-library';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { FeedCapsuleArt, FeedCapsuleBook } from '@/components/FeedCapsuleArt';
@@ -24,6 +25,7 @@ export default function MonthlyCapsuleScreen() {
   const [tab, setTab] = useState<'app' | 'instagram'>('app');
   const [format, setFormat] = useState<'feed' | 'story'>('feed');
   const [monthOffset, setMonthOffset] = useState(0);
+  const [favoriteId, setFavoriteId] = useState<string | null>(null);
   const shotRef = useRef<View>(null);
 
   const selected = useMemo(() => {
@@ -67,7 +69,13 @@ export default function MonthlyCapsuleScreen() {
       .slice(0, 10)
       .map((book) => ({ id: book.id, title: book.title, author: book.author, pageCount: book.totalPages || 0, rating: book.rating || 0, coverUrl: book.coverUrl }))
   ), [monthBooks]);
-  const bestBook = rankedBooks[0] || null;
+  const bestBook = useMemo<FeedCapsuleBook | null>(() => {
+    if (favoriteId) {
+      const chosen = monthBooks.find((b) => b.id === favoriteId);
+      if (chosen) return { id: chosen.id, title: chosen.title, author: chosen.author, pageCount: chosen.totalPages || 0, rating: chosen.rating || 0, coverUrl: chosen.coverUrl };
+    }
+    return rankedBooks[0] || null;
+  }, [favoriteId, monthBooks, rankedBooks]);
 
   const literaryCopy = useMemo(() => {
     if (monthFinished === 0) return monthName + ' foi um período de pausa e reflexão silenciosa entre as páginas.';
@@ -143,6 +151,33 @@ export default function MonthlyCapsuleScreen() {
     }
   }
 
+  // Save the rendered capsule straight to the device gallery.
+  async function handleSaveToGallery() {
+    if (Platform.OS === 'web') {
+      downloadOnWeb();
+      return;
+    }
+    try {
+      if (!shotRef.current) {
+        setMessage('A imagem da cápsula ainda está sendo preparada. Tente novamente em instantes.');
+        return;
+      }
+      const permission = await MediaLibrary.requestPermissionsAsync();
+      if (!permission.granted) {
+        haptic('warning');
+        setMessage('Permita o acesso à galeria para salvar a imagem.');
+        return;
+      }
+      const uri = await captureRef(shotRef, { format: 'png', quality: 1, result: 'tmpfile' });
+      await MediaLibrary.saveToLibraryAsync(uri);
+      haptic('success');
+      setMessage('Cápsula salva na galeria.');
+    } catch {
+      haptic('error');
+      setMessage('Não foi possível salvar na galeria. Tente novamente.');
+    }
+  }
+
   return (
     <Screen>
       <View style={[styles.headerRow, mobile && styles.stack]}>
@@ -154,9 +189,9 @@ export default function MonthlyCapsuleScreen() {
         <Card>
           <Text style={styles.periodLabel}>PERÍODO</Text>
           <View style={styles.periodRow}>
-            <Pressable onPress={() => setMonthOffset((o) => o - 1)} hitSlop={10}><ReadoraIcon name="back" size={18} color={appColors.gold} /></Pressable>
+            <Pressable onPress={() => { setMonthOffset((o) => o - 1); setFavoriteId(null); }} hitSlop={10}><ReadoraIcon name="back" size={18} color={appColors.gold} /></Pressable>
             <Text style={styles.period}>{capitalize(month)}</Text>
-            <Pressable onPress={() => setMonthOffset((o) => Math.min(0, o + 1))} hitSlop={10}><ReadoraIcon name="forward" size={18} color={monthOffset < 0 ? appColors.gold : appColors.textDim} /></Pressable>
+            <Pressable onPress={() => { setMonthOffset((o) => Math.min(0, o + 1)); setFavoriteId(null); }} hitSlop={10}><ReadoraIcon name="forward" size={18} color={monthOffset < 0 ? appColors.gold : appColors.textDim} /></Pressable>
           </View>
         </Card>
       </View>
@@ -191,7 +226,27 @@ export default function MonthlyCapsuleScreen() {
             <EssenceLine value={String(monthPages)} label="PÁGINAS PERCORRIDAS" text="A distância mística que seus olhos atravessaram este mês." />
             <EssenceLine value={String(monthFinished)} label="HISTÓRIAS CONCLUÍDAS" text="O número de universos que agora fazem parte da sua história." />
             <EssenceLine value={vibe} label="ATMOSFERA DOMINANTE" text="O sentimento que guiou suas escolhas e momentos de leitura." />
+
+            {monthBooks.length > 0 ? (
+              <View style={styles.favBox}>
+                <Text style={styles.favLabel}>FAVORITO DO MÊS</Text>
+                <View style={styles.favChips}>
+                  {monthBooks.map((book) => {
+                    const active = bestBook?.id === book.id;
+                    return (
+                      <Pressable key={book.id} onPress={() => setFavoriteId(book.id)} style={[styles.favChip, active && styles.favChipActive]}>
+                        <Text numberOfLines={1} style={[styles.favChipText, active && styles.favChipTextActive]}>{book.title}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            ) : null}
+
             <Pressable style={[styles.downloadButton, styles.btnRow]} onPress={handleShareImage}><ReadoraIcon name="share" size={17} color={appColors.background} /><Text style={styles.downloadText}>{Platform.OS === 'web' ? 'Baixar Cápsula PNG' : 'Compartilhar Cápsula'}</Text></Pressable>
+            {Platform.OS !== 'web' ? (
+              <Pressable style={[styles.saveButton, styles.btnRow]} onPress={handleSaveToGallery}><ReadoraIcon name="download" size={17} color={appColors.gold} /><Text style={styles.saveText}>Salvar na galeria</Text></Pressable>
+            ) : null}
           </View>
         </View>
       ) : (
@@ -205,6 +260,9 @@ export default function MonthlyCapsuleScreen() {
             <Text selectable style={styles.caption}>{caption}</Text>
           </Card>
           <Pressable style={[styles.downloadButton, styles.btnRow]} onPress={handleShareImage}><ReadoraIcon name="share" size={17} color={appColors.background} /><Text style={styles.downloadText}>{Platform.OS === 'web' ? 'Baixar imagem para o Instagram' : 'Compartilhar imagem da cápsula'}</Text></Pressable>
+          {Platform.OS !== 'web' ? (
+            <Pressable style={[styles.saveButton, styles.btnRow]} onPress={handleSaveToGallery}><ReadoraIcon name="download" size={17} color={appColors.gold} /><Text style={styles.saveText}>Salvar na galeria</Text></Pressable>
+          ) : null}
         </>
       )}
 
@@ -265,6 +323,15 @@ const styles = StyleSheet.create({
   essenceText: { color: appColors.textDim, fontFamily: appFonts.display, fontStyle: 'italic', lineHeight: 20, marginTop: 4 },
   downloadButton: { backgroundColor: appColors.gold, borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 12 },
   downloadText: { color: appColors.background, fontWeight: '900' },
+  saveButton: { borderColor: appColors.goldDeep, borderWidth: 1, borderRadius: 14, paddingVertical: 15, alignItems: 'center', marginTop: 10 },
+  saveText: { color: appColors.gold, fontWeight: '900' },
+  favBox: { gap: 10 },
+  favLabel: { color: appColors.textMuted, fontSize: 13, letterSpacing: 3, fontWeight: '900' },
+  favChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  favChip: { maxWidth: '100%', borderColor: appColors.border, borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9, backgroundColor: appColors.surface },
+  favChipActive: { backgroundColor: appColors.gold, borderColor: appColors.gold },
+  favChipText: { color: appColors.textMuted, fontWeight: '800', fontSize: 13 },
+  favChipTextActive: { color: appColors.background, fontWeight: '900' },
   shareTitle: { color: appColors.text, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 26, fontWeight: '900' },
   captionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 18 },
   captionTitle: { color: appColors.text, fontSize: 24, fontWeight: '900', flex: 1 },

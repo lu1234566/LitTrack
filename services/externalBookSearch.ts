@@ -65,7 +65,10 @@ function fallbackBooks(query: string) {
   return filtered.length ? filtered : demoBooks;
 }
 
-export async function searchGoogleBooks(query: string): Promise<ExternalBook[]> {
+// Strict lookup: real provider results only, never the demo fallback. Use this
+// for auto-enrichment, where a wrong match (e.g. demo "Eragon") would corrupt
+// real book data. Returns [] when nothing is found or the network fails.
+export async function lookupExternalBooks(query: string): Promise<ExternalBook[]> {
   const cleaned = query.trim();
   if (!cleaned) return [];
 
@@ -122,5 +125,12 @@ export async function searchGoogleBooks(query: string): Promise<ExternalBook[]> 
     }
   } catch {}
 
-  return fallbackBooks(cleaned);
+  return [];
+}
+
+export async function searchGoogleBooks(query: string): Promise<ExternalBook[]> {
+  const cleaned = query.trim();
+  if (!cleaned) return [];
+  const results = await lookupExternalBooks(cleaned);
+  return results.length ? results : fallbackBooks(cleaned);
 }
