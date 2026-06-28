@@ -1,6 +1,9 @@
-import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
+import { ReadoraIcon } from '@/components/ReadoraIcon';
+import { ShareableProfileCards } from '@/components/ShareableProfileCards';
 import { useBooks } from '@/contexts/BookContext';
 import { useQuotes } from '@/contexts/QuoteContext';
 import { useReadingSessions } from '@/contexts/ReadingSessionContext';
@@ -14,6 +17,7 @@ export default function LiteraryProfileScreen() {
   const { sessions } = useReadingSessions();
   const { width } = useWindowDimensions();
   const mobile = width < 760;
+  const [showCards, setShowCards] = useState(false);
   const topGenres = Object.entries(books.reduce<Record<string, number>>((acc, book) => {
     acc[book.genre] = (acc[book.genre] || 0) + 1;
     return acc;
@@ -30,7 +34,13 @@ export default function LiteraryProfileScreen() {
         <Text style={styles.kicker}>PERFIL LITERÁRIO</Text>
         <Text style={styles.title}>{archetype}</Text>
         <Text style={styles.subtitle}>Uma leitura simbólica dos seus hábitos, gêneros, memórias e ritmo entre livros.</Text>
+        <Pressable style={styles.shareBtn} onPress={() => setShowCards(true)}>
+          <ReadoraIcon name="share" size={17} color={appColors.background} />
+          <Text style={styles.shareText}>Compartilhar perfil</Text>
+        </Pressable>
       </View>
+
+      {showCards ? <ShareableProfileCards books={books} onClose={() => setShowCards(false)} /> : null}
 
       <View style={[styles.grid, mobile && styles.stack]}>
         <Metric label="GÊNERO DOMINANTE" value={stats.favoriteGenre || '—'} />
@@ -109,6 +119,8 @@ const styles = StyleSheet.create({
   kicker: { color: appColors.gold, fontSize: 12, fontWeight: '900', letterSpacing: 5 },
   title: { color: appColors.text, fontFamily: appFonts.display, fontSize: 50, lineHeight: 56, fontWeight: '900' },
   subtitle: { color: appColors.textMuted, fontSize: 18, lineHeight: 27, maxWidth: 680 },
+  shareBtn: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: appColors.gold, borderRadius: 999, paddingVertical: 13, paddingHorizontal: 22, marginTop: 14 },
+  shareText: { color: appColors.background, fontWeight: '900', fontSize: 15 },
   grid: { flexDirection: 'row', gap: 16 },
   mainGrid: { flexDirection: 'row', gap: 16 },
   metricLabel: { color: appColors.textDim, fontSize: 10, letterSpacing: 3, fontWeight: '900' },
