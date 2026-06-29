@@ -15,6 +15,7 @@ export type FeedCapsuleBook = {
   pageCount: number;
   rating: number; // 0-5
   coverUrl?: string;
+  description?: string;
 };
 
 export type FeedCapsuleArtProps = {

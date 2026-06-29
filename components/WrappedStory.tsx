@@ -159,6 +159,26 @@ export function WrappedStory({ books, year, onClose }: { books: Book[]; year: nu
       )
     },
     {
+      colors: ['#134e4a', '#22d3ee'] as SlideColors,
+      render: () => (
+        <View style={styles.center}>
+          <Text style={styles.kicker}>O MAIOR DO ANO</Text>
+          {data.longestBook ? (
+            <>
+              <View style={styles.bestCover}>
+                {data.longestBook.coverUrl
+                  ? <Image source={{ uri: data.longestBook.coverUrl }} style={styles.bestCoverImg} resizeMode="cover" />
+                  : <ReadoraIcon name="library" size={54} color="rgba(255,255,255,0.5)" />}
+              </View>
+              <Text style={styles.bestTitle} numberOfLines={2}>{data.longestBook.title}</Text>
+              <Text style={styles.lead}>{data.longestBook.pageCount.toLocaleString('pt-BR')} páginas · {data.longestBook.author}</Text>
+              <Text style={styles.synopsis} numberOfLines={7}>{data.longestBook.description ? '“' + data.longestBook.description + '”' : 'Sem sinopse cadastrada — use “Completar dados” para buscá-la automaticamente.'}</Text>
+            </>
+          ) : <Text style={styles.lead}>Sem livros com páginas registradas em {year}.</Text>}
+        </View>
+      )
+    },
+    {
       colors: ['#0b132b', '#1c2541'] as SlideColors,
       render: () => (
         <View style={styles.center}>
@@ -317,6 +337,7 @@ const styles = StyleSheet.create({
   bestCover: { width: 150, height: 216, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.25)', borderColor: 'rgba(255,255,255,0.25)', borderWidth: 1, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 6 },
   bestCoverImg: { width: '100%', height: '100%' },
   bestTitle: { color: '#fff', fontFamily: appFonts.display, fontWeight: '900', fontSize: 30, lineHeight: 34, textAlign: 'center', marginTop: 8 },
+  synopsis: { color: 'rgba(255,255,255,0.92)', fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 16, lineHeight: 24, textAlign: 'center', maxWidth: 360, marginTop: 14 },
   recapGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12, marginTop: 22, maxWidth: 380 },
   recapBox: { width: '45%', backgroundColor: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.18)', borderWidth: 1, borderRadius: 20, padding: 16, alignItems: 'center' },
   recapValue: { color: '#fff', fontWeight: '900', fontSize: 26 },

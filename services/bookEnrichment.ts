@@ -39,6 +39,7 @@ export async function enrichBookPatch(book: Book): Promise<Partial<Book> | null>
   if ((!book.totalPages || book.totalPages <= 0) && (match.totalPages || 0) > 0) patch.totalPages = match.totalPages;
   if (!book.coverUrl && match.coverUrl) patch.coverUrl = match.coverUrl;
   if ((!book.genre || UNSET_GENRES.includes(book.genre.trim().toLowerCase())) && match.genre && !UNSET_GENRES.includes(match.genre.trim().toLowerCase())) patch.genre = match.genre;
+  if (!book.description && match.description) patch.description = match.description;
   if (!book.publisher && match.publisher) patch.publisher = match.publisher;
   if (!book.publishedDate && match.publishedDate) patch.publishedDate = match.publishedDate;
   if (!book.isbn && match.isbn) patch.isbn = match.isbn;

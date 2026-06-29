@@ -17,7 +17,7 @@ export type WrappedData = {
 };
 
 function toCard(book: Book): FeedCapsuleBook {
-  return { id: book.id, title: book.title, author: book.author, pageCount: book.totalPages || 0, rating: book.rating || 0, coverUrl: book.coverUrl };
+  return { id: book.id, title: book.title, author: book.author, pageCount: book.totalPages || 0, rating: book.rating || 0, coverUrl: book.coverUrl, description: book.description };
 }
 
 function topEntry(counts: Record<string, number>): [string, number] {

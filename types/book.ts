@@ -15,6 +15,7 @@ export interface Book {
   publishedDate?: string;
   isbn?: string;
   coverUrl?: string;
+  description?: string;
   priority?: string;
   reasonToRead?: string;
   mood?: string;
