@@ -25,6 +25,7 @@ export default function EditBookScreen() {
   const [reason, setReason] = useState(book?.reasonToRead || '');
   const [quote, setQuote] = useState(book?.favoriteQuote || '');
   const [review, setReview] = useState(book?.review || '');
+  const [contentWarnings, setContentWarnings] = useState(book?.contentWarnings || '');
   const [status, setStatus] = useState<BookStatus>(book?.status || 'reading');
 
   if (!book) {
@@ -53,7 +54,8 @@ export default function EditBookScreen() {
       rating: Number(rating) || 0,
       reasonToRead: reason.trim(),
       favoriteQuote: quote.trim(),
-      review: review.trim()
+      review: review.trim(),
+      contentWarnings: contentWarnings.trim()
     });
     router.replace({ pathname: '/book/[id]', params: { id: currentBook.id } } as never);
   }
@@ -78,9 +80,9 @@ export default function EditBookScreen() {
         <TextInput style={[styles.input, styles.half]} placeholder="Paginas" placeholderTextColor={appColors.textDim} value={totalPages} onChangeText={setTotalPages} keyboardType="numeric" />
         <TextInput style={[styles.input, styles.half]} placeholder="Pagina atual" placeholderTextColor={appColors.textDim} value={currentPage} onChangeText={setCurrentPage} keyboardType="numeric" />
       </View>
-      <TextInput style={styles.input} placeholder="Nota" placeholderTextColor={appColors.textDim} value={rating} onChangeText={setRating} keyboardType="numeric" />
+      <TextInput style={styles.input} placeholder="Nota (use .5 para meia-estrela, ex: 4.5)" placeholderTextColor={appColors.textDim} value={rating} onChangeText={setRating} keyboardType="numeric" />
       <View style={styles.statusRow}>
-        {(['reading', 'finished', 'wishlist'] as BookStatus[]).map((item) => (
+        {(['reading', 'finished', 'wishlist', 'dnf'] as BookStatus[]).map((item) => (
           <Pressable key={item} style={[styles.statusButton, status === item && styles.statusButtonActive]} onPress={() => setStatus(item)}>
             <Text style={[styles.statusText, status === item && styles.statusTextActive]}>{label(item)}</Text>
           </Pressable>
@@ -89,6 +91,7 @@ export default function EditBookScreen() {
       <TextInput style={styles.textArea} placeholder="Motivo de leitura" placeholderTextColor={appColors.textDim} value={reason} onChangeText={setReason} multiline />
       <TextInput style={styles.textArea} placeholder="Citacao favorita" placeholderTextColor={appColors.textDim} value={quote} onChangeText={setQuote} multiline />
       <TextInput style={styles.textArea} placeholder="Resenha" placeholderTextColor={appColors.textDim} value={review} onChangeText={setReview} multiline />
+      <TextInput style={styles.input} placeholder="Alertas de conteúdo (separe por vírgula)" placeholderTextColor={appColors.textDim} value={contentWarnings} onChangeText={setContentWarnings} />
       <Pressable style={[styles.saveButton, styles.btnRow]} onPress={handleSave}><ReadoraIcon name="check" size={17} color={appColors.background} /><Text style={styles.saveText}>Salvar alteracoes</Text></Pressable>
     </Screen>
   );
@@ -97,6 +100,7 @@ export default function EditBookScreen() {
 function label(status: BookStatus) {
   if (status === 'finished') return 'Lido';
   if (status === 'wishlist') return 'Quero ler';
+  if (status === 'dnf') return 'Abandonei';
   return 'Lendo';
 }
 

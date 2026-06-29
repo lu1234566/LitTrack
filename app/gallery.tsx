@@ -102,6 +102,7 @@ function labelFor(status: 'all' | BookStatus) {
   if (status === 'all') return 'Todos';
   if (status === 'reading') return 'Lendo';
   if (status === 'finished') return 'Lidos';
+  if (status === 'dnf') return 'Abandonados';
   return 'Quero ler';
 }
 

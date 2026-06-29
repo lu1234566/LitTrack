@@ -29,6 +29,7 @@ export function calculateProgress(book: Book) {
 export function statusLabel(status: Book['status']) {
   if (status === 'finished') return 'Lido';
   if (status === 'wishlist') return 'Quero ler';
+  if (status === 'dnf') return 'Abandonado';
   return 'Lendo';
 }
 

@@ -159,6 +159,7 @@ function normalizeLegacyBook(input: LegacyReadoraBook): Book | null {
     priority: normalizePriority(stringValue(input.priority)),
     reasonToRead: stringValue(input.reasonToRead || input.discoveredFrom),
     mood: moods.join(', '),
+    contentWarnings: stringValue(input.contentWarnings),
     notes: legacyNotes(input),
     startedAt: dateValue(input.startedAt),
     finishedAt: dateValue(input.finishedAt),

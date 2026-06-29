@@ -308,6 +308,7 @@ function labelForScope(status: 'all' | BookStatus) {
 function statusLabel(status: string) {
   if (status === 'finished') return 'Lido';
   if (status === 'wishlist') return 'Quero ler';
+  if (status === 'dnf') return 'Abandonado';
   return 'Lendo';
 }
 

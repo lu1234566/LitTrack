@@ -1,4 +1,4 @@
-export type BookStatus = 'reading' | 'finished' | 'wishlist';
+export type BookStatus = 'reading' | 'finished' | 'wishlist' | 'dnf';
 
 export interface Book {
   id: string;
@@ -19,6 +19,7 @@ export interface Book {
   priority?: string;
   reasonToRead?: string;
   mood?: string;
+  contentWarnings?: string;
   notes?: string;
   startedAt?: number;
   finishedAt?: number;

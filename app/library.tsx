@@ -9,7 +9,7 @@ import { BookStatus } from '@/types/book';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors, appFonts } from '@/theme/tokens';
 
-const filters: Array<'all' | BookStatus> = ['all', 'wishlist', 'finished', 'reading'];
+const filters: Array<'all' | BookStatus> = ['all', 'wishlist', 'finished', 'reading', 'dnf'];
 const sortOptions = ['recentes', 'nota', 'titulo', 'paginas'] as const;
 
 type SortOption = typeof sortOptions[number];
@@ -133,6 +133,7 @@ function labelFor(status: 'all' | BookStatus) {
   if (status === 'all') return 'Todas';
   if (status === 'reading') return 'Lendo';
   if (status === 'finished') return 'Favoritos';
+  if (status === 'dnf') return 'Abandonados';
   return 'Quero Ler';
 }
 

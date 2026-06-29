@@ -122,6 +122,7 @@ export default function BookDetailsScreen() {
         <Pressable style={styles.secondaryButton} onPress={() => updateStatus(currentBook.id, 'reading')}><Text style={styles.secondaryText}>Lendo</Text></Pressable>
         <Pressable style={styles.secondaryButton} onPress={() => updateStatus(currentBook.id, 'finished')}><Text style={styles.secondaryText}>Lido</Text></Pressable>
         <Pressable style={styles.secondaryButton} onPress={() => updateStatus(currentBook.id, 'wishlist')}><Text style={styles.secondaryText}>Quero ler</Text></Pressable>
+        <Pressable style={styles.secondaryButton} onPress={() => updateStatus(currentBook.id, 'dnf')}><Text style={styles.secondaryText}>Abandonei</Text></Pressable>
       </View>
 
       {bookSessions.slice(0, 3).map((session) => (
@@ -133,6 +134,7 @@ export default function BookDetailsScreen() {
         </Card>
       ))}
 
+      {currentBook.contentWarnings ? <Card><Text style={[styles.cardTitle, { color: appColors.red }]}>Alertas de conteúdo</Text><Text style={styles.body}>{currentBook.contentWarnings}</Text></Card> : null}
       {currentBook.reasonToRead ? <Card><Text style={styles.cardTitle}>Motivo de leitura</Text><Text style={styles.body}>{currentBook.reasonToRead}</Text></Card> : null}
       {currentBook.favoriteQuote ? <Card><Text style={styles.cardTitle}>Citacao favorita</Text><Text style={styles.quote}>{currentBook.favoriteQuote}</Text></Card> : null}
       {currentBook.review ? <Card><Text style={styles.cardTitle}>Resenha</Text><Text style={styles.body}>{currentBook.review}</Text></Card> : null}

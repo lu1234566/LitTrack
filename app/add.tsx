@@ -33,6 +33,7 @@ export default function AddBookScreen() {
   const [review, setReview] = useState('');
   const [strengths, setStrengths] = useState('');
   const [weaknesses, setWeaknesses] = useState('');
+  const [contentWarnings, setContentWarnings] = useState('');
   const [isbn, setIsbn] = useState('');
   const [coverUrl, setCoverUrl] = useState('');
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
@@ -142,6 +143,7 @@ export default function AddBookScreen() {
       favoriteQuote: quote.trim(),
       review: journal,
       mood: selectedMoods.join(', ') || genre.trim() || 'literário',
+      contentWarnings: contentWarnings.trim(),
       notes: isbn ? 'ISBN: ' + isbn : '',
       isbn: isbn.trim(),
       coverUrl: coverUrl.trim()
@@ -200,7 +202,7 @@ export default function AddBookScreen() {
           <View style={styles.fieldBox}><Text style={styles.label}>Status</Text><TextInput style={styles.input} value={statusLabel(status)} editable={false} /></View>
         </View>
         <View style={[styles.statusRow, mobile && styles.stack]}>
-          {(['reading', 'finished', 'wishlist'] as BookStatus[]).map((item) => (
+          {(['reading', 'finished', 'wishlist', 'dnf'] as BookStatus[]).map((item) => (
             <Pressable key={item} style={[styles.statusButton, status === item && styles.statusButtonActive]} onPress={() => setStatus(item)}>
               <Text style={[styles.statusText, status === item && styles.statusTextActive]}>{statusLabel(item)}</Text>
             </Pressable>
@@ -211,7 +213,7 @@ export default function AddBookScreen() {
       <Card>
         <View style={styles.sectionHeader}><ReadoraIcon name="starOutline" size={24} color={appColors.gold} /><Text style={styles.sectionTitle}>Controle de Qualidade</Text><ReadoraIcon name="chevronDown" size={22} color={appColors.textMuted} style={styles.chevron} /></View>
         <View style={styles.ratingPill}><Text style={styles.ratingText}>Média: {rating || '0.0'} ★</Text></View>
-        <View style={styles.ratingRow}>{[0, 1, 2, 3, 4, 5].map((value) => <Pressable key={value} style={[styles.ratingChip, Number(rating) === value && styles.ratingChipActive]} onPress={() => setRating(String(value))}><Text style={[styles.ratingChipText, Number(rating) === value && styles.ratingChipTextActive]}>{value}★</Text></Pressable>)}</View>
+        <View style={styles.ratingRow}>{[0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5].map((value) => <Pressable key={value} style={[styles.ratingChip, Number(rating) === value && styles.ratingChipActive]} onPress={() => setRating(String(value))}><Text style={[styles.ratingChipText, Number(rating) === value && styles.ratingChipTextActive]}>{value}★</Text></Pressable>)}</View>
       </Card>
 
       <Card>
@@ -230,6 +232,8 @@ export default function AddBookScreen() {
         </View>
         <Text style={styles.label}>Citação Favorita</Text>
         <TextInput style={styles.textArea} placeholder="Uma frase ou trecho marcante do livro..." placeholderTextColor={appColors.textDim} value={quote} onChangeText={setQuote} multiline />
+        <Text style={[styles.label, { color: appColors.rose }]}>Alertas de Conteúdo</Text>
+        <TextInput style={styles.input} placeholder="Ex: violência, luto, abuso (separe por vírgula)" placeholderTextColor={appColors.textDim} value={contentWarnings} onChangeText={setContentWarnings} />
       </Card>
 
       <View style={styles.bottomActions}>
@@ -247,6 +251,7 @@ function Field({ label, ...props }: { label: string; value: string; onChangeText
 function statusLabel(status: BookStatus) {
   if (status === 'finished') return 'Lido';
   if (status === 'wishlist') return 'Quero ler';
+  if (status === 'dnf') return 'Abandonei';
   return 'Lendo';
 }
 
