@@ -7,6 +7,7 @@ import { calculateProgress, useBooks } from '@/contexts/BookContext';
 import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { statusLabel } from '@/services/bookStorage';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
+import { BookShareCard } from '@/components/BookShareCard';
 import { appColors } from '@/theme/tokens';
 
 export default function BookDetailsScreen() {
@@ -19,6 +20,7 @@ export default function BookDetailsScreen() {
   const [minutesRead, setMinutesRead] = useState('');
   const [sessionNote, setSessionNote] = useState('');
   const [sessionMood, setSessionMood] = useState('');
+  const [showCard, setShowCard] = useState(false);
 
   if (!book) {
     return (
@@ -79,8 +81,9 @@ export default function BookDetailsScreen() {
 
       <View style={styles.actionsTop}>
         <Link href={{ pathname: '/edit/[id]', params: { id: currentBook.id } }} asChild><Pressable style={[styles.editButton, styles.btnRow]}><ReadoraIcon name="editBook" size={16} color={appColors.gold} /><Text style={styles.editText}>Editar livro</Text></Pressable></Link>
-        <Link href="/quotes" asChild><Pressable style={[styles.editButton, styles.btnRow]}><ReadoraIcon name="quotes" size={16} color={appColors.gold} /><Text style={styles.editText}>Citacoes</Text></Pressable></Link>
+        <Pressable style={[styles.editButton, styles.btnRow]} onPress={() => setShowCard(true)}><ReadoraIcon name="share" size={16} color={appColors.gold} /><Text style={styles.editText}>Compartilhar card</Text></Pressable>
       </View>
+      {showCard ? <BookShareCard book={currentBook} onClose={() => setShowCard(false)} /> : null}
       {currentBook.status === 'wishlist' ? <Pressable style={[styles.startButton, styles.btnRow]} onPress={() => updateStatus(currentBook.id, 'reading')}><ReadoraIcon name="bookDetails" size={17} color={appColors.background} /><Text style={styles.startText}>Comecar leitura</Text></Pressable> : null}
 
       <Card>
