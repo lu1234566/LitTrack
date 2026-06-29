@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initializeApp, getApp, getApps, type FirebaseApp } from 'firebase/app';
-import { collection, doc, getDoc, getDocs, getFirestore, setDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, getDocs, getFirestore, setDoc } from 'firebase/firestore';
 import { getAuth, initializeAuth, GoogleAuthProvider, onAuthStateChanged, signInWithCredential, signOut as firebaseSignOut, type Auth, type Persistence, type User } from 'firebase/auth';
 import * as FirebaseAuthModule from 'firebase/auth';
 import { Book } from '@/types/book';
@@ -76,9 +76,18 @@ export async function signOutFirebaseUser() {
   await firebaseSignOut(nativeAuth);
 }
 
-async function pushCollection<T extends { id: string }>(userId: string, name: string, items: T[]) {
+// Full-collection sync: upserts every local item AND removes remote docs that
+// no longer exist locally, so deletions propagate (otherwise deleted items
+// would resurrect on the next pull/merge).
+async function syncCollection<T extends { id: string }>(userId: string, name: string, items: T[]) {
   if (!nativeDb) return 0;
-  await Promise.all(items.map((item) => setDoc(doc(nativeDb, 'users', userId, name, item.id), item)));
+  const colRef = collection(nativeDb, 'users', userId, name);
+  const snapshot = await getDocs(colRef);
+  const localIds = new Set(items.map((item) => item.id));
+  await Promise.all([
+    ...items.map((item) => setDoc(doc(nativeDb, 'users', userId, name, item.id), item)),
+    ...snapshot.docs.filter((d) => !localIds.has(d.id)).map((d) => deleteDoc(doc(nativeDb, 'users', userId, name, d.id)))
+  ]);
   return items.length;
 }
 
@@ -90,7 +99,7 @@ async function pullCollection<T>(userId: string, name: string): Promise<T[]> {
 
 export async function pushBooksToFirestore(userId: string, books: Book[]) {
   if (!nativeDb) return { ok: false, count: 0 };
-  const count = await pushCollection(userId, 'books', books);
+  const count = await syncCollection(userId, 'books', books);
   return { ok: true, count };
 }
 
@@ -100,10 +109,10 @@ export async function pullBooksFromFirestore(userId: string): Promise<Book[]> {
 
 export async function pushReadoraBundle(userId: string, bundle: SyncBundle) {
   if (!nativeDb) return { ok: false, count: 0 };
-  const books = await pushCollection(userId, 'books', bundle.books);
-  const quotes = await pushCollection(userId, 'quotes', bundle.quotes);
-  const shelves = await pushCollection(userId, 'shelves', bundle.shelves);
-  const sessions = await pushCollection(userId, 'sessions', bundle.sessions);
+  const books = await syncCollection(userId, 'books', bundle.books);
+  const quotes = await syncCollection(userId, 'quotes', bundle.quotes);
+  const shelves = await syncCollection(userId, 'shelves', bundle.shelves);
+  const sessions = await syncCollection(userId, 'sessions', bundle.sessions);
   await setDoc(doc(nativeDb, 'users', userId, 'settings', 'preferences'), bundle.preferences);
   await setDoc(doc(nativeDb, 'users', userId, 'sync', 'metadata'), { updatedAt: Date.now(), books, quotes, shelves, sessions });
   return { ok: true, count: books + quotes + shelves + sessions };

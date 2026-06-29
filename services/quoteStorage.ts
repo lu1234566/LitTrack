@@ -33,12 +33,12 @@ export const seedQuotes: Quote[] = [
 
 export async function loadQuotes(): Promise<Quote[]> {
   const raw = await AsyncStorage.getItem(KEY);
-  if (!raw) return seedQuotes;
+  if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : seedQuotes;
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
-    return seedQuotes;
+    return [];
   }
 }
 

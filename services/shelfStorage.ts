@@ -27,12 +27,12 @@ export const seedShelves: Shelf[] = [
 
 export async function loadShelves(): Promise<Shelf[]> {
   const raw = await AsyncStorage.getItem(KEY);
-  if (!raw) return seedShelves;
+  if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : seedShelves;
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
-    return seedShelves;
+    return [];
   }
 }
 

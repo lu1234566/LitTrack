@@ -267,6 +267,11 @@ export function ShareableProfileCards({ books, onClose }: { books: Book[]; onClo
 
   async function capture(): Promise<string | null> {
     if (!shotRef.current) return null;
+    // Ensure the cover (used by the "Livro do Ano" card) is cached/painted first.
+    if (data.bestBook?.coverUrl) {
+      await Image.prefetch(data.bestBook.coverUrl).catch(() => false);
+      await new Promise((resolve) => setTimeout(resolve, 350));
+    }
     return captureRef(shotRef, { format: 'png', quality: 1, result: 'tmpfile' });
   }
 

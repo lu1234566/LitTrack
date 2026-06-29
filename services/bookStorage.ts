@@ -7,13 +7,13 @@ const day = 86400000;
 
 export async function loadBooks(): Promise<Book[]> {
   const raw = await AsyncStorage.getItem(STORAGE_KEY);
-  if (!raw) return seedBooks;
+  if (!raw) return [];
 
   try {
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : seedBooks;
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
-    return seedBooks;
+    return [];
   }
 }
 

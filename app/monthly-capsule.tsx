@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Image, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import * as MediaLibrary from 'expo-media-library';
@@ -37,8 +37,11 @@ export default function MonthlyCapsuleScreen() {
   const selMonth = selected.getMonth();
   const selYear = selected.getFullYear();
 
+  // Bucket by when the book was finished (stable), falling back to reading-month
+  // timestamps. Using finishedAt avoids a later edit jumping a book to another
+  // month (a plain updatedAt would move on any edit).
   const monthBooks = useMemo(() => books.filter((book) => {
-    const d = new Date(book.updatedAt || book.createdAt);
+    const d = new Date(book.finishedAt || book.updatedAt || book.createdAt);
     return d.getMonth() === selMonth && d.getFullYear() === selYear;
   }), [books, selMonth, selYear]);
   const monthSessions = useMemo(() => sessions.filter((session) => {
@@ -125,6 +128,14 @@ export default function MonthlyCapsuleScreen() {
     setMessage(ok ? 'Cápsula PNG baixada pelo navegador.' : 'Download PNG disponível apenas no navegador com suporte a Canvas.');
   }
 
+  // Make sure remote covers are in cache (and painted) before we snapshot,
+  // otherwise the shared image can come out with blank covers.
+  async function preloadCovers() {
+    const urls = [bestBook?.coverUrl, ...rankedBooks.map((b) => b.coverUrl)].filter(Boolean) as string[];
+    await Promise.all(urls.map((u) => Image.prefetch(u).catch(() => false)));
+    await new Promise((resolve) => setTimeout(resolve, 350));
+  }
+
   // Native: snapshot do card em alta resolução (1080×1350) e abre a folha de
   // compartilhamento nativa. Web: mantém o download via Canvas.
   async function handleShareImage() {
@@ -137,6 +148,7 @@ export default function MonthlyCapsuleScreen() {
         setMessage('A imagem da cápsula ainda está sendo preparada. Tente novamente em instantes.');
         return;
       }
+      await preloadCovers();
       const uri = await captureRef(shotRef, { format: 'png', quality: 1, result: 'tmpfile' });
       haptic('success');
       if (await Sharing.isAvailableAsync()) {
@@ -168,6 +180,7 @@ export default function MonthlyCapsuleScreen() {
         setMessage('Permita o acesso à galeria para salvar a imagem.');
         return;
       }
+      await preloadCovers();
       const uri = await captureRef(shotRef, { format: 'png', quality: 1, result: 'tmpfile' });
       await MediaLibrary.saveToLibraryAsync(uri);
       haptic('success');

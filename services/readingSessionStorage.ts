@@ -31,12 +31,12 @@ export const seedReadingSessions: ReadingSession[] = [
 
 export async function loadReadingSessions(): Promise<ReadingSession[]> {
   const raw = await AsyncStorage.getItem(KEY);
-  if (!raw) return seedReadingSessions;
+  if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : seedReadingSessions;
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
-    return seedReadingSessions;
+    return [];
   }
 }
 

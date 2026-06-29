@@ -8,7 +8,7 @@ interface BookContextValue {
   books: Book[];
   loading: boolean;
   stats: ReadingStats;
-  addBook: (book: BookInput) => Promise<void>;
+  addBook: (book: BookInput) => Promise<Book>;
   updateBook: (bookId: string, patch: Partial<Book>) => Promise<void>;
   deleteBook: (bookId: string) => Promise<void>;
   replaceBooks: (nextBooks: Book[]) => Promise<void>;
@@ -34,7 +34,7 @@ const fallbackContext: BookContextValue = {
   books: [],
   loading: true,
   stats: emptyStats,
-  addBook: async () => {},
+  addBook: async () => ({} as Book),
   updateBook: async () => {},
   deleteBook: async () => {},
   replaceBooks: async () => {},
@@ -86,6 +86,7 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
     const now = Date.now();
     const nextBook: Book = { ...input, id: 'book-' + String(now), createdAt: now, updatedAt: now };
     await persist([nextBook, ...books]);
+    return nextBook;
   }
 
   async function updateBook(bookId: string, patch: Partial<Book>) {

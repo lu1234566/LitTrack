@@ -16,7 +16,7 @@ import { appColors, appFonts } from '@/theme/tokens';
 const moods = ['Sombrio', 'Tenso', 'Reflexivo', 'Aconchegante', 'Emocional', 'Misterioso', 'Caótico', 'Inspirador', 'Cerebral', 'Mágico'];
 
 export default function AddBookScreen() {
-  const { addBook } = useBooks();
+  const { addBook, updateBook } = useBooks();
   const params = useLocalSearchParams<{ isbn?: string }>();
   const { width } = useWindowDimensions();
   const mobile = width < 760;
@@ -147,22 +147,17 @@ export default function AddBookScreen() {
       coverUrl: coverUrl.trim()
     };
 
-    // Fill in missing pages/cover/genre automatically (e.g. manual entries),
-    // without overwriting anything the user typed. Stays quiet if offline.
-    let enriched = draft;
-    if (bookNeedsEnrichment(draft as Book)) {
-      try {
-        const patch = await enrichBookPatch(draft as Book);
-        if (patch) enriched = { ...draft, ...patch };
-      } catch {
-        /* keep the draft as-is */
-      }
-    }
-
-    await addBook(enriched);
-
+    const created = await addBook(draft);
     haptic('success');
     router.replace('/library');
+
+    // Fill in missing pages/cover/genre in the background (e.g. manual entries),
+    // without blocking navigation or overwriting anything the user typed.
+    if (bookNeedsEnrichment(created)) {
+      enrichBookPatch(created)
+        .then((patch) => { if (patch) updateBook(created.id, patch); })
+        .catch(() => { /* offline / no match — keep as-is */ });
+    }
   }
 
   return (
