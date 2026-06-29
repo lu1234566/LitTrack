@@ -65,7 +65,7 @@ export function WrappedBackground({ colors, image }: { colors: readonly [string,
       {image ? (
         <>
           <Animated.Image source={image} resizeMode="cover" style={[StyleSheet.absoluteFill, { width: '100%', height: '100%', transform: [{ scale }, { translateX: kbX }, { translateY: kbY }] }]} />
-          <LinearGradient colors={['rgba(0,0,0,0.15)', 'rgba(0,0,0,0.45)']} style={StyleSheet.absoluteFill} />
+          <LinearGradient colors={['rgba(0,0,0,0.08)', 'rgba(0,0,0,0.38)']} style={StyleSheet.absoluteFill} />
         </>
       ) : null}
       <Animated.View pointerEvents="none" style={[styles.glow, { transform: [{ translateX: glowX }, { translateY: glowY }] }]} />

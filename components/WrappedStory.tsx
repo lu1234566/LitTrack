@@ -13,21 +13,22 @@ import { appFonts } from '@/theme/tokens';
 
 const DURATION = 5200;
 
-// Fundos customizados por slide (na ordem dos slides). Para usar suas artes,
-// troque o `undefined` por require('@/assets/wrapped/01-intro.png') etc. — o
-// movimento (Ken Burns + partículas) é aplicado automaticamente por cima.
-const SLIDE_IMAGES: (number | undefined)[] = [
-  undefined, // 1 · intro
-  undefined, // 2 · livros
-  undefined, // 3 · páginas
-  undefined, // 4 · autor do ano
-  undefined, // 5 · gênero
-  undefined, // 6 · atmosfera
-  undefined, // 7 · mês mais forte
-  undefined, // 8 · top 5
-  undefined, // 9 · livro do ano
-  undefined, // 10 · maior livro
-  undefined  // 11 · recap final
+// Fundos por slide (na ordem dos slides). Os arquivos em assets/wrapped/ são
+// placeholders transparentes (mostram só o gradiente). Basta substituir cada
+// PNG pela sua arte mantendo o mesmo nome — o movimento (Ken Burns +
+// partículas) é aplicado automaticamente por cima.
+const SLIDE_IMAGES: number[] = [
+  require('../assets/wrapped/01-intro.png'),
+  require('../assets/wrapped/02-livros.png'),
+  require('../assets/wrapped/03-paginas.png'),
+  require('../assets/wrapped/04-autor.png'),
+  require('../assets/wrapped/05-genero.png'),
+  require('../assets/wrapped/06-atmosfera.png'),
+  require('../assets/wrapped/07-mes.png'),
+  require('../assets/wrapped/08-top5.png'),
+  require('../assets/wrapped/09-livro-do-ano.png'),
+  require('../assets/wrapped/10-maior-livro.png'),
+  require('../assets/wrapped/11-final.png')
 ];
 
 type SlideColors = readonly [string, string];
