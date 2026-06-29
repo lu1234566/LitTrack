@@ -1,4 +1,5 @@
 import { Book } from '@/types/book';
+import { nativeAuth } from '@/services/firebaseNative';
 
 // AI features (OCR + "chat with the book") via Google's Gemini API.
 //
@@ -27,6 +28,19 @@ type GeminiBody = {
   generationConfig?: { maxOutputTokens?: number };
 };
 
+// In proxy mode, attach the signed-in user's Firebase ID token so the backend
+// can verify the caller and reject strangers. No-op in direct mode.
+async function proxyAuthHeader(): Promise<Record<string, string>> {
+  if (!PROXY_URL) return {};
+  try {
+    const user = (nativeAuth as { currentUser?: { getIdToken?: () => Promise<string> } } | null)?.currentUser;
+    const token = user?.getIdToken ? await user.getIdToken() : null;
+    return token ? { authorization: 'Bearer ' + token } : {};
+  } catch {
+    return {};
+  }
+}
+
 async function callGemini(body: GeminiBody): Promise<string> {
   if (!isAiConfigured) throw new Error('IA não configurada.');
   const url = PROXY_URL
@@ -35,7 +49,7 @@ async function callGemini(body: GeminiBody): Promise<string> {
 
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...(await proxyAuthHeader()) },
     body: JSON.stringify(body)
   });
   if (!res.ok) {
