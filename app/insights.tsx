@@ -6,6 +6,7 @@ import { useQuotes } from '@/contexts/QuoteContext';
 import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { useShelves } from '@/contexts/ShelfContext';
 import { buildReadingInsights } from '@/services/readingInsights';
+import { buildDiversity } from '@/services/diversity';
 import { appColors } from '@/theme/tokens';
 
 export default function InsightsScreen() {
@@ -14,6 +15,8 @@ export default function InsightsScreen() {
   const { shelves } = useShelves();
   const { sessions } = useReadingSessions();
   const insights = buildReadingInsights(books, quotes, shelves, sessions);
+  const diversity = buildDiversity(books);
+  const maxDecade = Math.max(1, ...diversity.decades.map((d) => d.count));
 
   return (
     <Screen>
@@ -24,6 +27,30 @@ export default function InsightsScreen() {
         <Card><Text style={styles.big}>{insights.averagePagesPerSession}</Text><Text style={styles.label}>paginas por sessao</Text></Card>
         <Card><Text style={styles.big}>{insights.averageMinutesPerSession}</Text><Text style={styles.label}>minutos por sessao</Text></Card>
       </View>
+
+      <Card>
+        <Text style={styles.kicker}>Diversidade de leitura</Text>
+        <View style={styles.divRow}>
+          <View style={styles.divStat}><Text style={styles.big}>{diversity.distinctGenres}</Text><Text style={styles.label}>generos</Text></View>
+          <View style={styles.divStat}><Text style={styles.big}>{diversity.distinctAuthors}</Text><Text style={styles.label}>autores</Text></View>
+          <View style={styles.divStat}><Text style={styles.big}>{diversity.spanYears || '—'}</Text><Text style={styles.label}>anos de span</Text></View>
+        </View>
+        {diversity.decades.length ? (
+          <>
+            <Text style={[styles.label, { marginTop: 16, marginBottom: 8 }]}>Por década de publicação</Text>
+            <View style={styles.decadeChart}>
+              {diversity.decades.map((d) => (
+                <View key={d.decade} style={styles.decadeCol}>
+                  <Text style={styles.decadeCount}>{d.count}</Text>
+                  <View style={styles.decadeTrack}><View style={[styles.decadeBar, { height: (Math.round((d.count / maxDecade) * 100) + '%') as `${number}%` }]} /></View>
+                  <Text style={styles.decadeLabel}>{d.label}</Text>
+                </View>
+              ))}
+            </View>
+            {diversity.oldest && diversity.newest ? <Text style={[styles.body, { marginTop: 14 }]}>De {diversity.oldest.year} ({diversity.oldest.title}) a {diversity.newest.year} ({diversity.newest.title}).</Text> : null}
+          </>
+        ) : <Text style={styles.body}>Preencha o ano de publicação dos seus livros para ver a distribuição por década.</Text>}
+      </Card>
 
       <InsightList title="Autores recorrentes" items={insights.topAuthors} />
       <InsightList title="Generos fortes" items={insights.topGenres} />
@@ -65,5 +92,13 @@ const styles = StyleSheet.create({
   body: { color: appColors.textMuted, lineHeight: 22 },
   row: { flexDirection: 'row', justifyContent: 'space-between', borderBottomColor: appColors.border, borderBottomWidth: 1, paddingVertical: 10 },
   item: { color: appColors.text, fontWeight: '800', flex: 1 },
-  count: { color: appColors.gold, fontWeight: '900' }
+  count: { color: appColors.gold, fontWeight: '900' },
+  divRow: { flexDirection: 'row', gap: 12, marginTop: 12 },
+  divStat: { flex: 1, alignItems: 'center' },
+  decadeChart: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, minHeight: 130 },
+  decadeCol: { flex: 1, alignItems: 'center', gap: 6 },
+  decadeCount: { color: appColors.textMuted, fontSize: 12, fontWeight: '900' },
+  decadeTrack: { width: '70%', height: 90, justifyContent: 'flex-end', backgroundColor: appColors.surface, borderRadius: 6, overflow: 'hidden' },
+  decadeBar: { width: '100%', backgroundColor: appColors.gold, borderRadius: 6, minHeight: 4 },
+  decadeLabel: { color: appColors.textDim, fontSize: 11, fontWeight: '900' }
 });
