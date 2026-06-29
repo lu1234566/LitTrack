@@ -76,17 +76,15 @@ export async function signOutFirebaseUser() {
   await firebaseSignOut(nativeAuth);
 }
 
-// Full-collection sync: upserts every local item AND removes remote docs that
-// no longer exist locally, so deletions propagate (otherwise deleted items
-// would resurrect on the next pull/merge).
-async function syncCollection<T extends { id: string }>(userId: string, name: string, items: T[]) {
+// Upserts every local item and deletes ONLY the ids the caller explicitly asks
+// to remove (tombstones). It never bulk-deletes "remote docs missing locally":
+// doing so would wipe cloud data whenever a device synced from an empty or
+// partial local state (e.g. a fresh install before the first pull completes).
+async function syncCollection<T extends { id: string }>(userId: string, name: string, items: T[], deleteIds: string[] = []) {
   if (!nativeDb) return 0;
-  const colRef = collection(nativeDb, 'users', userId, name);
-  const snapshot = await getDocs(colRef);
-  const localIds = new Set(items.map((item) => item.id));
   await Promise.all([
     ...items.map((item) => setDoc(doc(nativeDb, 'users', userId, name, item.id), item)),
-    ...snapshot.docs.filter((d) => !localIds.has(d.id)).map((d) => deleteDoc(doc(nativeDb, 'users', userId, name, d.id)))
+    ...deleteIds.map((id) => deleteDoc(doc(nativeDb, 'users', userId, name, id)))
   ]);
   return items.length;
 }
@@ -107,12 +105,14 @@ export async function pullBooksFromFirestore(userId: string): Promise<Book[]> {
   return pullCollection<Book>(userId, 'books');
 }
 
-export async function pushReadoraBundle(userId: string, bundle: SyncBundle) {
+export type SyncDeletions = Partial<Record<'books' | 'quotes' | 'shelves' | 'sessions', string[]>>;
+
+export async function pushReadoraBundle(userId: string, bundle: SyncBundle, deletions: SyncDeletions = {}) {
   if (!nativeDb) return { ok: false, count: 0 };
-  const books = await syncCollection(userId, 'books', bundle.books);
-  const quotes = await syncCollection(userId, 'quotes', bundle.quotes);
-  const shelves = await syncCollection(userId, 'shelves', bundle.shelves);
-  const sessions = await syncCollection(userId, 'sessions', bundle.sessions);
+  const books = await syncCollection(userId, 'books', bundle.books, deletions.books);
+  const quotes = await syncCollection(userId, 'quotes', bundle.quotes, deletions.quotes);
+  const shelves = await syncCollection(userId, 'shelves', bundle.shelves, deletions.shelves);
+  const sessions = await syncCollection(userId, 'sessions', bundle.sessions, deletions.sessions);
   await setDoc(doc(nativeDb, 'users', userId, 'settings', 'preferences'), bundle.preferences);
   await setDoc(doc(nativeDb, 'users', userId, 'sync', 'metadata'), { updatedAt: Date.now(), books, quotes, shelves, sessions });
   return { ok: true, count: books + quotes + shelves + sessions };
