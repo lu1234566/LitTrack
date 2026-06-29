@@ -14,6 +14,9 @@ export type WrappedData = {
   bestBook: FeedCapsuleBook | null;
   top5: FeedCapsuleBook[];
   ranked: FeedCapsuleBook[];
+  monthly: number[];
+  bestMonth: number;
+  bestMonthCount: number;
 };
 
 function toCard(book: Book): FeedCapsuleBook {
@@ -60,6 +63,14 @@ export function buildWrapped(books: Book[], year: number): WrappedData {
 
   const longest = [...finished].filter((b) => (b.totalPages || 0) > 0).sort((a, b) => (b.totalPages || 0) - (a.totalPages || 0))[0];
 
+  const monthly = Array.from({ length: 12 }, () => 0);
+  finished.forEach((b) => {
+    const m = new Date(b.finishedAt || b.updatedAt || b.createdAt).getMonth();
+    monthly[m] += 1;
+  });
+  const bestMonthCount = Math.max(...monthly);
+  const bestMonth = monthly.indexOf(bestMonthCount);
+
   return {
     year,
     totalBooks,
@@ -72,6 +83,9 @@ export function buildWrapped(books: Book[], year: number): WrappedData {
     longestBook: longest ? toCard(longest) : null,
     bestBook: ranked[0] || null,
     top5: ranked.slice(0, 5),
-    ranked: ranked.slice(0, 10)
+    ranked: ranked.slice(0, 10),
+    monthly,
+    bestMonth: bestMonthCount > 0 ? bestMonth : -1,
+    bestMonthCount
   };
 }

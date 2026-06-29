@@ -121,6 +121,34 @@ export function WrappedStory({ books, year, onClose }: { books: Book[]; year: nu
       )
     },
     {
+      colors: ['#1e1b4b', '#6366f1'] as SlideColors,
+      render: () => {
+        const MN = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+        const letters = 'JFMAMJJASOND';
+        return (
+          <View style={styles.center}>
+            <Text style={styles.kicker}>SEU MÊS MAIS FORTE</Text>
+            {data.bestMonth >= 0 ? (
+              <>
+                <Text style={styles.heroName}>{MN[data.bestMonth]}</Text>
+                <Text style={styles.lead}>{data.bestMonthCount} livro(s) concluído(s) nesse mês.</Text>
+                <View style={styles.miniChart}>
+                  {data.monthly.map((c, i) => (
+                    <View key={i} style={styles.miniCol}>
+                      <View style={styles.miniTrack}>
+                        <View style={[styles.miniBar, { height: (Math.round((c / Math.max(1, data.bestMonthCount)) * 100) + '%') as `${number}%`, backgroundColor: i === data.bestMonth ? '#fff' : 'rgba(255,255,255,0.35)' }]} />
+                      </View>
+                      <Text style={styles.miniLetter}>{letters[i]}</Text>
+                    </View>
+                  ))}
+                </View>
+              </>
+            ) : <Text style={styles.lead}>Registre o mês de leitura dos seus livros para ver isso em {year}.</Text>}
+          </View>
+        );
+      }
+    },
+    {
       colors: ['#7f1d1d', '#ef4444'] as SlideColors,
       render: () => (
         <View style={styles.listWrap}>
@@ -338,6 +366,11 @@ const styles = StyleSheet.create({
   bestCoverImg: { width: '100%', height: '100%' },
   bestTitle: { color: '#fff', fontFamily: appFonts.display, fontWeight: '900', fontSize: 30, lineHeight: 34, textAlign: 'center', marginTop: 8 },
   synopsis: { color: 'rgba(255,255,255,0.92)', fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 16, lineHeight: 24, textAlign: 'center', maxWidth: 360, marginTop: 14 },
+  miniChart: { flexDirection: 'row', alignItems: 'flex-end', gap: 5, marginTop: 28, width: '100%', maxWidth: 420, alignSelf: 'center' },
+  miniCol: { flex: 1, alignItems: 'center', gap: 7 },
+  miniTrack: { width: '62%', height: 120, justifyContent: 'flex-end', backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 5, overflow: 'hidden' },
+  miniBar: { width: '100%', borderRadius: 5, minHeight: 3 },
+  miniLetter: { color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: '900' },
   recapGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12, marginTop: 22, maxWidth: 380 },
   recapBox: { width: '45%', backgroundColor: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.18)', borderWidth: 1, borderRadius: 20, padding: 16, alignItems: 'center' },
   recapValue: { color: '#fff', fontWeight: '900', fontSize: 26 },
