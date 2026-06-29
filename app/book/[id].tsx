@@ -9,7 +9,7 @@ import { statusLabel } from '@/services/bookStorage';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { BookShareCard } from '@/components/BookShareCard';
 import { BookChat } from '@/components/BookChat';
-import { isClaudeConfigured } from '@/services/claudeClient';
+import { isAiConfigured } from '@/services/aiClient';
 import { appColors } from '@/theme/tokens';
 
 export default function BookDetailsScreen() {
@@ -88,7 +88,7 @@ export default function BookDetailsScreen() {
       </View>
       {showCard ? <BookShareCard book={currentBook} onClose={() => setShowCard(false)} /> : null}
       {showChat ? <BookChat book={currentBook} onClose={() => setShowChat(false)} /> : null}
-      {isClaudeConfigured ? <Pressable style={[styles.startButton, styles.btnRow]} onPress={() => setShowChat(true)}><ReadoraIcon name="quotes" size={17} color={appColors.background} /><Text style={styles.startText}>Converse com o livro</Text></Pressable> : null}
+      {isAiConfigured ? <Pressable style={[styles.startButton, styles.btnRow]} onPress={() => setShowChat(true)}><ReadoraIcon name="quotes" size={17} color={appColors.background} /><Text style={styles.startText}>Converse com o livro</Text></Pressable> : null}
       {currentBook.status === 'wishlist' ? <Pressable style={[styles.startButton, styles.btnRow]} onPress={() => updateStatus(currentBook.id, 'reading')}><ReadoraIcon name="bookDetails" size={17} color={appColors.background} /><Text style={styles.startText}>Comecar leitura</Text></Pressable> : null}
 
       <Card>

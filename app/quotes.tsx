@@ -8,7 +8,7 @@ import { useQuotes } from '@/contexts/QuoteContext';
 import { Quote } from '@/types/quote';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { copyText, haptic } from '@/services/feedback';
-import { extractQuoteFromImage, isClaudeConfigured } from '@/services/claudeClient';
+import { extractQuoteFromImage, isAiConfigured } from '@/services/aiClient';
 import { appColors, appFonts } from '@/theme/tokens';
 
 export default function QuotesScreen() {
@@ -127,7 +127,7 @@ export default function QuotesScreen() {
         <Card>
           <Text style={styles.kicker}>NOVA MEMÓRIA</Text>
           <TextInput style={styles.textArea} placeholder="Trecho marcante" placeholderTextColor={appColors.textDim} value={text} onChangeText={setText} multiline />
-          {isClaudeConfigured && Platform.OS !== 'web' ? (
+          {isAiConfigured && Platform.OS !== 'web' ? (
             <View style={styles.ocrRow}>
               <Pressable style={[styles.ocrButton, styles.btnRow]} disabled={ocrBusy} onPress={() => captureQuotePhoto(true)}><ReadoraIcon name="camera" size={15} color={appColors.gold} /><Text style={styles.ocrText}>{ocrBusy ? 'Lendo...' : 'Fotografar página'}</Text></Pressable>
               <Pressable style={[styles.ocrButton, styles.btnRow]} disabled={ocrBusy} onPress={() => captureQuotePhoto(false)}><ReadoraIcon name="gallery" size={15} color={appColors.gold} /><Text style={styles.ocrText}>Da galeria</Text></Pressable>

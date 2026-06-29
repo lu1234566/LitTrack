@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Book } from '@/types/book';
-import { askAboutBook, ChatTurn } from '@/services/claudeClient';
+import { askAboutBook, ChatTurn } from '@/services/aiClient';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { haptic } from '@/services/feedback';
 import { appColors, appFonts } from '@/theme/tokens';
