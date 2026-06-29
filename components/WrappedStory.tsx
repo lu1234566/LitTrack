@@ -18,17 +18,17 @@ const DURATION = 5200;
 // PNG pela sua arte mantendo o mesmo nome — o movimento (Ken Burns +
 // partículas) é aplicado automaticamente por cima.
 const SLIDE_IMAGES: number[] = [
-  require('../assets/wrapped/01-intro.png'),
-  require('../assets/wrapped/02-livros.png'),
-  require('../assets/wrapped/03-paginas.png'),
-  require('../assets/wrapped/04-autor.png'),
-  require('../assets/wrapped/05-genero.png'),
-  require('../assets/wrapped/06-atmosfera.png'),
-  require('../assets/wrapped/07-mes.png'),
-  require('../assets/wrapped/08-top5.png'),
-  require('../assets/wrapped/09-livro-do-ano.png'),
-  require('../assets/wrapped/10-maior-livro.png'),
-  require('../assets/wrapped/11-final.png')
+  require('../assets/wrapped/01-intro.jpg'),
+  require('../assets/wrapped/02-livros.jpg'),
+  require('../assets/wrapped/03-paginas.jpg'),
+  require('../assets/wrapped/04-autor.jpg'),
+  require('../assets/wrapped/05-genero.jpg'),
+  require('../assets/wrapped/06-atmosfera.jpg'),
+  require('../assets/wrapped/07-mes.jpg'),
+  require('../assets/wrapped/08-top5.jpg'),
+  require('../assets/wrapped/09-livro-do-ano.jpg'),
+  require('../assets/wrapped/10-maior-livro.jpg'),
+  require('../assets/wrapped/11-final.jpg')
 ];
 
 type SlideColors = readonly [string, string];
