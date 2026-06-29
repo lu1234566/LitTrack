@@ -1,5 +1,5 @@
 import { Link } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
@@ -10,6 +10,7 @@ import { useShelves } from '@/contexts/ShelfContext';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors, appFonts } from '@/theme/tokens';
 import type { Book } from '@/types/book';
+import { LENGTH_OPTIONS, LengthBucket, MOOD_OPTIONS, pickWhatToRead } from '@/services/moodPicker';
 
 export default function RecommendationsScreen() {
   const { books, stats, updateStatus } = useBooks();
@@ -18,6 +19,11 @@ export default function RecommendationsScreen() {
   const { shelves } = useShelves();
   const { width } = useWindowDimensions();
   const mobile = width < 760;
+
+  const [moods, setMoods] = useState<string[]>([]);
+  const [length, setLength] = useState<LengthBucket>('any');
+  const picks = useMemo(() => pickWhatToRead(books, { moods, length }), [books, moods, length]);
+  const toggleMood = (mood: string) => setMoods((prev) => prev.includes(mood) ? prev.filter((m) => m !== mood) : [...prev, mood]);
 
   const recommendations = useMemo(() => buildRecommendations(books, quotes, sessions), [books, quotes, sessions]);
   const wishlist = books.filter((book) => book.status === 'wishlist');
@@ -42,6 +48,46 @@ export default function RecommendationsScreen() {
         <Metric label="EM ANDAMENTO" value={String(reading.length)} />
         <Metric label="GÊNERO FORTE" value={stats.favoriteGenre || '—'} />
       </View>
+
+      <Card>
+        <Text style={styles.cardTitle}>O que ler agora?</Text>
+        <Text style={styles.moodHint}>Escolha o clima e o tamanho. Buscamos na sua lista de leitura — pelo que você marcou ou pelo clima que seus gêneros costumam ter.</Text>
+        <Text style={styles.moodLabel}>CLIMA</Text>
+        <View style={styles.chipRow}>
+          {MOOD_OPTIONS.map((mood) => (
+            <Pressable key={mood} style={[styles.chip, moods.includes(mood) && styles.chipActive]} onPress={() => toggleMood(mood)}>
+              <Text style={[styles.chipText, moods.includes(mood) && styles.chipTextActive]}>{mood}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <Text style={styles.moodLabel}>TAMANHO</Text>
+        <View style={styles.chipRow}>
+          {LENGTH_OPTIONS.map((opt) => (
+            <Pressable key={opt.id} style={[styles.chip, length === opt.id && styles.chipActive]} onPress={() => setLength(opt.id)}>
+              <Text style={[styles.chipText, length === opt.id && styles.chipTextActive]}>{opt.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {picks.length === 0 ? (
+          <Text style={styles.moodEmpty}>{moods.length ? 'Nenhum livro da sua lista combina com esse clima ainda. Marque o clima dos seus livros lidos para melhorar as sugestões.' : 'Sua lista “Quero ler” aparecerá aqui. Escolha um clima para refinar.'}</Text>
+        ) : (
+          <View style={styles.pickList}>
+            {picks.map((pick) => (
+              <Link key={pick.book.id} href={`/book/${pick.book.id}` as never} asChild>
+                <Pressable style={styles.pickRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.pickTitle} numberOfLines={1}>{pick.book.title}</Text>
+                    <Text style={styles.pickMeta} numberOfLines={1}>{pick.book.author}{pick.book.totalPages ? ' • ' + pick.book.totalPages + ' pgs' : ''}{pick.book.genre ? ' • ' + pick.book.genre : ''}</Text>
+                    {pick.reasons.length ? <Text style={styles.pickWhy} numberOfLines={1}>{pick.inferred ? '✨ ' : ''}{pick.reasons[0]}</Text> : null}
+                  </View>
+                  <ReadoraIcon name="forward" size={18} color={appColors.textDim} />
+                </Pressable>
+              </Link>
+            ))}
+          </View>
+        )}
+      </Card>
 
       {recommendations.length === 0 ? (
         <View style={styles.emptyState}>
@@ -202,6 +248,19 @@ const styles = StyleSheet.create({
   primaryText: { color: appColors.background, fontWeight: '900' },
   readingBadge: { flex: 1, color: appColors.emerald, textAlign: 'center', fontWeight: '900', letterSpacing: 2 },
   cardTitle: { color: appColors.gold, fontFamily: appFonts.display, fontSize: 22, fontWeight: '900' },
+  moodHint: { color: appColors.textMuted, fontSize: 14, lineHeight: 20, marginTop: 6 },
+  moodLabel: { color: appColors.textDim, fontSize: 11, letterSpacing: 3, fontWeight: '900', marginTop: 16, marginBottom: 8 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: { borderColor: appColors.border, borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9, backgroundColor: appColors.surface },
+  chipActive: { backgroundColor: appColors.gold, borderColor: appColors.gold },
+  chipText: { color: appColors.textMuted, fontSize: 13, fontWeight: '800' },
+  chipTextActive: { color: appColors.background, fontWeight: '900' },
+  moodEmpty: { color: appColors.textDim, fontSize: 14, lineHeight: 20, marginTop: 18 },
+  pickList: { marginTop: 18, gap: 10 },
+  pickRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderColor: appColors.border, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: appColors.surface },
+  pickTitle: { color: appColors.text, fontSize: 16, fontWeight: '900' },
+  pickMeta: { color: appColors.textDim, fontSize: 12, marginTop: 2 },
+  pickWhy: { color: appColors.gold, fontSize: 12, fontWeight: '800', marginTop: 4 },
   bullet: { color: appColors.textMuted, lineHeight: 24, marginTop: 10 },
   emptyState: { minHeight: 360, alignItems: 'center', justifyContent: 'center', gap: 12 },
   emptyIcon: { color: appColors.gold, fontSize: 52 },
