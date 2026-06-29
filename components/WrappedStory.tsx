@@ -70,8 +70,10 @@ export function WrappedStory({ books, year, onClose }: { books: Book[]; year: nu
   const { width, height } = useWindowDimensions();
   const data = useMemo(() => buildWrapped(books, year), [books, year]);
   const shotRef = useRef<View>(null);
+  const rootRef = useRef<View>(null);
   const [index, setIndex] = useState(0);
   const [message, setMessage] = useState('');
+  const [capturing, setCapturing] = useState(false);
 
   const pagesBricks = Math.max(1, Math.round(data.totalPages / 300));
 
@@ -250,6 +252,7 @@ export function WrappedStory({ books, year, onClose }: { books: Book[]; year: nu
   const anim = useRef<Animated.CompositeAnimation | null>(null);
 
   useEffect(() => {
+    setMessage('');
     progress.forEach((v, i) => v.setValue(i < index ? 1 : 0));
     enter.setValue(0);
     Animated.timing(enter, { toValue: 1, duration: 450, useNativeDriver: true }).start();
@@ -307,11 +310,43 @@ export function WrappedStory({ books, year, onClose }: { books: Book[]; year: nu
     } catch { haptic('error'); setMessage('Não foi possível salvar.'); }
   }
 
+  // Captura o slide visível (com a marca Readora e a barra de progresso), sem
+  // os controles de UI — para que cada slide possa virar um story.
+  async function captureSlide(): Promise<string | null> {
+    if (!rootRef.current) return null;
+    setCapturing(true);
+    await new Promise((resolve) => setTimeout(resolve, 140));
+    try {
+      return await captureRef(rootRef, { format: 'png', quality: 1, result: 'tmpfile' });
+    } finally {
+      setCapturing(false);
+    }
+  }
+
+  async function shareSlide() {
+    if (Platform.OS === 'web') { setMessage('Compartilhamento disponível no app.'); return; }
+    try {
+      const uri = await captureSlide();
+      if (uri && (await Sharing.isAvailableAsync())) { haptic('success'); await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Meu slide Readora Wrapped' }); }
+      else setMessage('Compartilhamento não disponível.');
+    } catch { haptic('error'); setMessage('Não foi possível gerar a imagem.'); }
+  }
+
+  async function saveSlide() {
+    if (Platform.OS === 'web') return;
+    try {
+      const permission = await MediaLibrary.requestPermissionsAsync();
+      if (!permission.granted) { setMessage('Permita o acesso à galeria.'); return; }
+      const uri = await captureSlide();
+      if (uri) { await MediaLibrary.saveToLibraryAsync(uri); haptic('success'); setMessage('Slide salvo na galeria.'); }
+    } catch { haptic('error'); setMessage('Não foi possível salvar.'); }
+  }
+
   const slide = slides[index];
 
   return (
     <Modal visible animationType="fade" onRequestClose={onClose}>
-      <View style={styles.root}>
+      <View ref={rootRef} collapsable={false} style={styles.root}>
         <WrappedBackground colors={slide.colors} image={SLIDE_IMAGES[index]} />
 
         {/* progress bars */}
@@ -325,7 +360,7 @@ export function WrappedStory({ books, year, onClose }: { books: Book[]; year: nu
 
         <View style={styles.topBar}>
           <Text style={styles.brand}>Readora</Text>
-          <Pressable onPress={onClose} hitSlop={14}><ReadoraIcon name="close" size={26} color="#fff" /></Pressable>
+          {!capturing ? <Pressable onPress={onClose} hitSlop={14}><ReadoraIcon name="close" size={26} color="#fff" /></Pressable> : null}
         </View>
 
         <Animated.View style={[styles.slide, { opacity: enter, transform: [{ translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) }] }]}>
@@ -341,6 +376,25 @@ export function WrappedStory({ books, year, onClose }: { books: Book[]; year: nu
         ) : (
           <Pressable style={styles.tapBackOnly} onPress={prev} />
         )}
+
+        {/* per-slide share controls — hidden on the final slide (it has its own)
+            and while capturing, so they don't appear in the saved image */}
+        {!capturing && index < slides.length - 1 ? (
+          <View style={styles.slideActions} pointerEvents="box-none">
+            {message ? <View style={styles.toast}><Text style={styles.toastText}>{message}</Text></View> : null}
+            <View style={styles.actionRow}>
+              <Pressable style={styles.actionBtn} onPress={shareSlide} hitSlop={8}>
+                <ReadoraIcon name="share" size={16} color="#0b132b" />
+                <Text style={styles.actionText}>Compartilhar slide</Text>
+              </Pressable>
+              {Platform.OS !== 'web' ? (
+                <Pressable style={styles.actionIcon} onPress={saveSlide} hitSlop={8}>
+                  <ReadoraIcon name="download" size={20} color="#fff" />
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
+        ) : null}
 
         {/* off-screen capture source */}
         {Platform.OS !== 'web' ? (
@@ -402,6 +456,13 @@ const styles = StyleSheet.create({
   saveBtn: { marginTop: 12, paddingVertical: 12, paddingHorizontal: 22, borderRadius: 999, borderColor: 'rgba(255,255,255,0.6)', borderWidth: 1, backgroundColor: 'rgba(0,0,0,0.25)', zIndex: 5 },
   saveText: { ...TS, color: '#fff', fontWeight: '900', fontSize: 14 },
   msg: { ...TS, color: '#fff', fontWeight: '900', marginTop: 12, textAlign: 'center' },
+  slideActions: { position: 'absolute', left: 0, right: 0, bottom: 38, alignItems: 'center', gap: 12 },
+  actionRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 999, paddingVertical: 13, paddingHorizontal: 22 },
+  actionText: { color: '#0b132b', fontWeight: '900', fontSize: 14 },
+  actionIcon: { width: 48, height: 48, borderRadius: 999, alignItems: 'center', justifyContent: 'center', borderColor: 'rgba(255,255,255,0.6)', borderWidth: 1, backgroundColor: 'rgba(0,0,0,0.3)' },
+  toast: { backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 999, paddingVertical: 8, paddingHorizontal: 16 },
+  toastText: { ...TS, color: '#fff', fontWeight: '900', fontSize: 13, textAlign: 'center' },
   tapRow: { position: 'absolute', top: 90, left: 0, right: 0, bottom: 0, flexDirection: 'row' },
   tapLeft: { width: '30%', height: '100%' },
   tapRight: { flex: 1, height: '100%' },
