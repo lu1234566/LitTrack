@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
@@ -7,6 +8,7 @@ import { useQuotes } from '@/contexts/QuoteContext';
 import { Quote } from '@/types/quote';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { copyText, haptic } from '@/services/feedback';
+import { extractQuoteFromImage, isClaudeConfigured } from '@/services/claudeClient';
 import { appColors, appFonts } from '@/theme/tokens';
 
 export default function QuotesScreen() {
@@ -22,6 +24,8 @@ export default function QuotesScreen() {
   const [tagFilter, setTagFilter] = useState('all');
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [showComposer, setShowComposer] = useState(false);
+  const [ocrBusy, setOcrBusy] = useState(false);
+  const [ocrMessage, setOcrMessage] = useState('');
   const [editingId, setEditingId] = useState('');
   const [editText, setEditText] = useState('');
   const [editPage, setEditPage] = useState('');
@@ -56,6 +60,31 @@ export default function QuotesScreen() {
     setTags('');
     setShowComposer(false);
     haptic('success');
+  }
+
+  async function captureQuotePhoto(fromCamera: boolean) {
+    try {
+      const perm = fromCamera ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) { setOcrMessage('Permita o acesso à ' + (fromCamera ? 'câmera' : 'galeria') + '.'); return; }
+      const result = fromCamera
+        ? await ImagePicker.launchCameraAsync({ base64: true, quality: 0.6 })
+        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, base64: true, quality: 0.6 });
+      if (result.canceled) return;
+      const asset = result.assets?.[0];
+      if (!asset?.base64) { setOcrMessage('Não foi possível ler a imagem.'); return; }
+      setOcrBusy(true);
+      setOcrMessage('Lendo o texto da foto...');
+      const mediaType = asset.mimeType || 'image/jpeg';
+      const extracted = await extractQuoteFromImage(asset.base64, mediaType);
+      setText((prev) => prev ? prev + '\n' + extracted : extracted);
+      haptic('success');
+      setOcrMessage('Texto extraído. Revise antes de salvar.');
+    } catch (error) {
+      haptic('error');
+      setOcrMessage(error instanceof Error ? error.message : 'Falha ao extrair o texto.');
+    } finally {
+      setOcrBusy(false);
+    }
   }
 
   async function copyQuote(quote: Quote) {
@@ -98,6 +127,13 @@ export default function QuotesScreen() {
         <Card>
           <Text style={styles.kicker}>NOVA MEMÓRIA</Text>
           <TextInput style={styles.textArea} placeholder="Trecho marcante" placeholderTextColor={appColors.textDim} value={text} onChangeText={setText} multiline />
+          {isClaudeConfigured && Platform.OS !== 'web' ? (
+            <View style={styles.ocrRow}>
+              <Pressable style={[styles.ocrButton, styles.btnRow]} disabled={ocrBusy} onPress={() => captureQuotePhoto(true)}><ReadoraIcon name="camera" size={15} color={appColors.gold} /><Text style={styles.ocrText}>{ocrBusy ? 'Lendo...' : 'Fotografar página'}</Text></Pressable>
+              <Pressable style={[styles.ocrButton, styles.btnRow]} disabled={ocrBusy} onPress={() => captureQuotePhoto(false)}><ReadoraIcon name="gallery" size={15} color={appColors.gold} /><Text style={styles.ocrText}>Da galeria</Text></Pressable>
+            </View>
+          ) : null}
+          {ocrMessage ? <Text style={styles.ocrMessage}>{ocrMessage}</Text> : null}
           <View style={styles.bookPicker}>
             {books.slice(0, 4).map((book) => (
               <Pressable key={book.id} style={[styles.chip, bookId === book.id && styles.chipActive]} onPress={() => setBookId(book.id)}>
@@ -187,6 +223,10 @@ const styles = StyleSheet.create({
   btnRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   newButtonText: { color: appColors.background, fontSize: 18, fontWeight: '900' },
   kicker: { color: appColors.gold, fontSize: 12, fontWeight: '900', letterSpacing: 4 },
+  ocrRow: { flexDirection: 'row', gap: 10, marginTop: 10 },
+  ocrButton: { flex: 1, borderColor: appColors.gold, borderWidth: 1, borderRadius: 14, paddingVertical: 11 },
+  ocrText: { color: appColors.gold, fontWeight: '900', fontSize: 13 },
+  ocrMessage: { color: appColors.textMuted, fontSize: 13, marginTop: 8 },
   filtersRow: { flexDirection: 'row', gap: 14, alignItems: 'center' },
   searchInput: { flex: 1, backgroundColor: appColors.surface, borderColor: appColors.border, borderWidth: 1, borderRadius: 18, paddingHorizontal: 22, paddingVertical: 18, color: appColors.text, fontSize: 18 },
   selectField: { flex: 1, backgroundColor: appColors.surface, borderColor: appColors.border, borderWidth: 1, borderRadius: 18, paddingHorizontal: 22, paddingVertical: 18 },
