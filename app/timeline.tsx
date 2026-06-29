@@ -12,8 +12,8 @@ export default function TimelineScreen() {
   const totalPages = sessions.reduce((sum, session) => sum + session.pagesRead, 0);
   const totalMinutes = sessions.reduce((sum, session) => sum + session.minutesRead, 0);
 
-  return (
-    <Screen>
+  const header = (
+    <>
       <View style={styles.header}>
         <Text style={styles.title}>Linha do Tempo</Text>
         <Text style={styles.subtitle}>A cronologia viva das suas sessões de leitura.</Text>
@@ -24,33 +24,40 @@ export default function TimelineScreen() {
         <Metric label="PÁGINAS" value={String(totalPages)} />
         <Metric label="MINUTOS" value={String(totalMinutes)} />
       </View>
+    </>
+  );
 
-      {sessions.length === 0 ? (
-        <View style={styles.emptyState}>
-          <View style={styles.emptyCircle}><ReadoraIcon name="timeline" size={34} color={appColors.gold} /></View>
-          <Text style={styles.emptyTitle}>Nenhum marco registrado</Text>
-          <Text style={styles.emptyText}>Registre uma sessão rápida ou atualize o progresso de um livro para criar sua linha do tempo.</Text>
+  const empty = (
+    <View style={styles.emptyState}>
+      <View style={styles.emptyCircle}><ReadoraIcon name="timeline" size={34} color={appColors.gold} /></View>
+      <Text style={styles.emptyTitle}>Nenhum marco registrado</Text>
+      <Text style={styles.emptyText}>Registre uma sessão rápida ou atualize o progresso de um livro para criar sua linha do tempo.</Text>
+    </View>
+  );
+
+  return (
+    <Screen
+      data={sessions}
+      itemGap={0}
+      keyExtractor={(session) => session.id}
+      ListHeaderComponent={header}
+      ListEmptyComponent={empty}
+      renderItem={(session, index) => (
+        <View style={styles.timelineItem}>
+          <View style={styles.timelineRail}><View style={styles.dot} />{index !== sessions.length - 1 ? <View style={styles.line} /> : null}</View>
+          <Card>
+            <View style={styles.row}>
+              <Text style={styles.book}>{session.bookTitle}</Text>
+              <Text style={styles.date}>{new Date(session.createdAt).toLocaleDateString('pt-BR')}</Text>
+            </View>
+            <Text style={styles.body}>{session.pagesRead} páginas • {session.minutesRead} minutos</Text>
+            {session.mood ? <Text style={styles.mood}>Humor: {session.mood}</Text> : null}
+            {session.note ? <Text style={styles.body}>{session.note}</Text> : null}
+            <Pressable style={styles.danger} onPress={() => deleteSession(session.id)}><Text style={styles.dangerText}>Remover sessão</Text></Pressable>
+          </Card>
         </View>
-      ) : null}
-
-      <View style={styles.timelineList}>
-        {sessions.map((session, index) => (
-          <View key={session.id} style={styles.timelineItem}>
-            <View style={styles.timelineRail}><View style={styles.dot} />{index !== sessions.length - 1 ? <View style={styles.line} /> : null}</View>
-            <Card>
-              <View style={styles.row}>
-                <Text style={styles.book}>{session.bookTitle}</Text>
-                <Text style={styles.date}>{new Date(session.createdAt).toLocaleDateString('pt-BR')}</Text>
-              </View>
-              <Text style={styles.body}>{session.pagesRead} páginas • {session.minutesRead} minutos</Text>
-              {session.mood ? <Text style={styles.mood}>Humor: {session.mood}</Text> : null}
-              {session.note ? <Text style={styles.body}>{session.note}</Text> : null}
-              <Pressable style={styles.danger} onPress={() => deleteSession(session.id)}><Text style={styles.dangerText}>Remover sessão</Text></Pressable>
-            </Card>
-          </View>
-        ))}
-      </View>
-    </Screen>
+      )}
+    />
   );
 }
 

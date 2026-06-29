@@ -52,8 +52,8 @@ export default function LibraryScreen() {
     });
   }, [books, filter, genreFilter, sortBy, text]);
 
-  return (
-    <Screen refreshing={refreshing} onRefresh={onRefresh}>
+  const header = (
+    <>
       <View style={styles.header}>
         <Text style={styles.title}>Meus Livros</Text>
         <Text style={styles.subtitle}>Sua biblioteca pessoal.</Text>
@@ -90,16 +90,28 @@ export default function LibraryScreen() {
       </Card>
 
       {loading ? <Text style={styles.muted}>Carregando livros...</Text> : null}
-      {!loading && visibleBooks.length === 0 ? (
-        <View style={styles.emptyPanel}>
-          <ReadoraIcon name="library" size={56} color={appColors.textDim} />
-          <Text style={styles.emptyTitle}>Nenhum livro encontrado</Text>
-          <Text style={styles.emptyText}>Tente ajustar seus filtros ou adicione um novo livro.</Text>
-          <Link href="/add" asChild><Pressable style={styles.emptyButton}><ReadoraIcon name="addBook" size={18} color={appColors.background} /><Text style={styles.emptyButtonText}>Adicionar Leitura</Text></Pressable></Link>
-        </View>
-      ) : null}
-      {visibleBooks.map((book) => <BookCard key={book.id} book={book} />)}
-    </Screen>
+    </>
+  );
+
+  const empty = !loading ? (
+    <View style={styles.emptyPanel}>
+      <ReadoraIcon name="library" size={56} color={appColors.textDim} />
+      <Text style={styles.emptyTitle}>Nenhum livro encontrado</Text>
+      <Text style={styles.emptyText}>Tente ajustar seus filtros ou adicione um novo livro.</Text>
+      <Link href="/add" asChild><Pressable style={styles.emptyButton}><ReadoraIcon name="addBook" size={18} color={appColors.background} /><Text style={styles.emptyButtonText}>Adicionar Leitura</Text></Pressable></Link>
+    </View>
+  ) : null;
+
+  return (
+    <Screen
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+      data={visibleBooks}
+      keyExtractor={(book) => book.id}
+      renderItem={(book) => <BookCard book={book} />}
+      ListHeaderComponent={header}
+      ListEmptyComponent={empty}
+    />
   );
 }
 

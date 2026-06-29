@@ -1,6 +1,6 @@
-import { ReactNode, useState } from 'react';
+import { ReactElement, ReactNode, useState } from 'react';
 import { Link, usePathname } from 'expo-router';
-import { Image, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { FlatList, Image, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { usePreferences } from '@/contexts/PreferencesContext';
 import { appColors, appFonts } from '@/theme/tokens';
@@ -31,16 +31,32 @@ const bottomTabs: { icon: ReadoraIconName; label: string; href: string }[] = [
   { icon: 'literaryProfile', label: 'Perfil', href: '/literary-profile' }
 ];
 
-export function Screen({
+export function Screen<T>({
   children,
   scroll = true,
   refreshing,
-  onRefresh
+  onRefresh,
+  data,
+  renderItem,
+  keyExtractor,
+  ListHeaderComponent,
+  ListEmptyComponent,
+  ListFooterComponent,
+  itemGap
 }: {
-  children: ReactNode;
+  children?: ReactNode;
   scroll?: boolean;
   refreshing?: boolean;
   onRefresh?: () => void;
+  /** When provided, the screen body is a virtualized FlatList instead of a
+   *  ScrollView — only the visible rows are mounted, keeping long lists smooth. */
+  data?: ReadonlyArray<T>;
+  renderItem?: (item: T, index: number) => ReactElement | null;
+  keyExtractor?: (item: T, index: number) => string;
+  ListHeaderComponent?: ReactNode;
+  ListEmptyComponent?: ReactNode;
+  ListFooterComponent?: ReactNode;
+  itemGap?: number;
 }) {
   const { preferences } = usePreferences();
   const density = densityValue(preferences.visualDensity);
@@ -50,28 +66,57 @@ export function Screen({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const content = <View style={[styles.content, isDesktop ? styles.desktopContent : styles.mobileContent, { gap: density.screenGap }]}>{children}</View>;
 
+  const refreshControl = onRefresh ? (
+    <RefreshControl
+      refreshing={Boolean(refreshing)}
+      onRefresh={onRefresh}
+      tintColor={appColors.gold}
+      colors={[appColors.gold]}
+      progressBackgroundColor={appColors.surface}
+    />
+  ) : undefined;
+
+  const gap = itemGap ?? density.screenGap;
+
+  let body: ReactNode;
+  if (data && renderItem) {
+    body = (
+      <FlatList
+        data={data as T[]}
+        keyExtractor={keyExtractor ? (item, index) => keyExtractor(item, index) : (_, index) => String(index)}
+        renderItem={({ item, index }) => renderItem(item, index)}
+        ListHeaderComponent={ListHeaderComponent ? <View style={{ gap: density.screenGap, marginBottom: data.length ? gap : 0 }}>{ListHeaderComponent}</View> : null}
+        ListEmptyComponent={ListEmptyComponent ? <>{ListEmptyComponent}</> : null}
+        ListFooterComponent={ListFooterComponent ? <View style={{ marginTop: gap }}>{ListFooterComponent}</View> : null}
+        ItemSeparatorComponent={() => <View style={{ height: gap }} />}
+        contentContainerStyle={[isDesktop ? styles.desktopContent : styles.mobileContent, isDesktop ? styles.scrollDesktop : styles.scrollMobile]}
+        refreshControl={refreshControl}
+        showsVerticalScrollIndicator={false}
+        removeClippedSubviews
+        initialNumToRender={8}
+        windowSize={11}
+      />
+    );
+  } else if (scroll) {
+    body = (
+      <ScrollView
+        contentContainerStyle={[styles.scroll, isDesktop ? styles.scrollDesktop : styles.scrollMobile]}
+        refreshControl={refreshControl}
+      >
+        {content}
+      </ScrollView>
+    );
+  } else {
+    body = content;
+  }
+
   return (
     <SafeAreaView style={styles.root}>
       <StatusBar style="light" />
       <View style={styles.shell}>
         {isDesktop ? <Sidebar accent={accent} textScale={preferences.textScale} /> : <MobileTopbar accent={accent} onMenu={() => setDrawerOpen(true)} />}
         <View style={[styles.main, isDesktop ? styles.mainDesktop : styles.mainMobile]}>
-          {scroll ? (
-            <ScrollView
-              contentContainerStyle={[styles.scroll, isDesktop ? styles.scrollDesktop : styles.scrollMobile]}
-              refreshControl={onRefresh ? (
-                <RefreshControl
-                  refreshing={Boolean(refreshing)}
-                  onRefresh={onRefresh}
-                  tintColor={appColors.gold}
-                  colors={[appColors.gold]}
-                  progressBackgroundColor={appColors.surface}
-                />
-              ) : undefined}
-            >
-              {content}
-            </ScrollView>
-          ) : content}
+          {body}
         </View>
       </View>
       {!isDesktop ? <MobileBottomBar accent={accent} /> : null}

@@ -84,8 +84,8 @@ export default function QuotesScreen() {
     setEditTags('');
   }
 
-  return (
-    <Screen>
+  const header = (
+    <>
       <View style={[styles.headerRow, mobile && styles.stack]}>
         <View style={styles.titleBox}>
           <Text style={styles.title}><Text style={styles.titleIcon}>” </Text>Diário de Citações</Text>
@@ -126,19 +126,27 @@ export default function QuotesScreen() {
           </Pressable>
         ))}
       </View>
+    </>
+  );
 
-      {quotes.length === 0 ? (
-        <View style={styles.emptyState}>
-          <View style={styles.emptyCircle}><Text style={styles.emptyIcon}>”</Text></View>
-          <Text style={styles.emptyTitle}>Nenhuma citação encontrada</Text>
-          <Text style={styles.emptyText}>Comece a salvar trechos que tocam sua alma.</Text>
-        </View>
-      ) : null}
+  const empty = (
+    <View style={styles.emptyState}>
+      <View style={styles.emptyCircle}><Text style={styles.emptyIcon}>”</Text></View>
+      <Text style={styles.emptyTitle}>Nenhuma citação encontrada</Text>
+      <Text style={styles.emptyText}>Comece a salvar trechos que tocam sua alma.</Text>
+    </View>
+  );
 
-      {visibleQuotes.map((quote) => {
+  return (
+    <Screen
+      data={visibleQuotes}
+      keyExtractor={(quote) => quote.id}
+      ListHeaderComponent={header}
+      ListEmptyComponent={empty}
+      renderItem={(quote) => {
         const editing = editingId === quote.id;
         return (
-          <Card key={quote.id}>
+          <Card>
             {editing ? (
               <>
                 <TextInput style={styles.textArea} placeholder="Editar trecho" placeholderTextColor={appColors.textDim} value={editText} onChangeText={setEditText} multiline />
@@ -163,8 +171,8 @@ export default function QuotesScreen() {
             </View>
           </Card>
         );
-      })}
-    </Screen>
+      }}
+    />
   );
 }
 
