@@ -24,7 +24,9 @@ export default function MonthlyCapsuleScreen() {
   const [message, setMessage] = useState('');
   const [tab, setTab] = useState<'app' | 'instagram'>('app');
   const [format, setFormat] = useState<'feed' | 'story'>('feed');
+  const [period, setPeriod] = useState<'month' | 'year'>('month');
   const [monthOffset, setMonthOffset] = useState(0);
+  const [yearOffset, setYearOffset] = useState(0);
   const [favoriteId, setFavoriteId] = useState<string | null>(null);
   const shotRef = useRef<View>(null);
 
@@ -36,18 +38,21 @@ export default function MonthlyCapsuleScreen() {
   }, [monthOffset]);
   const selMonth = selected.getMonth();
   const selYear = selected.getFullYear();
+  const periodYear = new Date().getFullYear() + yearOffset;
+  const isYear = period === 'year';
 
   // Bucket by when the book was finished (stable), falling back to reading-month
   // timestamps. Using finishedAt avoids a later edit jumping a book to another
   // month (a plain updatedAt would move on any edit).
+  const bookDate = (book: typeof books[number]) => new Date(book.finishedAt || book.updatedAt || book.createdAt);
   const monthBooks = useMemo(() => books.filter((book) => {
-    const d = new Date(book.finishedAt || book.updatedAt || book.createdAt);
-    return d.getMonth() === selMonth && d.getFullYear() === selYear;
-  }), [books, selMonth, selYear]);
+    const d = bookDate(book);
+    return isYear ? d.getFullYear() === periodYear : (d.getMonth() === selMonth && d.getFullYear() === selYear);
+  }), [books, isYear, periodYear, selMonth, selYear]);
   const monthSessions = useMemo(() => sessions.filter((session) => {
     const d = new Date(session.createdAt);
-    return d.getMonth() === selMonth && d.getFullYear() === selYear;
-  }), [sessions, selMonth, selYear]);
+    return isYear ? d.getFullYear() === periodYear : (d.getMonth() === selMonth && d.getFullYear() === selYear);
+  }), [sessions, isYear, periodYear, selMonth, selYear]);
 
   const monthFinished = monthBooks.filter((book) => book.status === 'finished').length;
   const monthMinutes = monthSessions.reduce((sum, session) => sum + session.minutesRead, 0);
@@ -58,6 +63,8 @@ export default function MonthlyCapsuleScreen() {
   const ratingOutOf10 = monthAverage * 2;
   const month = selected.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
   const monthName = selected.toLocaleDateString('pt-BR', { month: 'long' });
+  const periodLabel = isYear ? String(periodYear) : capitalize(month);
+  const periodName = isYear ? 'em ' + periodYear : 'em ' + monthName;
   const vibe = monthSessions[0]?.mood || monthBooks.find((book) => book.mood)?.mood || 'Sereno';
   const minutesLabel = Math.floor(monthMinutes / 60) + 'h ' + (monthMinutes % 60) + 'm';
 
@@ -81,15 +88,19 @@ export default function MonthlyCapsuleScreen() {
   }, [favoriteId, monthBooks, rankedBooks]);
 
   const literaryCopy = useMemo(() => {
-    if (monthFinished === 0) return monthName + ' foi um período de pausa e reflexão silenciosa entre as páginas.';
-    if (ratingOutOf10 >= 8) return 'Sua jornada em ' + monthName + ' foi marcada por encontros sublimes e histórias que ecoaram profundamente.';
-    if (monthPages > 500) return 'Em ' + monthName + ', você mergulhou intensamente em novos mundos, percorrendo caminhos de papel e tinta.';
-    return 'Um mês de descobertas e novos começos literários. ' + monthName + ' deixou sua marca em sua estante.';
-  }, [monthFinished, ratingOutOf10, monthPages, monthName]);
+    const word = isYear ? 'ano' : 'mês';
+    if (monthFinished === 0) return capitalize(isYear ? String(periodYear) : monthName) + ' foi um período de pausa e reflexão silenciosa entre as páginas.';
+    if (ratingOutOf10 >= 8) return 'Sua jornada ' + periodName + ' foi marcada por encontros sublimes e histórias que ecoaram profundamente.';
+    if (monthPages > 500) return (isYear ? 'Em ' + periodYear : 'Em ' + monthName) + ', você mergulhou intensamente em novos mundos, percorrendo caminhos de papel e tinta.';
+    return 'Um ' + word + ' de descobertas e novos começos literários ' + periodName + '.';
+  }, [isYear, periodYear, monthFinished, ratingOutOf10, monthPages, monthName, periodName]);
 
   const feedData = {
-    monthName,
-    year: selYear,
+    monthName: isYear ? String(periodYear) : monthName,
+    year: isYear ? periodYear : selYear,
+    heading: isYear ? 'Cápsula Anual' : undefined,
+    periodText: isYear ? 'Retrospectiva de ' + periodYear : undefined,
+    favoriteLabel: isYear ? 'Favorito do Ano' : undefined,
     totalBooks: monthFinished || monthBooks.length,
     totalPages: monthPages,
     ratingOutOf10,
@@ -201,10 +212,14 @@ export default function MonthlyCapsuleScreen() {
         </View>
         <Card>
           <Text style={styles.periodLabel}>PERÍODO</Text>
+          <View style={styles.periodToggle}>
+            <Pressable onPress={() => { setPeriod('month'); setFavoriteId(null); }} style={[styles.periodTab, !isYear && styles.periodTabActive]}><Text style={!isYear ? styles.periodTabTextActive : styles.periodTabText}>Mês</Text></Pressable>
+            <Pressable onPress={() => { setPeriod('year'); setFavoriteId(null); }} style={[styles.periodTab, isYear && styles.periodTabActive]}><Text style={isYear ? styles.periodTabTextActive : styles.periodTabText}>Ano</Text></Pressable>
+          </View>
           <View style={styles.periodRow}>
-            <Pressable onPress={() => { setMonthOffset((o) => o - 1); setFavoriteId(null); }} hitSlop={10}><ReadoraIcon name="back" size={18} color={appColors.gold} /></Pressable>
-            <Text style={styles.period}>{capitalize(month)}</Text>
-            <Pressable onPress={() => { setMonthOffset((o) => Math.min(0, o + 1)); setFavoriteId(null); }} hitSlop={10}><ReadoraIcon name="forward" size={18} color={monthOffset < 0 ? appColors.gold : appColors.textDim} /></Pressable>
+            <Pressable onPress={() => { isYear ? setYearOffset((o) => o - 1) : setMonthOffset((o) => o - 1); setFavoriteId(null); }} hitSlop={10}><ReadoraIcon name="back" size={18} color={appColors.gold} /></Pressable>
+            <Text style={styles.period}>{periodLabel}</Text>
+            <Pressable onPress={() => { isYear ? setYearOffset((o) => Math.min(0, o + 1)) : setMonthOffset((o) => Math.min(0, o + 1)); setFavoriteId(null); }} hitSlop={10}><ReadoraIcon name="forward" size={18} color={(isYear ? yearOffset < 0 : monthOffset < 0) ? appColors.gold : appColors.textDim} /></Pressable>
           </View>
         </Card>
       </View>
@@ -223,19 +238,21 @@ export default function MonthlyCapsuleScreen() {
       {tab === 'app' ? (
         <View style={[styles.mainGrid, mobile && styles.stack]}>
           <View style={styles.previewCol}>
-            <View style={styles.formatRow}>
-              <Pressable onPress={() => setFormat('feed')} style={[styles.formatBtn, format === 'feed' && styles.formatBtnActive]}><Text style={format === 'feed' ? styles.formatTextActive : styles.formatText}>Feed (4:5)</Text></Pressable>
-              <Pressable onPress={() => setFormat('story')} style={[styles.formatBtn, format === 'story' && styles.formatBtnActive]}><Text style={format === 'story' ? styles.formatTextActive : styles.formatText}>Story (9:16)</Text></Pressable>
-            </View>
+            {!isYear ? (
+              <View style={styles.formatRow}>
+                <Pressable onPress={() => setFormat('feed')} style={[styles.formatBtn, format === 'feed' && styles.formatBtnActive]}><Text style={format === 'feed' ? styles.formatTextActive : styles.formatText}>Feed (4:5)</Text></Pressable>
+                <Pressable onPress={() => setFormat('story')} style={[styles.formatBtn, format === 'story' && styles.formatBtnActive]}><Text style={format === 'story' ? styles.formatTextActive : styles.formatText}>Story (9:16)</Text></Pressable>
+              </View>
+            ) : null}
             <View style={[styles.previewFrame, { width: previewWidth + 24 }]}>
-              {format === 'feed'
+              {format === 'feed' || isYear
                 ? <FeedCapsuleArt scale={previewScale} {...feedData} />
                 : <StoryCapsuleArt scale={previewScale} {...feedData} />}
             </View>
           </View>
 
           <View style={styles.essence}>
-            <Text style={styles.essenceTitle}>Sua Essência de {month}</Text>
+            <Text style={styles.essenceTitle}>Sua Essência de {periodLabel}</Text>
             <EssenceLine value={String(monthPages)} label="PÁGINAS PERCORRIDAS" text="A distância mística que seus olhos atravessaram este mês." />
             <EssenceLine value={String(monthFinished)} label="HISTÓRIAS CONCLUÍDAS" text="O número de universos que agora fazem parte da sua história." />
             <EssenceLine value={vibe} label="ATMOSFERA DOMINANTE" text="O sentimento que guiou suas escolhas e momentos de leitura." />
@@ -284,7 +301,7 @@ export default function MonthlyCapsuleScreen() {
       {/* Fonte de captura em alta resolução (Feed 1080×1350 / Story 1080×1920), fora da tela. */}
       {Platform.OS !== 'web' ? (
         <View style={styles.offscreen} pointerEvents="none">
-          {format === 'feed'
+          {format === 'feed' || isYear
             ? <FeedCapsuleArt ref={shotRef} scale={1} {...feedData} />
             : <StoryCapsuleArt ref={shotRef} scale={1} {...feedData} />}
         </View>
@@ -312,7 +329,12 @@ const styles = StyleSheet.create({
   title: { color: appColors.text, fontFamily: appFonts.display, fontSize: 56, lineHeight: 64, fontWeight: '900' },
   subtitle: { color: appColors.textMuted, fontSize: 18, lineHeight: 27, maxWidth: 560 },
   periodLabel: { color: appColors.textDim, letterSpacing: 4, fontSize: 11, textAlign: 'center' },
-  period: { color: appColors.text, fontWeight: '900', textAlign: 'center', marginTop: 4 },
+  periodToggle: { flexDirection: 'row', gap: 6, alignSelf: 'center', backgroundColor: appColors.background, borderColor: appColors.border, borderWidth: 1, borderRadius: 12, padding: 3, marginTop: 8 },
+  periodTab: { borderRadius: 9, paddingVertical: 6, paddingHorizontal: 16 },
+  periodTabActive: { backgroundColor: appColors.gold },
+  periodTabText: { color: appColors.textMuted, fontWeight: '900', fontSize: 12 },
+  periodTabTextActive: { color: appColors.background, fontWeight: '900', fontSize: 12 },
+  period: { color: appColors.text, fontWeight: '900', textAlign: 'center', marginTop: 6 },
   segmented: { alignSelf: 'center', flexDirection: 'row', backgroundColor: appColors.surface, borderColor: appColors.border, borderWidth: 1, borderRadius: 18, padding: 5 },
   segmentActive: { backgroundColor: appColors.gold, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 24 },
   segment: { borderRadius: 14, paddingVertical: 12, paddingHorizontal: 24 },

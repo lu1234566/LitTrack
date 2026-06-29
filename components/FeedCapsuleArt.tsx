@@ -21,6 +21,9 @@ export type FeedCapsuleArtProps = {
   scale?: number;
   monthName: string;
   year: number;
+  heading?: string;
+  periodText?: string;
+  favoriteLabel?: string;
   totalBooks: number;
   totalPages: number;
   ratingOutOf10: number;
@@ -78,7 +81,7 @@ function Cover({ book, w, h, u }: { book: FeedCapsuleBook; w: number; h: number;
 }
 
 export const FeedCapsuleArt = forwardRef<View, FeedCapsuleArtProps>(function FeedCapsuleArt(
-  { scale = 1, monthName, year, totalBooks, totalPages, ratingOutOf10, dominantMood, books, bestBook, literaryCopy },
+  { scale = 1, monthName, year, heading, periodText, favoriteLabel, totalBooks, totalPages, ratingOutOf10, dominantMood, books, bestBook, literaryCopy },
   ref
 ) {
   const u = (n: number) => n * scale;
@@ -90,8 +93,8 @@ export const FeedCapsuleArt = forwardRef<View, FeedCapsuleArtProps>(function Fee
       {/* Header */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: u(56) }}>
         <View style={{ flex: 1, paddingRight: u(16) }}>
-          <Text style={{ color: C.amber50, fontFamily: appFonts.display, fontStyle: 'italic', fontWeight: '900', fontSize: u(72), lineHeight: u(78) }}>Cápsula Mensal</Text>
-          <Text style={[labelStyle, { fontSize: u(28), letterSpacing: u(3), marginTop: u(8) }]}>{monthName} / {year}</Text>
+          <Text style={{ color: C.amber50, fontFamily: appFonts.display, fontStyle: 'italic', fontWeight: '900', fontSize: u(72), lineHeight: u(78) }}>{heading || 'Cápsula Mensal'}</Text>
+          <Text style={[labelStyle, { fontSize: u(28), letterSpacing: u(3), marginTop: u(8) }]}>{periodText || monthName + ' / ' + year}</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: u(10), backgroundColor: C.amber, paddingHorizontal: u(30), paddingVertical: u(16), borderRadius: u(26) }}>
           <ReadoraIcon name="sparkle" size={u(30)} color={C.bg} />
@@ -135,7 +138,7 @@ export const FeedCapsuleArt = forwardRef<View, FeedCapsuleArtProps>(function Fee
               <Cover book={bestBook} w={u(80)} h={u(112)} u={u} />
               <View style={{ flex: 1 }}>
                 <View style={{ alignSelf: 'flex-start', backgroundColor: C.amberSoft, paddingHorizontal: u(16), paddingVertical: u(5), borderRadius: u(999), marginBottom: u(10) }}>
-                  <Text style={{ color: C.amber, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(15), textTransform: 'uppercase', letterSpacing: u(1.4) }}>Favorito do Mês</Text>
+                  <Text style={{ color: C.amber, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(15), textTransform: 'uppercase', letterSpacing: u(1.4) }}>{favoriteLabel || 'Favorito do Mês'}</Text>
                 </View>
                 <Text numberOfLines={1} style={{ color: C.n50, fontFamily: appFonts.body, fontWeight: '700', fontSize: u(24), marginBottom: u(4) }}>{bestBook.title}</Text>
                 <Text numberOfLines={1} style={{ color: C.n400, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: u(18) }}>{bestBook.author}</Text>
