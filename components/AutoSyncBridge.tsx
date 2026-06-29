@@ -72,7 +72,9 @@ function mergeByUpdatedAt<T extends { id: string; updatedAt?: number }>(local: T
   const map = new Map<string, T>();
   [...local, ...remote].forEach((item) => {
     const current = map.get(item.id);
-    if (!current || (item.updatedAt || 0) >= (current.updatedAt || 0)) map.set(item.id, item);
+    // Strictly-newer wins; on a tie the first seen (local) is kept, so an
+    // offline edit isn't clobbered by stale remote data with the same timestamp.
+    if (!current || (item.updatedAt || 0) > (current.updatedAt || 0)) map.set(item.id, item);
   });
   return Array.from(map.values()).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 }
