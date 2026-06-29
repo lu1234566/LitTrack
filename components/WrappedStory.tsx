@@ -134,7 +134,7 @@ export function WrappedStory({ books, year, onClose }: { books: Book[]; year: nu
         <View style={styles.center}>
           <Text style={styles.kicker}>SUA ATMOSFERA</Text>
           <Text style={styles.heroName}>{data.vibe}</Text>
-          <Text style={styles.lead}>O tom que guiou suas escolhas.</Text>
+          <Text style={styles.lead}>{data.vibeLead}</Text>
         </View>
       )
     },
@@ -199,6 +199,7 @@ export function WrappedStory({ books, year, onClose }: { books: Book[]; year: nu
               <Text style={styles.bestTitle} numberOfLines={2}>{data.bestBook.title}</Text>
               <Text style={styles.lead}>{data.bestBook.author}</Text>
               <View style={{ marginTop: 10 }}><Stars rating={data.bestBook.rating} size={22} /></View>
+              <Text style={[styles.lead, { marginTop: 12 }]}>{data.favLead}</Text>
             </>
           ) : <Text style={styles.lead}>Você ainda não concluiu livros em {year}.</Text>}
         </View>
@@ -359,45 +360,48 @@ function Recap({ label, value }: { label: string; value: string }) {
   );
 }
 
+// Sombra aplicada ao texto branco para garantir leitura sobre fundos claros.
+const TS = { textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 10 } as const;
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#000' },
   progressRow: { flexDirection: 'row', gap: 5, paddingHorizontal: 16 },
   progressTrack: { flex: 1, height: 3, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.3)', overflow: 'hidden' },
   progressFill: { height: '100%', backgroundColor: '#fff' },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 22, paddingTop: 14 },
-  brand: { color: '#fff', fontFamily: appFonts.display, fontStyle: 'italic', fontWeight: '900', fontSize: 22 },
+  brand: { ...TS, color: '#fff', fontFamily: appFonts.display, fontStyle: 'italic', fontWeight: '900', fontSize: 22 },
   slide: { flex: 1, paddingHorizontal: 30, justifyContent: 'center' },
   center: { alignItems: 'center', justifyContent: 'center', gap: 14 },
-  kicker: { color: 'rgba(255,255,255,0.85)', fontWeight: '900', letterSpacing: 4, fontSize: 14, textTransform: 'uppercase', textAlign: 'center' },
-  bigYear: { color: '#fff', fontFamily: appFonts.display, fontStyle: 'italic', fontWeight: '900', fontSize: 110, lineHeight: 116 },
-  lead: { color: 'rgba(255,255,255,0.9)', fontSize: 18, lineHeight: 26, textAlign: 'center', maxWidth: 340 },
-  hint: { color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: '700', marginTop: 18 },
-  hero: { color: '#fff', fontFamily: appFonts.display, fontWeight: '900', fontSize: 130, lineHeight: 138 },
-  heroUnit: { color: '#fff', fontSize: 24, fontWeight: '900' },
-  heroName: { color: '#fff', fontFamily: appFonts.display, fontStyle: 'italic', fontWeight: '900', fontSize: 56, lineHeight: 62, textAlign: 'center' },
+  kicker: { ...TS, color: 'rgba(255,255,255,0.9)', fontWeight: '900', letterSpacing: 4, fontSize: 14, textTransform: 'uppercase', textAlign: 'center' },
+  bigYear: { ...TS, color: '#fff', fontFamily: appFonts.display, fontStyle: 'italic', fontWeight: '900', fontSize: 110, lineHeight: 116, textShadowRadius: 18 },
+  lead: { ...TS, color: '#fff', fontSize: 18, lineHeight: 26, textAlign: 'center', maxWidth: 360 },
+  hint: { ...TS, color: 'rgba(255,255,255,0.8)', fontSize: 14, fontWeight: '700', marginTop: 18 },
+  hero: { ...TS, color: '#fff', fontFamily: appFonts.display, fontWeight: '900', fontSize: 130, lineHeight: 138, textShadowRadius: 20 },
+  heroUnit: { ...TS, color: '#fff', fontSize: 24, fontWeight: '900' },
+  heroName: { ...TS, color: '#fff', fontFamily: appFonts.display, fontStyle: 'italic', fontWeight: '900', fontSize: 56, lineHeight: 62, textAlign: 'center', textShadowRadius: 14 },
   listWrap: { width: '100%', maxWidth: 460, alignSelf: 'center' },
   listRow: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingVertical: 14, borderBottomColor: 'rgba(255,255,255,0.15)', borderBottomWidth: 1 },
-  listRank: { color: '#fff', fontFamily: appFonts.display, fontStyle: 'italic', fontWeight: '900', fontSize: 34, minWidth: 40 },
-  listTitle: { color: '#fff', fontWeight: '900', fontSize: 19 },
-  listAuthor: { color: 'rgba(255,255,255,0.8)', fontStyle: 'italic', fontFamily: appFonts.display, fontSize: 15, marginTop: 2 },
+  listRank: { ...TS, color: '#fff', fontFamily: appFonts.display, fontStyle: 'italic', fontWeight: '900', fontSize: 34, minWidth: 40 },
+  listTitle: { ...TS, color: '#fff', fontWeight: '900', fontSize: 19 },
+  listAuthor: { ...TS, color: 'rgba(255,255,255,0.85)', fontStyle: 'italic', fontFamily: appFonts.display, fontSize: 15, marginTop: 2 },
   bestCover: { width: 150, height: 216, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.25)', borderColor: 'rgba(255,255,255,0.25)', borderWidth: 1, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 6 },
   bestCoverImg: { width: '100%', height: '100%' },
-  bestTitle: { color: '#fff', fontFamily: appFonts.display, fontWeight: '900', fontSize: 30, lineHeight: 34, textAlign: 'center', marginTop: 8 },
-  synopsis: { color: 'rgba(255,255,255,0.92)', fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 16, lineHeight: 24, textAlign: 'center', maxWidth: 360, marginTop: 14 },
+  bestTitle: { ...TS, color: '#fff', fontFamily: appFonts.display, fontWeight: '900', fontSize: 30, lineHeight: 34, textAlign: 'center', marginTop: 8 },
+  synopsis: { ...TS, color: '#fff', fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 16, lineHeight: 24, textAlign: 'center', maxWidth: 360, marginTop: 14 },
   miniChart: { flexDirection: 'row', alignItems: 'flex-end', gap: 5, marginTop: 28, width: '100%', maxWidth: 420, alignSelf: 'center' },
   miniCol: { flex: 1, alignItems: 'center', gap: 7 },
   miniTrack: { width: '62%', height: 120, justifyContent: 'flex-end', backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 5, overflow: 'hidden' },
   miniBar: { width: '100%', borderRadius: 5, minHeight: 3 },
-  miniLetter: { color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: '900' },
+  miniLetter: { ...TS, color: 'rgba(255,255,255,0.8)', fontSize: 11, fontWeight: '900' },
   recapGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12, marginTop: 22, maxWidth: 380 },
-  recapBox: { width: '45%', backgroundColor: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.18)', borderWidth: 1, borderRadius: 20, padding: 16, alignItems: 'center' },
-  recapValue: { color: '#fff', fontWeight: '900', fontSize: 26 },
-  recapLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 11, letterSpacing: 2, fontWeight: '900', marginTop: 6 },
+  recapBox: { width: '45%', backgroundColor: 'rgba(0,0,0,0.35)', borderColor: 'rgba(255,255,255,0.22)', borderWidth: 1, borderRadius: 20, padding: 16, alignItems: 'center' },
+  recapValue: { ...TS, color: '#fff', fontWeight: '900', fontSize: 26 },
+  recapLabel: { ...TS, color: 'rgba(255,255,255,0.85)', fontSize: 11, letterSpacing: 2, fontWeight: '900', marginTop: 6 },
   shareBtn: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: '#fff', borderRadius: 999, paddingVertical: 15, paddingHorizontal: 26, marginTop: 28, zIndex: 5 },
   shareText: { color: '#0b132b', fontWeight: '900', fontSize: 15 },
-  saveBtn: { marginTop: 12, paddingVertical: 12, paddingHorizontal: 22, borderRadius: 999, borderColor: 'rgba(255,255,255,0.5)', borderWidth: 1, zIndex: 5 },
-  saveText: { color: '#fff', fontWeight: '900', fontSize: 14 },
-  msg: { color: '#fff', fontWeight: '900', marginTop: 12, textAlign: 'center' },
+  saveBtn: { marginTop: 12, paddingVertical: 12, paddingHorizontal: 22, borderRadius: 999, borderColor: 'rgba(255,255,255,0.6)', borderWidth: 1, backgroundColor: 'rgba(0,0,0,0.25)', zIndex: 5 },
+  saveText: { ...TS, color: '#fff', fontWeight: '900', fontSize: 14 },
+  msg: { ...TS, color: '#fff', fontWeight: '900', marginTop: 12, textAlign: 'center' },
   tapRow: { position: 'absolute', top: 90, left: 0, right: 0, bottom: 0, flexDirection: 'row' },
   tapLeft: { width: '30%', height: '100%' },
   tapRight: { flex: 1, height: '100%' },

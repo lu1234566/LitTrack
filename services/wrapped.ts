@@ -17,6 +17,8 @@ export type WrappedData = {
   monthly: number[];
   bestMonth: number;
   bestMonthCount: number;
+  vibeLead: string;
+  favLead: string;
 };
 
 function toCard(book: Book): FeedCapsuleBook {
@@ -71,6 +73,29 @@ export function buildWrapped(books: Book[], year: number): WrappedData {
   const bestMonthCount = Math.max(...monthly);
   const bestMonth = monthly.indexOf(bestMonthCount);
 
+  // Why this vibe? Count books carrying the dominant mood and name the
+  // highest-rated ones that pulled the year toward it.
+  const vibeName = vibe || 'Sereno';
+  const vibeCount = moodCounts[vibeName] || 0;
+  const vibeContributors = finished
+    .filter((b) => (b.mood || '').split(',').map((m) => m.trim()).includes(vibeName))
+    .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+    .map((b) => b.title);
+  const vibeLead = vibeCount > 0
+    ? vibeCount + ' dos seus ' + totalBooks + ' livros carregaram esse clima'
+      + (vibeContributors.length ? ', com destaque para ' + vibeContributors.slice(0, 2).join(' e ') + '.' : '.')
+    : 'O tom que guiou suas escolhas de leitura.';
+
+  // Why this favorite? It is the top-rated book of the year (ties broken by length).
+  const fav = ranked[0];
+  const topRating = fav ? fav.rating : 0;
+  const ties = finished.filter((b) => (b.rating || 0) === topRating && topRating > 0).length;
+  const favLead = fav
+    ? (ties > 1
+      ? 'Nota ' + topRating.toFixed(1) + '/5 — destaque entre ' + ties + ' leituras nota máxima do ano.'
+      : 'Nota ' + topRating.toFixed(1) + '/5 — sua leitura mais bem avaliada do ano.')
+    : '';
+
   return {
     year,
     totalBooks,
@@ -86,6 +111,8 @@ export function buildWrapped(books: Book[], year: number): WrappedData {
     ranked: ranked.slice(0, 10),
     monthly,
     bestMonth: bestMonthCount > 0 ? bestMonth : -1,
-    bestMonthCount
+    bestMonthCount,
+    vibeLead,
+    favLead
   };
 }
