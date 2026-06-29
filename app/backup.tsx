@@ -8,6 +8,7 @@ import { useQuotes } from '@/contexts/QuoteContext';
 import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { useShelves } from '@/contexts/ShelfContext';
 import { createReadoraBackup, parseReadoraBackup, stringifyBackup } from '@/services/readoraBackup';
+import { csvToBooks, mergeImported } from '@/services/csvImport';
 import { downloadTextFile, pickTextFile, printTextDocument } from '@/services/webPlatformTools';
 import { copyText, haptic } from '@/services/feedback';
 import { bookNeedsEnrichment, enrichLibrary } from '@/services/bookEnrichment';
@@ -199,6 +200,24 @@ export default function BackupScreen() {
     await runImport(importText);
   }
 
+  async function pickCsvFile() {
+    try {
+      setMessage('Abrindo seletor de arquivos...');
+      const text = await pickTextFile('.csv,text/csv,text/plain');
+      if (text === null) { setMessage('Seleção cancelada.'); return; }
+      if (!text.trim()) { notify('Arquivo vazio', 'O arquivo selecionado não retornou conteúdo legível.'); return; }
+      const { source, books: imported } = csvToBooks(text);
+      const { merged, added, skipped } = mergeImported(books, imported);
+      await replaceBooks(merged);
+      haptic('success');
+      const label = source === 'goodreads' ? 'Goodreads' : 'StoryGraph';
+      notify('Importação concluída', added + ' livro(s) do ' + label + ' adicionados' + (skipped ? ' · ' + skipped + ' duplicado(s) ignorado(s)' : '') + '.');
+    } catch (error) {
+      haptic('error');
+      notify('Falha ao importar CSV', error instanceof Error ? error.message : 'erro desconhecido ao processar o CSV.');
+    }
+  }
+
   return (
     <Screen>
       <View style={styles.header}>
@@ -241,6 +260,10 @@ export default function BackupScreen() {
           <Text style={styles.body}>Restaure sua biblioteca a partir de um arquivo JSON exportado anteriormente.</Text>
           <View style={[styles.reportButtons, mobile && styles.stack]}><Pressable style={styles.outlineButton} onPress={pickBackupFile}><Text style={styles.outlineText}>Importar de arquivo</Text></Pressable><Pressable style={styles.outlineButton} onPress={importBackup}><Text style={styles.outlineText}>Importar texto colado</Text></Pressable></View>
           <TextInput style={styles.textArea} placeholder="Ou cole aqui o JSON exportado" placeholderTextColor={appColors.textDim} value={importText} onChangeText={setImportText} multiline />
+          <View style={styles.csvDivider} />
+          <Text style={[styles.cardTitle, { color: appColors.emerald }]}>MIGRAR DE OUTRO APP</Text>
+          <Text style={styles.body}>Importe sua estante exportada do Goodreads ou do StoryGraph (.csv). Duplicados são ignorados.</Text>
+          <Pressable style={[styles.outlineButton, { borderColor: appColors.emerald }]} onPress={pickCsvFile}><Text style={[styles.outlineText, { color: appColors.emerald }]}>Importar CSV (Goodreads / StoryGraph)</Text></Pressable>
         </Card>
 
         <Card>
@@ -347,6 +370,7 @@ const styles = StyleSheet.create({
   textAreaLarge: { backgroundColor: appColors.background, borderColor: appColors.border, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, color: appColors.text, fontSize: 12, minHeight: 220, textAlignVertical: 'top', marginTop: 12 },
   outlineButton: { borderColor: '#3b82f6', borderWidth: 1, borderRadius: 999, paddingVertical: 13, paddingHorizontal: 14, alignItems: 'center', marginTop: 12, flex: 1 },
   outlineText: { color: '#3b82f6', fontWeight: '900' },
+  csvDivider: { height: 1, backgroundColor: appColors.border, marginVertical: 18 },
   bullet: { color: appColors.textMuted, lineHeight: 24, marginTop: 10 },
   reportHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
   reportButtons: { flexDirection: 'row', gap: 8 },
