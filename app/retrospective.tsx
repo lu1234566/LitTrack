@@ -16,6 +16,18 @@ export default function RetrospectiveScreen() {
   const sessionMinutes = sessions.reduce((sum, session) => sum + session.minutesRead, 0);
   const longestSession = [...sessions].sort((a, b) => b.pagesRead - a.pagesRead)[0];
 
+  const year = new Date().getFullYear();
+  const monthlyFinished = Array.from({ length: 12 }, () => 0);
+  books.forEach((book) => {
+    if (book.status !== 'finished') return;
+    const d = new Date(book.finishedAt || book.updatedAt || book.createdAt);
+    if (d.getFullYear() === year) monthlyFinished[d.getMonth()] += 1;
+  });
+  const maxMonthly = Math.max(1, ...monthlyFinished);
+  const monthLetters = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
+  const bestMonthIdx = monthlyFinished.indexOf(Math.max(...monthlyFinished));
+  const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
   return (
     <Screen>
       <View style={styles.hero}>
@@ -35,6 +47,22 @@ export default function RetrospectiveScreen() {
         <Highlight title="Maior livro" value={longest ? longest.title : 'Ainda sem livros'} detail={longest ? (longest.totalPages || 0) + ' páginas' : 'Cadastre leituras para criar marcos.'} color={appColors.purple} />
         <Highlight title="Sessão mais intensa" value={longestSession ? longestSession.bookTitle : 'Ainda sem sessões'} detail={longestSession ? longestSession.pagesRead + ' páginas em uma sessão' : 'Registre sessões para mapear seu ritmo.'} color={appColors.emerald} />
       </View>
+
+      <Card>
+        <Text style={styles.cardTitle}>Ritmo de {year}</Text>
+        <Text style={styles.body}>Livros concluídos por mês{monthlyFinished[bestMonthIdx] > 0 ? ' — seu mês mais forte foi ' + monthNames[bestMonthIdx] + '.' : '.'}</Text>
+        <View style={styles.chart}>
+          {monthlyFinished.map((count, i) => (
+            <View key={i} style={styles.chartCol}>
+              <Text style={styles.chartCount}>{count > 0 ? count : ''}</Text>
+              <View style={styles.chartTrack}>
+                <View style={[styles.chartBar, { height: (Math.round((count / maxMonthly) * 100) + '%') as `${number}%`, backgroundColor: i === bestMonthIdx && count > 0 ? appColors.gold : appColors.goldDeep }]} />
+              </View>
+              <Text style={styles.chartMonth}>{monthLetters[i]}</Text>
+            </View>
+          ))}
+        </View>
+      </Card>
 
       <Card>
         <Text style={styles.cardTitle}>Síntese do ciclo</Text>
@@ -68,5 +96,11 @@ const styles = StyleSheet.create({
   highlightValue: { color: appColors.text, fontFamily: appFonts.display, fontSize: 28, fontWeight: '900' },
   cardTitle: { color: appColors.gold, fontFamily: appFonts.display, fontSize: 24, fontWeight: '900' },
   body: { color: appColors.textMuted, lineHeight: 22 },
-  quote: { color: appColors.text, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 22, lineHeight: 30, marginTop: 12 }
+  quote: { color: appColors.text, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 22, lineHeight: 30, marginTop: 12 },
+  chart: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, marginTop: 18 },
+  chartCol: { flex: 1, alignItems: 'center', gap: 6 },
+  chartCount: { color: appColors.textMuted, fontSize: 11, fontWeight: '900', height: 14 },
+  chartTrack: { width: '70%', height: 120, justifyContent: 'flex-end', backgroundColor: appColors.background, borderRadius: 8, overflow: 'hidden' },
+  chartBar: { width: '100%', borderRadius: 8, minHeight: 3 },
+  chartMonth: { color: appColors.textDim, fontSize: 11, fontWeight: '900' }
 });

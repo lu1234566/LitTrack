@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Platform, Text, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useBooks } from '@/contexts/BookContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
 import { useQuotes } from '@/contexts/QuoteContext';
@@ -8,6 +9,12 @@ import { useSession } from '@/contexts/SessionContext';
 import { useShelves } from '@/contexts/ShelfContext';
 import { isNativeFirebaseConfigured, pullReadoraBundle, pushReadoraBundle } from '@/services/firebaseNative';
 import { appColors } from '@/theme/tokens';
+
+const SYNC_KEY = '@readora_last_sync';
+
+function formatSyncTime(ts: number) {
+  return new Date(ts).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
 
 export function AutoSyncBridge() {
   const { user } = useSession();
@@ -19,6 +26,15 @@ export function AutoSyncBridge() {
   const [status, setStatus] = useState('');
   const firstPullDone = useRef(false);
   const lastPayload = useRef('');
+
+  // Restore the last successful sync time so the user sees it on open.
+  useEffect(() => {
+    if (Platform.OS === 'web' || !user) return;
+    AsyncStorage.getItem(SYNC_KEY).then((raw) => {
+      const ts = Number(raw);
+      if (ts) setStatus('Última sincronização ' + formatSyncTime(ts));
+    });
+  }, [user]);
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
@@ -56,7 +72,13 @@ export function AutoSyncBridge() {
       try {
         setStatus('Salvando na nuvem...');
         const result = await pushReadoraBundle(userId, { books, quotes, shelves, sessions, preferences });
-        setStatus(result.ok ? 'Sincronizado com a nuvem.' : 'Firebase não configurado.');
+        if (result.ok) {
+          const ts = Date.now();
+          await AsyncStorage.setItem(SYNC_KEY, String(ts));
+          setStatus('Sincronizado · ' + formatSyncTime(ts));
+        } else {
+          setStatus('Firebase não configurado.');
+        }
       } catch {
         setStatus('Erro ao sincronizar com a nuvem.');
       }
