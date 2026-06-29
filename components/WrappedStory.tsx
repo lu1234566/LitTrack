@@ -1,17 +1,34 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Image, Modal, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import * as MediaLibrary from 'expo-media-library';
 import { Book } from '@/types/book';
 import { buildWrapped } from '@/services/wrapped';
+import { WrappedBackground } from '@/components/WrappedBackground';
 import { FeedCapsuleArt, FeedCapsuleBook } from '@/components/FeedCapsuleArt';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { haptic } from '@/services/feedback';
 import { appFonts } from '@/theme/tokens';
 
 const DURATION = 5200;
+
+// Fundos customizados por slide (na ordem dos slides). Para usar suas artes,
+// troque o `undefined` por require('@/assets/wrapped/01-intro.png') etc. — o
+// movimento (Ken Burns + partículas) é aplicado automaticamente por cima.
+const SLIDE_IMAGES: (number | undefined)[] = [
+  undefined, // 1 · intro
+  undefined, // 2 · livros
+  undefined, // 3 · páginas
+  undefined, // 4 · autor do ano
+  undefined, // 5 · gênero
+  undefined, // 6 · atmosfera
+  undefined, // 7 · mês mais forte
+  undefined, // 8 · top 5
+  undefined, // 9 · livro do ano
+  undefined, // 10 · maior livro
+  undefined  // 11 · recap final
+];
 
 type SlideColors = readonly [string, string];
 
@@ -293,7 +310,7 @@ export function WrappedStory({ books, year, onClose }: { books: Book[]; year: nu
   return (
     <Modal visible animationType="fade" onRequestClose={onClose}>
       <View style={styles.root}>
-        <LinearGradient colors={slide.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+        <WrappedBackground colors={slide.colors} image={SLIDE_IMAGES[index]} />
 
         {/* progress bars */}
         <View style={[styles.progressRow, { paddingTop: height > 700 ? 56 : 28 }]}>
