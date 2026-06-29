@@ -1,8 +1,11 @@
-import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
 import { useReadingSessions } from '@/contexts/ReadingSessionContext';
+import { ReadoraIcon } from '@/components/ReadoraIcon';
+import { WrappedStory } from '@/components/WrappedStory';
 import { appColors, appFonts } from '@/theme/tokens';
 
 export default function RetrospectiveScreen() {
@@ -27,13 +30,19 @@ export default function RetrospectiveScreen() {
   const monthLetters = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
   const bestMonthIdx = monthlyFinished.indexOf(Math.max(...monthlyFinished));
   const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+  const [showWrapped, setShowWrapped] = useState(false);
 
   return (
     <Screen>
+      {showWrapped ? <WrappedStory books={books} year={year} onClose={() => setShowWrapped(false)} /> : null}
       <View style={styles.hero}>
         <Text style={styles.kicker}>RETROSPECTIVA</Text>
         <Text style={styles.title}>Sua jornada em números</Text>
         <Text style={styles.subtitle}>Um painel editorial com os marcos mais fortes da sua vida literária local.</Text>
+        <Pressable style={styles.wrappedBtn} onPress={() => setShowWrapped(true)}>
+          <ReadoraIcon name="sparkle" size={18} color={appColors.background} />
+          <Text style={styles.wrappedText}>Ver minha Readora Wrapped {year}</Text>
+        </Pressable>
       </View>
 
       <View style={[styles.grid, mobile && styles.stack]}>
@@ -87,6 +96,8 @@ const styles = StyleSheet.create({
   kicker: { color: appColors.gold, letterSpacing: 6, fontSize: 11, fontWeight: '900' },
   title: { color: appColors.text, fontFamily: appFonts.display, fontSize: 52, lineHeight: 58, fontWeight: '900', textAlign: 'center' },
   subtitle: { color: appColors.textMuted, fontSize: 17, lineHeight: 25, textAlign: 'center', maxWidth: 620 },
+  wrappedBtn: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: appColors.gold, borderRadius: 999, paddingVertical: 14, paddingHorizontal: 24, marginTop: 8 },
+  wrappedText: { color: appColors.background, fontWeight: '900', fontSize: 15 },
   grid: { flexDirection: 'row', gap: 16 },
   featureGrid: { flexDirection: 'row', gap: 16 },
   metricLabel: { color: appColors.textDim, fontSize: 10, letterSpacing: 3, fontWeight: '900' },
