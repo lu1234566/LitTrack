@@ -19,6 +19,10 @@ export default function DashboardScreen() {
   const mobile = width < 760;
   const recentBooks = books.filter((book) => book.status === 'finished').slice(0, 3);
   const sessionMinutes = sessions.reduce((sum, session) => sum + session.minutesRead, 0);
+  const year = new Date().getFullYear();
+  const finishedThisYear = books.filter((book) => book.status === 'finished' && new Date(book.finishedAt || book.updatedAt || book.createdAt).getFullYear() === year).length;
+  const yearlyGoal = preferences.yearlyGoal || 0;
+  const goalPct = yearlyGoal > 0 ? Math.min(100, Math.round((finishedThisYear / yearlyGoal) * 100)) : 0;
 
   return (
     <Screen>
@@ -39,6 +43,20 @@ export default function DashboardScreen() {
         <Metric label="MÉDIA CRÍTICA" value={stats.averageRating.toFixed(1)} accent />
         <Metric label="EM FOCO" value={books.find((book) => book.status === 'reading')?.title || '—'} />
       </View>
+
+      <SectionHeader color={appColors.emerald} title={'Meta de ' + year} action="AJUSTAR" href="/settings" />
+      {yearlyGoal > 0 ? (
+        <Card>
+          <View style={styles.goalTop}>
+            <Text style={styles.goalCount}>{finishedThisYear}<Text style={styles.goalOf}> / {yearlyGoal} livros</Text></Text>
+            <Text style={styles.goalPct}>{goalPct}%</Text>
+          </View>
+          <View style={styles.goalTrack}><View style={[styles.goalFill, { width: (goalPct + '%') as `${number}%` }]} /></View>
+          <Text style={styles.goalNote}>{finishedThisYear >= yearlyGoal ? 'Meta do ano concluída! 🎉' : 'Faltam ' + (yearlyGoal - finishedThisYear) + ' livro(s) para sua meta anual.'}</Text>
+        </Card>
+      ) : (
+        <Card><Text style={styles.body}>Defina sua meta anual de leitura nas Configurações para acompanhar o progresso aqui.</Text></Card>
+      )}
 
       <SectionHeader color={appColors.gold} title="Últimas Leituras" action="COLEÇÃO" href="/library" />
       {loading ? <Text style={styles.muted}>Carregando biblioteca...</Text> : null}
@@ -166,5 +184,12 @@ const styles = StyleSheet.create({
   blackButton: { backgroundColor: appColors.background, borderRadius: 999, paddingVertical: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 16 },
   blackButtonText: { color: appColors.text, fontSize: 12, letterSpacing: 1, fontWeight: '900' },
   bottomStats: { flexDirection: 'row', gap: 16 },
-  muted: { color: appColors.textMuted }
+  muted: { color: appColors.textMuted },
+  goalTop: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+  goalCount: { color: appColors.text, fontFamily: appFonts.display, fontSize: 32, fontWeight: '900' },
+  goalOf: { color: appColors.textMuted, fontFamily: appFonts.body, fontSize: 16, fontWeight: '900' },
+  goalPct: { color: appColors.emerald, fontSize: 22, fontWeight: '900' },
+  goalTrack: { height: 12, borderRadius: 999, backgroundColor: appColors.border, overflow: 'hidden', marginTop: 12 },
+  goalFill: { height: '100%', backgroundColor: appColors.emerald, borderRadius: 999 },
+  goalNote: { color: appColors.textMuted, fontSize: 13, marginTop: 10 }
 });

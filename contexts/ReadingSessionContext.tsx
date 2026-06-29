@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import { ReadingSession } from '@/types/readingSession';
 import { loadReadingSessions, saveReadingSessions } from '@/services/readingSessionStorage';
 
-type SessionInput = Omit<ReadingSession, 'id' | 'createdAt' | 'updatedAt'>;
+type SessionInput = Omit<ReadingSession, 'id' | 'createdAt' | 'updatedAt'> & { date?: number };
 
 type ReadingSessionContextValue = {
   sessions: ReadingSession[];
@@ -41,7 +41,11 @@ export function ReadingSessionProvider({ children }: { children: React.ReactNode
 
   async function addSession(input: SessionInput) {
     const now = Date.now();
-    await persist([{ ...input, id: 'session-' + String(now), createdAt: now, updatedAt: now }, ...sessions]);
+    const { date, ...rest } = input;
+    // `date` lets the user back-date a session (e.g. logging past reading); it
+    // becomes the session's createdAt, which drives the streak and heatmap.
+    const createdAt = date ?? now;
+    await persist([{ ...rest, id: 'session-' + String(now), createdAt, updatedAt: now }, ...sessions]);
   }
 
   async function deleteSession(sessionId: string) {

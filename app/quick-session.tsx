@@ -16,6 +16,7 @@ export default function QuickSessionScreen() {
   const [minutes, setMinutes] = useState('20');
   const [mood, setMood] = useState('focado');
   const [note, setNote] = useState('');
+  const [dateStr, setDateStr] = useState(formatDate(new Date()));
   const [message, setMessage] = useState('');
   const selected = books.find((book) => book.id === bookId) || fallbackBooks[0];
 
@@ -30,10 +31,21 @@ export default function QuickSessionScreen() {
       setMessage('Informe paginas ou minutos.');
       return;
     }
-    await addSession({ bookId: selected.id, bookTitle: selected.title, pagesRead, minutesRead, mood, note });
+    const date = parseDate(dateStr);
+    if (date === null) {
+      setMessage('Data inválida. Use o formato DD/MM/AAAA.');
+      return;
+    }
+    await addSession({ bookId: selected.id, bookTitle: selected.title, pagesRead, minutesRead, mood, note, date });
     if (pagesRead > 0) await updateProgress(selected.id, (selected.currentPage || 0) + pagesRead);
     setMessage('Sessao registrada para ' + selected.title + '.');
     setNote('');
+  }
+
+  function shiftDay(days: number) {
+    const d = new Date();
+    d.setDate(d.getDate() - days);
+    setDateStr(formatDate(d));
   }
 
   return (
@@ -59,6 +71,13 @@ export default function QuickSessionScreen() {
           <TextInput style={[styles.input, styles.half]} placeholder="Minutos" placeholderTextColor={appColors.textDim} value={minutes} onChangeText={setMinutes} keyboardType="numeric" />
         </View>
         <TextInput style={styles.input} placeholder="Humor" placeholderTextColor={appColors.textDim} value={mood} onChangeText={setMood} />
+        <View style={styles.dateRow}>
+          <TextInput style={[styles.input, styles.half]} placeholder="Data (DD/MM/AAAA)" placeholderTextColor={appColors.textDim} value={dateStr} onChangeText={setDateStr} keyboardType="numbers-and-punctuation" />
+          <View style={styles.dayChips}>
+            <Pressable style={styles.dayChip} onPress={() => shiftDay(0)}><Text style={styles.dayChipText}>Hoje</Text></Pressable>
+            <Pressable style={styles.dayChip} onPress={() => shiftDay(1)}><Text style={styles.dayChipText}>Ontem</Text></Pressable>
+          </View>
+        </View>
         <TextInput style={styles.textArea} placeholder="Nota rapida" placeholderTextColor={appColors.textDim} value={note} onChangeText={setNote} multiline />
         <Pressable style={styles.button} onPress={saveSession}><Text style={styles.buttonText}>Salvar sessao</Text></Pressable>
       </Card>
@@ -68,8 +87,27 @@ export default function QuickSessionScreen() {
   );
 }
 
+function formatDate(d: Date) {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear();
+}
+
+function parseDate(value: string): number | null {
+  const m = value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return null;
+  const day = Number(m[1]); const month = Number(m[2]) - 1; const year = Number(m[3]);
+  const d = new Date(year, month, day, 12, 0, 0);
+  if (d.getDate() !== day || d.getMonth() !== month || d.getFullYear() !== year) return null;
+  if (d.getTime() > Date.now()) return null; // no future dates
+  return d.getTime();
+}
+
 const styles = StyleSheet.create({
   title: { color: appColors.text, fontSize: 32, fontWeight: '900' },
+  dateRow: { flexDirection: 'row', gap: 10, marginTop: 10, alignItems: 'center' },
+  dayChips: { flexDirection: 'row', gap: 8 },
+  dayChip: { borderColor: appColors.border, borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 12 },
+  dayChipText: { color: appColors.textMuted, fontWeight: '900', fontSize: 13 },
   subtitle: { color: appColors.textMuted, fontSize: 15, lineHeight: 22 },
   kicker: { color: appColors.gold, fontSize: 13, fontWeight: '900', letterSpacing: 1 },
   bookList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
