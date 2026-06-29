@@ -19,6 +19,8 @@ export type WrappedData = {
   bestMonthCount: number;
   vibeLead: string;
   favLead: string;
+  authorLead: string;
+  genreLead: string;
 };
 
 function toCard(book: Book): FeedCapsuleBook {
@@ -52,7 +54,7 @@ export function buildWrapped(books: Book[], year: number): WrappedData {
   });
 
   const [topAuthor, topAuthorCount] = topEntry(authorCounts);
-  const [topGenre] = topEntry(genreCounts);
+  const [topGenre, topGenreCount] = topEntry(genreCounts);
   const [vibe] = topEntry(moodCounts);
 
   const ranked = [...finished]
@@ -86,6 +88,28 @@ export function buildWrapped(books: Book[], year: number): WrappedData {
       + (vibeContributors.length ? ', com destaque para ' + vibeContributors.slice(0, 2).join(' e ') + '.' : '.')
     : 'O tom que guiou suas escolhas de leitura.';
 
+  // Why this author? Show how much of the year they own and name their titles.
+  const topAuthorBooks = finished
+    .filter((b) => (b.author || '') === topAuthor)
+    .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+    .map((b) => b.title);
+  const authorLead = topAuthor && topAuthorCount > 0
+    ? (topAuthorCount > 1
+      ? topAuthorCount + ' dos seus ' + totalBooks + ' livros saíram da pena dele(a)'
+        + (topAuthorBooks.length ? ', como “' + topAuthorBooks.slice(0, 2).join('” e “') + '”.' : '.')
+      : 'Foi quem assinou “' + (topAuthorBooks[0] || '') + '”, uma leitura que marcou seu ano.')
+    : 'O nome que mais marcou presença nas suas leituras.';
+
+  // Why this genre? Its share of the year and the standout title within it.
+  const genrePct = totalBooks > 0 ? Math.round((topGenreCount / totalBooks) * 100) : 0;
+  const topGenreBook = finished
+    .filter((b) => (b.genre || '') === topGenre)
+    .sort((a, b) => (b.rating || 0) - (a.rating || 0))[0];
+  const genreLead = topGenreCount > 0
+    ? topGenreCount + ' livro' + (topGenreCount > 1 ? 's' : '') + ' nesse território (' + genrePct + '% do ano)'
+      + (topGenreBook ? ', com “' + topGenreBook.title + '” no topo.' : '.')
+    : 'O território onde você mais habitou.';
+
   // Why this favorite? It is the top-rated book of the year (ties broken by length).
   const fav = ranked[0];
   const topRating = fav ? fav.rating : 0;
@@ -113,6 +137,8 @@ export function buildWrapped(books: Book[], year: number): WrappedData {
     bestMonth: bestMonthCount > 0 ? bestMonth : -1,
     bestMonthCount,
     vibeLead,
-    favLead
+    favLead,
+    authorLead,
+    genreLead
   };
 }

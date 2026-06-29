@@ -114,7 +114,7 @@ export function WrappedStory({ books, year, onClose }: { books: Book[]; year: nu
         <View style={styles.center}>
           <Text style={styles.kicker}>SEU AUTOR DO ANO</Text>
           <Text style={styles.heroName}>{data.topAuthor}</Text>
-          <Text style={styles.lead}>{data.topAuthorCount} livro(s) que você viveu com {data.topAuthor.split(' ')[0]}.</Text>
+          <Text style={styles.lead}>{data.authorLead}</Text>
         </View>
       )
     },
@@ -124,7 +124,7 @@ export function WrappedStory({ books, year, onClose }: { books: Book[]; year: nu
         <View style={styles.center}>
           <Text style={styles.kicker}>SEU GÊNERO</Text>
           <Text style={styles.heroName}>{data.topGenre}</Text>
-          <Text style={styles.lead}>O território onde você mais habitou.</Text>
+          <Text style={styles.lead}>{data.genreLead}</Text>
         </View>
       )
     },
