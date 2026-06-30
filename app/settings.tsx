@@ -154,7 +154,7 @@ export default function SettingsScreen() {
         <Text style={styles.kicker}>TIPOS DE LEMBRETE</Text>
         <View style={[styles.row, mobile && styles.stack]}>
           <Reminder label="Hora de Ler" text="Um convite suave para seu próximo capítulo." />
-          <Reminder label="Registrar Sessão" text="Lembrete para documentar seu progresso diário." />
+          <Reminder label="Atualizar Progresso" text="Lembrete para registrar sua leitura do dia." />
           <Reminder label="Atualizar Status" text="Para livros que você não atualiza há algum tempo." />
         </View>
         <Pressable style={[styles.saveButton, styles.btnRow]} onPress={saveReminders}><ReadoraIcon name="check" size={16} color={appColors.background} /><Text style={styles.saveText}>Salvar e Agendar</Text></Pressable>

@@ -54,7 +54,7 @@ export default function RetrospectiveScreen() {
       <View style={[styles.featureGrid, mobile && styles.stack]}>
         <Highlight title="Melhor avaliado" value={best ? best.title : 'Ainda sem notas'} detail={best ? best.rating + '/5 estrelas' : 'Avalie seus livros para destacar favoritos.'} color={appColors.gold} />
         <Highlight title="Maior livro" value={longest ? longest.title : 'Ainda sem livros'} detail={longest ? (longest.totalPages || 0) + ' páginas' : 'Cadastre leituras para criar marcos.'} color={appColors.purple} />
-        <Highlight title="Sessão mais intensa" value={longestSession ? longestSession.bookTitle : 'Ainda sem sessões'} detail={longestSession ? longestSession.pagesRead + ' páginas em uma sessão' : 'Registre sessões para mapear seu ritmo.'} color={appColors.emerald} />
+        <Highlight title="Sessão mais intensa" value={longestSession ? longestSession.bookTitle : 'Ainda sem sessões'} detail={longestSession ? longestSession.pagesRead + ' páginas em uma sessão' : 'Atualize o progresso dos seus livros para mapear seu ritmo.'} color={appColors.emerald} />
       </View>
 
       <Card>

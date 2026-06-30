@@ -31,7 +31,7 @@ export default function TimelineScreen() {
     <View style={styles.emptyState}>
       <View style={styles.emptyCircle}><ReadoraIcon name="timeline" size={34} color={appColors.gold} /></View>
       <Text style={styles.emptyTitle}>Nenhum marco registrado</Text>
-      <Text style={styles.emptyText}>Registre uma sessão rápida ou atualize o progresso de um livro para criar sua linha do tempo.</Text>
+      <Text style={styles.emptyText}>Atualize o progresso dos seus livros para criar sua linha do tempo.</Text>
     </View>
   );
 
