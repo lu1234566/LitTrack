@@ -18,10 +18,6 @@ export default function BookDetailsScreen() {
   const { addSession, sessionsForBook } = useReadingSessions();
   const book = useMemo(() => getBook(String(id)), [getBook, id]);
   const [page, setPage] = useState(book?.currentPage ? String(book.currentPage) : '');
-  const [pagesRead, setPagesRead] = useState('');
-  const [minutesRead, setMinutesRead] = useState('');
-  const [sessionNote, setSessionNote] = useState('');
-  const [sessionMood, setSessionMood] = useState('');
   const [showCard, setShowCard] = useState(false);
   const [showChat, setShowChat] = useState(false);
 
@@ -44,24 +40,13 @@ export default function BookDetailsScreen() {
       Alert.alert('Pagina invalida', 'Digite um numero valido.');
       return;
     }
+    // Auto-registra a leitura: ao avançar páginas, cria uma sessão silenciosa
+    // (sem formulário) para alimentar streak, heatmap e linha do tempo.
+    const advanced = nextPage - (currentBook.currentPage || 0);
     await updateProgress(currentBook.id, nextPage);
-  }
-
-  async function handleSession() {
-    const pages = Number(pagesRead) || 0;
-    const minutes = Number(minutesRead) || 0;
-    if (pages <= 0 && minutes <= 0) {
-      Alert.alert('Sessao vazia', 'Informe paginas lidas ou minutos de leitura.');
-      return;
+    if (advanced > 0) {
+      await addSession({ bookId: currentBook.id, bookTitle: currentBook.title, pagesRead: advanced, minutesRead: 0, note: '', mood: '' });
     }
-    await addSession({ bookId: currentBook.id, bookTitle: currentBook.title, pagesRead: pages, minutesRead: minutes, note: sessionNote.trim(), mood: sessionMood.trim() });
-    const nextPage = (currentBook.currentPage || 0) + pages;
-    if (pages > 0) await updateProgress(currentBook.id, nextPage);
-    setPage(String(nextPage));
-    setPagesRead('');
-    setMinutesRead('');
-    setSessionNote('');
-    setSessionMood('');
   }
 
   async function handleDelete() {
@@ -115,17 +100,6 @@ export default function BookDetailsScreen() {
       <TextInput style={styles.input} placeholder="Pagina atual" placeholderTextColor={appColors.textDim} value={page} onChangeText={setPage} keyboardType="numeric" />
       <Pressable style={[styles.primaryButton, styles.btnRow]} onPress={handleProgress}><ReadoraIcon name="trendingUp" size={17} color={appColors.background} /><Text style={styles.primaryText}>Atualizar progresso</Text></Pressable>
 
-      <Card>
-        <Text style={styles.cardTitle}>Registrar sessao</Text>
-        <View style={styles.sessionRow}>
-          <TextInput style={[styles.input, styles.half]} placeholder="Paginas lidas" placeholderTextColor={appColors.textDim} value={pagesRead} onChangeText={setPagesRead} keyboardType="numeric" />
-          <TextInput style={[styles.input, styles.half]} placeholder="Minutos" placeholderTextColor={appColors.textDim} value={minutesRead} onChangeText={setMinutesRead} keyboardType="numeric" />
-        </View>
-        <TextInput style={styles.input} placeholder="Humor da leitura" placeholderTextColor={appColors.textDim} value={sessionMood} onChangeText={setSessionMood} />
-        <TextInput style={styles.textArea} placeholder="Nota da sessao" placeholderTextColor={appColors.textDim} value={sessionNote} onChangeText={setSessionNote} multiline />
-        <Pressable style={[styles.primaryButton, styles.btnRow]} onPress={handleSession}><ReadoraIcon name="check" size={17} color={appColors.background} /><Text style={styles.primaryText}>Salvar sessao</Text></Pressable>
-      </Card>
-
       <View style={styles.statusRow}>
         <Pressable style={styles.secondaryButton} onPress={() => updateStatus(currentBook.id, 'reading')}><Text style={styles.secondaryText}>Lendo</Text></Pressable>
         <Pressable style={styles.secondaryButton} onPress={() => updateStatus(currentBook.id, 'finished')}><Text style={styles.secondaryText}>Lido</Text></Pressable>
@@ -135,8 +109,8 @@ export default function BookDetailsScreen() {
 
       {bookSessions.slice(0, 3).map((session) => (
         <Card key={session.id}>
-          <Text style={styles.cardTitle}>Sessao recente</Text>
-          <Text style={styles.body}>{session.pagesRead} paginas • {session.minutesRead} min • {new Date(session.createdAt).toLocaleDateString('pt-BR')}</Text>
+          <Text style={styles.cardTitle}>Leitura registrada</Text>
+          <Text style={styles.body}>{session.pagesRead} paginas{session.minutesRead ? ' • ' + session.minutesRead + ' min' : ''} • {new Date(session.createdAt).toLocaleDateString('pt-BR')}</Text>
           {session.mood ? <Text style={styles.body}>Humor: {session.mood}</Text> : null}
           {session.note ? <Text style={styles.body}>{session.note}</Text> : null}
         </Card>

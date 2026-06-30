@@ -56,7 +56,6 @@ export default function RootLayout() {
                   <Stack.Screen name="progress" options={{ title: 'Progresso' }} />
                   <Stack.Screen name="appearance" options={{ title: 'Aparencia' }} />
                   <Stack.Screen name="product-status" options={{ title: 'Status' }} />
-                  <Stack.Screen name="quick-session" options={{ title: 'Sessao rapida' }} />
                   <Stack.Screen name="insights" options={{ title: 'Insights' }} />
                   <Stack.Screen name="backup" options={{ title: 'Backup' }} />
                   <Stack.Screen name="add" options={{ title: 'Adicionar livro' }} />
