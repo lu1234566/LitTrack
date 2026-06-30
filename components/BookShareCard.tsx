@@ -135,11 +135,7 @@ export function BookShareCard({ book, onClose }: { book: Book; onClose: () => vo
         </View>
         <ScrollView contentContainerStyle={styles.scroll}>
           <View style={styles.preview}>
-            <View style={{ width: 1080 * PREVIEW, height: 1350 * PREVIEW }}>
-              <View style={{ transform: [{ scale: PREVIEW }], position: 'absolute', top: 0, left: 0 }}>
-                <BookCardArt book={book} scale={1} />
-              </View>
-            </View>
+            <BookCardArt book={book} scale={PREVIEW} />
           </View>
           {message ? <Text style={styles.msg}>{message}</Text> : null}
           <Pressable style={styles.shareBtn} onPress={share}><ReadoraIcon name="share" size={18} color={appColors.background} /><Text style={styles.shareText}>Compartilhar</Text></Pressable>

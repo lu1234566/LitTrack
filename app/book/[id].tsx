@@ -83,7 +83,7 @@ export default function BookDetailsScreen() {
       </View>
 
       <View style={styles.actionsTop}>
-        <Link href={{ pathname: '/edit/[id]', params: { id: currentBook.id } }} asChild><Pressable style={[styles.editButton, styles.btnRow]}><ReadoraIcon name="editBook" size={16} color={appColors.gold} /><Text style={styles.editText}>Editar livro</Text></Pressable></Link>
+        <Pressable style={[styles.editButton, styles.btnRow]} onPress={() => router.push({ pathname: '/edit/[id]', params: { id: currentBook.id } } as never)}><ReadoraIcon name="editBook" size={16} color={appColors.gold} /><Text style={styles.editText}>Editar livro</Text></Pressable>
         <Pressable style={[styles.editButton, styles.btnRow]} onPress={() => setShowCard(true)}><ReadoraIcon name="share" size={16} color={appColors.gold} /><Text style={styles.editText}>Compartilhar card</Text></Pressable>
       </View>
       {showCard ? <BookShareCard book={currentBook} onClose={() => setShowCard(false)} /> : null}
