@@ -92,7 +92,6 @@ export function Screen<T>({
         contentContainerStyle={[isDesktop ? styles.desktopContent : styles.mobileContent, isDesktop ? styles.scrollDesktop : styles.scrollMobile]}
         refreshControl={refreshControl}
         showsVerticalScrollIndicator={false}
-        removeClippedSubviews
         initialNumToRender={8}
         windowSize={11}
       />
