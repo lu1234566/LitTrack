@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router';
 import { Text as RNText, TextInput as RNTextInput } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -36,6 +37,7 @@ export default function RootLayout() {
   });
 
   return (
+    <SafeAreaProvider>
     <ErrorBoundary>
     <PreferencesProvider>
       <SessionProvider>
@@ -76,5 +78,6 @@ export default function RootLayout() {
       </SessionProvider>
     </PreferencesProvider>
     </ErrorBoundary>
+    </SafeAreaProvider>
   );
 }

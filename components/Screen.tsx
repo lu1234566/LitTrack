@@ -1,8 +1,11 @@
 import { ReactElement, ReactNode, useState } from 'react';
 import { Link, usePathname } from 'expo-router';
-import { FlatList, Image, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { FlatList, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { usePreferences } from '@/contexts/PreferencesContext';
+import { useSession } from '@/contexts/SessionContext';
+import { SessionUser } from '@/types/sessionUser';
 import { appColors, appFonts } from '@/theme/tokens';
 import { accentColor, densityValue, scaledFont } from '@/services/visualPreferences';
 import { ReadoraIcon, ReadoraIconName } from '@/components/ReadoraIcon';
@@ -59,6 +62,7 @@ export function Screen<T>({
   itemGap?: number;
 }) {
   const { preferences } = usePreferences();
+  const { user } = useSession();
   const density = densityValue(preferences.visualDensity);
   const accent = accentColor(preferences.visualAccent);
   const { width } = useWindowDimensions();
@@ -113,13 +117,13 @@ export function Screen<T>({
     <SafeAreaView style={styles.root}>
       <StatusBar style="light" />
       <View style={styles.shell}>
-        {isDesktop ? <Sidebar accent={accent} textScale={preferences.textScale} /> : <MobileTopbar accent={accent} onMenu={() => setDrawerOpen(true)} />}
+        {isDesktop ? <Sidebar accent={accent} textScale={preferences.textScale} user={user} /> : <MobileTopbar accent={accent} onMenu={() => setDrawerOpen(true)} user={user} />}
         <View style={[styles.main, isDesktop ? styles.mainDesktop : styles.mainMobile]}>
           {body}
         </View>
       </View>
       {!isDesktop ? <MobileBottomBar accent={accent} /> : null}
-      {!isDesktop && drawerOpen ? <MobileDrawer accent={accent} onClose={() => setDrawerOpen(false)} textScale={preferences.textScale} /> : null}
+      {!isDesktop && drawerOpen ? <MobileDrawer accent={accent} onClose={() => setDrawerOpen(false)} textScale={preferences.textScale} user={user} /> : null}
     </SafeAreaView>
   );
 }
@@ -136,7 +140,12 @@ function Brand({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function Sidebar({ accent, textScale }: { accent: string; textScale?: string }) {
+function UserAvatar({ uri, style, iconSize }: { uri?: string | null; style: object; iconSize: number }) {
+  if (uri) return <Image source={{ uri }} style={style} />;
+  return <View style={[style, styles.avatarFallback]}><ReadoraIcon name="literaryProfile" size={iconSize} color={appColors.textDim} /></View>;
+}
+
+function Sidebar({ accent, textScale, user }: { accent: string; textScale?: string; user: SessionUser | null }) {
   return (
     <View style={styles.sidebar}>
       <Brand />
@@ -152,10 +161,10 @@ function Sidebar({ accent, textScale }: { accent: string; textScale?: string }) 
       </ScrollView>
       <View style={styles.sidebarFooter}>
         <View style={styles.userRow}>
-          <Image source={{ uri: 'https://avatars.githubusercontent.com/u/17485550?v=4' }} style={styles.avatar} />
+          <UserAvatar uri={user?.photoURL} style={styles.avatar} iconSize={20} />
           <View style={styles.userTextBox}>
-            <Text style={styles.userName}>Lucas Barcelar</Text>
-            <Text style={styles.userEmail}>barcelar34@gmail.com</Text>
+            <Text style={styles.userName}>{user?.displayName || 'Convidado'}</Text>
+            <Text style={styles.userEmail}>{user?.email || 'Faça login para sincronizar'}</Text>
           </View>
         </View>
         <Link href="/settings" asChild><Pressable style={styles.sideItem}><View style={styles.sideIcon}><ReadoraIcon name="settings" size={20} color={appColors.textMuted} /></View><Text style={styles.sideText}>Configurações</Text></Pressable></Link>
@@ -165,17 +174,17 @@ function Sidebar({ accent, textScale }: { accent: string; textScale?: string }) 
   );
 }
 
-function MobileTopbar({ accent, onMenu }: { accent: string; onMenu: () => void }) {
+function MobileTopbar({ accent, onMenu, user }: { accent: string; onMenu: () => void; user: SessionUser | null }) {
   return (
     <View style={styles.mobileTopbar}>
       <Pressable onPress={onMenu} style={styles.menuButton}><ReadoraIcon name="menu" size={28} color={appColors.textMuted} /></Pressable>
       <Brand compact />
-      <Image source={{ uri: 'https://avatars.githubusercontent.com/u/17485550?v=4' }} style={[styles.mobileAvatar, { borderColor: accent }]} />
+      <UserAvatar uri={user?.photoURL} style={[styles.mobileAvatar, { borderColor: accent }]} iconSize={22} />
     </View>
   );
 }
 
-function MobileDrawer({ accent, onClose, textScale }: { accent: string; onClose: () => void; textScale?: string }) {
+function MobileDrawer({ accent, onClose, textScale, user }: { accent: string; onClose: () => void; textScale?: string; user: SessionUser | null }) {
   return (
     <View style={styles.drawerOverlay}>
       <View style={styles.drawerPanel}>
@@ -195,10 +204,10 @@ function MobileDrawer({ accent, onClose, textScale }: { accent: string; onClose:
         </ScrollView>
         <View style={styles.drawerFooter}>
           <View style={styles.userRow}>
-            <Image source={{ uri: 'https://avatars.githubusercontent.com/u/17485550?v=4' }} style={styles.avatar} />
+            <UserAvatar uri={user?.photoURL} style={styles.avatar} iconSize={20} />
             <View style={styles.userTextBox}>
-              <Text style={styles.userName}>Lucas Barcelar</Text>
-              <Text style={styles.userEmail}>barcelar34@gmail.com</Text>
+              <Text style={styles.userName}>{user?.displayName || 'Convidado'}</Text>
+              <Text style={styles.userEmail}>{user?.email || 'Faça login para sincronizar'}</Text>
             </View>
           </View>
           <Link href="/settings" asChild><Pressable style={styles.drawerItem} onPress={onClose}><View style={styles.drawerIcon}><ReadoraIcon name="settings" size={24} color={appColors.textMuted} /></View><Text style={styles.drawerText}>Configurações</Text></Pressable></Link>
@@ -264,6 +273,7 @@ const styles = StyleSheet.create({
   userRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatar: { width: 34, height: 34, borderRadius: 999 },
   mobileAvatar: { width: 44, height: 44, borderRadius: 999, borderWidth: 1 },
+  avatarFallback: { backgroundColor: appColors.surface, borderColor: appColors.border, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   userTextBox: { flex: 1 },
   userName: { color: appColors.text, fontWeight: '900' },
   userEmail: { color: appColors.textDim, fontSize: 12, marginTop: 2 },
