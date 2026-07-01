@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import * as Updates from 'expo-updates';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
@@ -43,6 +44,8 @@ export default function SettingsScreen() {
   const [yearlyGoal, setYearlyGoal] = useState(String(preferences.yearlyGoal));
   const [dailyPageGoal, setDailyPageGoal] = useState(String(preferences.dailyPageGoal));
   const [syncMessage, setSyncMessage] = useState('');
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateMessage, setUpdateMessage] = useState('');
 
   async function save(custom?: Partial<typeof preferences>) {
     await updatePreferences({
@@ -122,6 +125,29 @@ export default function SettingsScreen() {
     setSyncMessage(total > 0 ? total + ' item(ns) recebidos do Firestore.' : 'Nenhum dado remoto encontrado.');
   }
 
+  async function checkForUpdate() {
+    setCheckingUpdate(true);
+    setUpdateMessage('');
+    try {
+      const result = await Updates.checkForUpdateAsync();
+      if (!result.isAvailable) {
+        setUpdateMessage('Você já está na versão mais recente publicada neste canal.');
+        return;
+      }
+      setUpdateMessage('Baixando atualização...');
+      await Updates.fetchUpdateAsync();
+      setUpdateMessage('Atualização baixada. Reinicie o app para aplicar.');
+      Alert.alert('Atualização pronta', 'Reinicie o app agora para aplicar a nova versão?', [
+        { text: 'Depois', style: 'cancel' },
+        { text: 'Reiniciar agora', onPress: () => Updates.reloadAsync() }
+      ]);
+    } catch (error) {
+      setUpdateMessage(error instanceof Error ? 'Erro ao verificar: ' + error.message : 'Erro ao verificar atualização.');
+    } finally {
+      setCheckingUpdate(false);
+    }
+  }
+
   return (
     <Screen>
       <View style={styles.header}>
@@ -178,6 +204,29 @@ export default function SettingsScreen() {
           <Pressable style={[styles.secondaryButton, styles.btnRow]} onPress={pullAll}><ReadoraIcon name="import" size={15} color={appColors.gold} /><Text style={styles.secondaryText}>Receber tudo</Text></Pressable>
         </View>
         {syncMessage ? <Text style={styles.message}>{syncMessage}</Text> : null}
+      </Card>
+
+      <Card>
+        <View style={styles.titleRow}><ReadoraIcon name="refresh" size={20} color={appColors.gold} /><Text style={styles.cardTitle}>Versão e Atualizações</Text></View>
+        {Platform.OS === 'web' || !Updates.isEnabled ? (
+          <Text style={styles.body}>Atualizações OTA se aplicam apenas ao app instalado via build (não à versão web).</Text>
+        ) : (
+          <>
+            <Text style={styles.value}>{Updates.isEmbeddedLaunch ? 'Build nativa' : 'Atualização OTA aplicada'}</Text>
+            <Text style={styles.body}>
+              Canal: {Updates.channel || 'desconhecido'}
+              {'\n'}
+              {Updates.isEmbeddedLaunch ? 'Nenhuma atualização OTA foi baixada ainda.' : 'Publicada em: ' + (Updates.createdAt ? Updates.createdAt.toLocaleString('pt-BR') : 'desconhecido')}
+              {'\n'}
+              ID: {Updates.updateId ? Updates.updateId.slice(0, 8) : '—'}
+            </Text>
+            <Pressable style={[styles.secondaryButton, styles.btnRow]} onPress={checkForUpdate} disabled={checkingUpdate}>
+              <ReadoraIcon name="refresh" size={15} color={appColors.gold} />
+              <Text style={styles.secondaryText}>{checkingUpdate ? 'Verificando...' : 'Verificar atualização'}</Text>
+            </Pressable>
+            {updateMessage ? <Text style={styles.message}>{updateMessage}</Text> : null}
+          </>
+        )}
       </Card>
     </Screen>
   );

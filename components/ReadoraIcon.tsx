@@ -108,6 +108,7 @@ const ICONS = {
   trash: ['ion', 'trash-outline'],
   copy: ['mci', 'content-copy'],
   dot: ['mci', 'circle-small'],
+  refresh: ['ion', 'refresh-outline'],
 } satisfies Record<string, IconDef>;
 
 export type ReadoraIconName = keyof typeof ICONS;
