@@ -41,6 +41,7 @@ exports.aiProxy = onRequest({ secrets: [GEMINI_KEY], cors: true }, async (req, r
     const data = await upstream.json();
     res.status(upstream.status).json(data);
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    console.error('aiProxy upstream error', e);
+    res.status(500).json({ error: 'Falha ao contatar a IA. Tente novamente.' });
   }
 });

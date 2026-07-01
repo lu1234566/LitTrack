@@ -16,7 +16,7 @@ import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors, appFonts } from '@/theme/tokens';
 import type { Book, BookStatus } from '@/types/book';
 
-const scopes: Array<'all' | BookStatus> = ['all', 'finished', 'reading', 'wishlist'];
+const scopes: Array<'all' | BookStatus> = ['all', 'finished', 'reading', 'wishlist', 'dnf'];
 const ratings = [0, 1, 2, 3, 4, 5];
 
 export default function BackupScreen() {
@@ -325,6 +325,7 @@ function labelForScope(status: 'all' | BookStatus) {
   if (status === 'finished') return 'Lidos';
   if (status === 'wishlist') return 'Quero ler';
   if (status === 'reading') return 'Lendo';
+  if (status === 'dnf') return 'Abandonados';
   return 'Todos';
 }
 

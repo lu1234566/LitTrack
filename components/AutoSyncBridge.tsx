@@ -32,6 +32,11 @@ export function AutoSyncBridge() {
   // against the current ids tells us exactly what the user deleted, so we can
   // propagate that deletion instead of inferring it destructively.
   const prevIds = useRef<Record<SyncCollectionName, Set<string>>>({ books: new Set(), quotes: new Set(), shelves: new Set(), sessions: new Set() });
+  // Always-current snapshot of local state, so the pull effect (which only
+  // runs once, at mount) merges against whatever the user has edited since —
+  // not a stale copy captured when the effect was first defined.
+  const latest = useRef({ books, quotes, shelves, sessions, preferences });
+  latest.current = { books, quotes, shelves, sessions, preferences };
 
   // Restore the last successful sync time so the user sees it on open.
   useEffect(() => {
@@ -56,11 +61,11 @@ export function AutoSyncBridge() {
         // Drop remote items the user already deleted locally (pending tombstones)
         // so a stale cloud copy doesn't resurrect them before the delete syncs.
         const tombstones = await loadTombstones();
-        if (bundle.books?.length) await replaceBooks(mergeByUpdatedAt(books, dropTombstoned(bundle.books, tombstones, 'books')));
-        if (bundle.quotes?.length) await setQuoteList(mergeByUpdatedAt(quotes, dropTombstoned(bundle.quotes, tombstones, 'quotes')));
-        if (bundle.shelves?.length) await setShelfList(mergeByUpdatedAt(shelves, dropTombstoned(bundle.shelves, tombstones, 'shelves')));
-        if (bundle.sessions?.length) await setSessionList(mergeByUpdatedAt(sessions, dropTombstoned(bundle.sessions, tombstones, 'sessions')));
-        if (bundle.preferences) await updatePreferences({ ...preferences, ...bundle.preferences });
+        if (bundle.books?.length) await replaceBooks(mergeByUpdatedAt(latest.current.books, dropTombstoned(bundle.books, tombstones, 'books')));
+        if (bundle.quotes?.length) await setQuoteList(mergeByUpdatedAt(latest.current.quotes, dropTombstoned(bundle.quotes, tombstones, 'quotes')));
+        if (bundle.shelves?.length) await setShelfList(mergeByUpdatedAt(latest.current.shelves, dropTombstoned(bundle.shelves, tombstones, 'shelves')));
+        if (bundle.sessions?.length) await setSessionList(mergeByUpdatedAt(latest.current.sessions, dropTombstoned(bundle.sessions, tombstones, 'sessions')));
+        if (bundle.preferences) await updatePreferences({ ...latest.current.preferences, ...bundle.preferences });
         setStatus('Dados sincronizados.');
       } catch {
         setStatus('Não foi possível receber dados remotos.');

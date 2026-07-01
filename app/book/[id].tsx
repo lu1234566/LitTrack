@@ -35,13 +35,17 @@ export default function BookDetailsScreen() {
   const bookSessions = sessionsForBook(currentBook.id);
 
   async function handleProgress() {
-    const nextPage = Number(page);
-    if (Number.isNaN(nextPage)) {
+    const rawPage = Number(page);
+    if (Number.isNaN(rawPage)) {
       Alert.alert('Pagina invalida', 'Digite um numero valido.');
       return;
     }
     // Auto-registra a leitura: ao avançar páginas, cria uma sessão silenciosa
     // (sem formulário) para alimentar streak, heatmap e linha do tempo.
+    // O clamp espelha o que updateProgress aplica internamente, para que o
+    // total de páginas da sessão nunca ultrapasse o avanço real do livro.
+    const totalPages = currentBook.totalPages || 0;
+    const nextPage = Math.max(0, Math.min(rawPage, totalPages || rawPage));
     const advanced = nextPage - (currentBook.currentPage || 0);
     await updateProgress(currentBook.id, nextPage);
     if (advanced > 0) {
