@@ -30,15 +30,17 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const isGoogleLoginPrepared = Boolean(isNativeFirebaseConfigured && hasGoogleClientId);
 
   // Official Google provider: handles native redirect URIs (reverse client id),
-  // PKCE and the correct id_token audience per platform. A placeholder web id
-  // keeps the hook from throwing (and crashing the whole app) when Google login
-  // isn't configured yet — the guarded signInWithGoogle below still refuses to
-  // prompt until the real client ids are present.
+  // PKCE and the correct id_token audience per platform. A placeholder id per
+  // platform keeps the hook from throwing (and crashing the whole screen) when
+  // Google login isn't configured yet — expo-auth-session requires its own
+  // android/iosClientId on native even if a web id is present, so every field
+  // needs the same fallback. The guarded signInWithGoogle below still refuses
+  // to prompt until the real client ids are present.
   const placeholderClientId = 'unconfigured.apps.googleusercontent.com';
   const [request, , promptAsync] = Google.useAuthRequest({
     webClientId: webClientId || placeholderClientId,
-    androidClientId,
-    iosClientId,
+    androidClientId: androidClientId || placeholderClientId,
+    iosClientId: iosClientId || placeholderClientId,
     scopes: ['openid', 'profile', 'email']
   });
 
