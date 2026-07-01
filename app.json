@@ -3,6 +3,12 @@
     "name": "Readora Native",
     "slug": "readora-native",
     "version": "0.1.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/3a93b87d-49a4-44f7-9a48-514f78101579"
+    },
     "orientation": "portrait",
     "scheme": "readora",
     "userInterfaceStyle": "dark",
