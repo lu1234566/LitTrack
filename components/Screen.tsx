@@ -1,7 +1,7 @@
 import { ReactElement, ReactNode, useState } from 'react';
 import { Link, usePathname } from 'expo-router';
 import { FlatList, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { usePreferences } from '@/contexts/PreferencesContext';
 import { useSession } from '@/contexts/SessionContext';
@@ -23,7 +23,8 @@ const menuItems: { icon: ReadoraIconName; label: string; href: string }[] = [
   { icon: 'recommendations', label: 'Recomendações', href: '/recommendations' },
   { icon: 'backup', label: 'Backup e Exportação', href: '/backup' },
   { icon: 'gallery', label: 'Galeria', href: '/gallery' },
-  { icon: 'addBook', label: 'Adicionar', href: '/add' }
+  { icon: 'addBook', label: 'Adicionar', href: '/add' },
+  { icon: 'account', label: 'Conta', href: '/account' }
 ];
 
 const bottomTabs: { icon: ReadoraIconName; label: string; href: string }[] = [
@@ -63,6 +64,7 @@ export function Screen<T>({
 }) {
   const { preferences } = usePreferences();
   const { user } = useSession();
+  const insets = useSafeAreaInsets();
   const density = densityValue(preferences.visualDensity);
   const accent = accentColor(preferences.visualAccent);
   const { width } = useWindowDimensions();
@@ -93,7 +95,7 @@ export function Screen<T>({
         ListEmptyComponent={ListEmptyComponent ? <>{ListEmptyComponent}</> : null}
         ListFooterComponent={ListFooterComponent ? <View style={{ marginTop: gap }}>{ListFooterComponent}</View> : null}
         ItemSeparatorComponent={() => <View style={{ height: gap }} />}
-        contentContainerStyle={[isDesktop ? styles.desktopContent : styles.mobileContent, isDesktop ? styles.scrollDesktop : styles.scrollMobile]}
+        contentContainerStyle={[isDesktop ? styles.desktopContent : styles.mobileContent, isDesktop ? styles.scrollDesktop : { paddingBottom: 104 + insets.bottom }]}
         refreshControl={refreshControl}
         showsVerticalScrollIndicator={false}
         initialNumToRender={8}
@@ -103,7 +105,7 @@ export function Screen<T>({
   } else if (scroll) {
     body = (
       <ScrollView
-        contentContainerStyle={[styles.scroll, isDesktop ? styles.scrollDesktop : styles.scrollMobile]}
+        contentContainerStyle={[styles.scroll, isDesktop ? styles.scrollDesktop : { paddingBottom: 104 + insets.bottom }]}
         refreshControl={refreshControl}
       >
         {content}
@@ -117,13 +119,13 @@ export function Screen<T>({
     <SafeAreaView style={styles.root}>
       <StatusBar style="light" />
       <View style={styles.shell}>
-        {isDesktop ? <Sidebar accent={accent} textScale={preferences.textScale} user={user} /> : <MobileTopbar accent={accent} onMenu={() => setDrawerOpen(true)} user={user} />}
-        <View style={[styles.main, isDesktop ? styles.mainDesktop : styles.mainMobile]}>
+        {isDesktop ? <Sidebar accent={accent} textScale={preferences.textScale} user={user} /> : <MobileTopbar accent={accent} onMenu={() => setDrawerOpen(true)} user={user} insetTop={insets.top} />}
+        <View style={[styles.main, isDesktop ? styles.mainDesktop : { paddingTop: 88 + insets.top }]}>
           {body}
         </View>
       </View>
-      {!isDesktop ? <MobileBottomBar accent={accent} /> : null}
-      {!isDesktop && drawerOpen ? <MobileDrawer accent={accent} onClose={() => setDrawerOpen(false)} textScale={preferences.textScale} user={user} /> : null}
+      {!isDesktop ? <MobileBottomBar accent={accent} insetBottom={insets.bottom} /> : null}
+      {!isDesktop && drawerOpen ? <MobileDrawer accent={accent} onClose={() => setDrawerOpen(false)} textScale={preferences.textScale} user={user} insetTop={insets.top} insetBottom={insets.bottom} /> : null}
     </SafeAreaView>
   );
 }
@@ -160,13 +162,15 @@ function Sidebar({ accent, textScale, user }: { accent: string; textScale?: stri
         ))}
       </ScrollView>
       <View style={styles.sidebarFooter}>
-        <View style={styles.userRow}>
-          <UserAvatar uri={user?.photoURL} style={styles.avatar} iconSize={20} />
-          <View style={styles.userTextBox}>
-            <Text style={styles.userName}>{user?.displayName || 'Convidado'}</Text>
-            <Text style={styles.userEmail}>{user?.email || 'Faça login para sincronizar'}</Text>
-          </View>
-        </View>
+        <Link href="/account" asChild>
+          <Pressable style={styles.userRow}>
+            <UserAvatar uri={user?.photoURL} style={styles.avatar} iconSize={20} />
+            <View style={styles.userTextBox}>
+              <Text style={styles.userName}>{user?.displayName || 'Convidado'}</Text>
+              <Text style={styles.userEmail}>{user?.email || 'Faça login para sincronizar'}</Text>
+            </View>
+          </Pressable>
+        </Link>
         <Link href="/settings" asChild><Pressable style={styles.sideItem}><View style={styles.sideIcon}><ReadoraIcon name="settings" size={20} color={appColors.textMuted} /></View><Text style={styles.sideText}>Configurações</Text></Pressable></Link>
         <Pressable style={styles.sideItem}><View style={styles.sideIcon}><ReadoraIcon name="logout" size={20} color={appColors.rose} /></View><Text style={[styles.sideText, { color: appColors.rose }]}>Sair</Text></Pressable>
       </View>
@@ -174,20 +178,24 @@ function Sidebar({ accent, textScale, user }: { accent: string; textScale?: stri
   );
 }
 
-function MobileTopbar({ accent, onMenu, user }: { accent: string; onMenu: () => void; user: SessionUser | null }) {
+function MobileTopbar({ accent, onMenu, user, insetTop }: { accent: string; onMenu: () => void; user: SessionUser | null; insetTop: number }) {
   return (
-    <View style={styles.mobileTopbar}>
+    <View style={[styles.mobileTopbar, { height: 88 + insetTop }]}>
       <Pressable onPress={onMenu} style={styles.menuButton}><ReadoraIcon name="menu" size={28} color={appColors.textMuted} /></Pressable>
       <Brand compact />
-      <UserAvatar uri={user?.photoURL} style={[styles.mobileAvatar, { borderColor: accent }]} iconSize={22} />
+      <Link href="/account" asChild>
+        <Pressable hitSlop={8}>
+          <UserAvatar uri={user?.photoURL} style={[styles.mobileAvatar, { borderColor: accent }]} iconSize={22} />
+        </Pressable>
+      </Link>
     </View>
   );
 }
 
-function MobileDrawer({ accent, onClose, textScale, user }: { accent: string; onClose: () => void; textScale?: string; user: SessionUser | null }) {
+function MobileDrawer({ accent, onClose, textScale, user, insetTop, insetBottom }: { accent: string; onClose: () => void; textScale?: string; user: SessionUser | null; insetTop: number; insetBottom: number }) {
   return (
     <View style={styles.drawerOverlay}>
-      <View style={styles.drawerPanel}>
+      <View style={[styles.drawerPanel, { paddingTop: 34 + insetTop }]}>
         <View style={styles.drawerHeader}>
           <Brand />
           <Pressable onPress={onClose} style={styles.closeButton}><ReadoraIcon name="close" size={28} color={appColors.textMuted} /></Pressable>
@@ -202,14 +210,16 @@ function MobileDrawer({ accent, onClose, textScale, user }: { accent: string; on
             </Link>
           ))}
         </ScrollView>
-        <View style={styles.drawerFooter}>
-          <View style={styles.userRow}>
-            <UserAvatar uri={user?.photoURL} style={styles.avatar} iconSize={20} />
-            <View style={styles.userTextBox}>
-              <Text style={styles.userName}>{user?.displayName || 'Convidado'}</Text>
-              <Text style={styles.userEmail}>{user?.email || 'Faça login para sincronizar'}</Text>
-            </View>
-          </View>
+        <View style={[styles.drawerFooter, { paddingBottom: 24 + insetBottom }]}>
+          <Link href="/account" asChild>
+            <Pressable style={styles.userRow} onPress={onClose}>
+              <UserAvatar uri={user?.photoURL} style={styles.avatar} iconSize={20} />
+              <View style={styles.userTextBox}>
+                <Text style={styles.userName}>{user?.displayName || 'Convidado'}</Text>
+                <Text style={styles.userEmail}>{user?.email || 'Faça login para sincronizar'}</Text>
+              </View>
+            </Pressable>
+          </Link>
           <Link href="/settings" asChild><Pressable style={styles.drawerItem} onPress={onClose}><View style={styles.drawerIcon}><ReadoraIcon name="settings" size={24} color={appColors.textMuted} /></View><Text style={styles.drawerText}>Configurações</Text></Pressable></Link>
           <Pressable style={styles.drawerItem}><View style={styles.drawerIcon}><ReadoraIcon name="logout" size={24} color={appColors.rose} /></View><Text style={[styles.drawerText, { color: appColors.rose }]}>Sair</Text></Pressable>
         </View>
@@ -219,10 +229,10 @@ function MobileDrawer({ accent, onClose, textScale, user }: { accent: string; on
   );
 }
 
-function MobileBottomBar({ accent }: { accent: string }) {
+function MobileBottomBar({ accent, insetBottom }: { accent: string; insetBottom: number }) {
   const pathname = usePathname();
   return (
-    <View style={styles.bottomBar}>
+    <View style={[styles.bottomBar, { paddingBottom: 22 + insetBottom }]}>
       {bottomTabs.map((tab) => {
         const active = tab.href === '/' ? pathname === '/' : pathname.startsWith(tab.href);
         const color = active ? accent : appColors.textDim;
@@ -244,10 +254,8 @@ const styles = StyleSheet.create({
   shell: { flex: 1, flexDirection: 'row', backgroundColor: appColors.background },
   main: { flex: 1, backgroundColor: appColors.background },
   mainDesktop: { marginLeft: 0 },
-  mainMobile: { paddingTop: 88 },
   scroll: { flexGrow: 1 },
   scrollDesktop: { paddingBottom: 56 },
-  scrollMobile: { paddingBottom: 104 },
   bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 20, flexDirection: 'row', backgroundColor: appColors.sidebar, borderTopColor: appColors.border, borderTopWidth: 1, paddingTop: 10, paddingBottom: 22, paddingHorizontal: 6 },
   bottomItem: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 2 },
   bottomLabel: { fontSize: 11, fontWeight: '800' },
