@@ -10,7 +10,7 @@
       "url": "https://u.expo.dev/3a93b87d-49a4-44f7-9a48-514f78101579"
     },
     "orientation": "portrait",
-    "scheme": "readora",
+    "scheme": ["readora", "com.readora.app"],
     "userInterfaceStyle": "dark",
     "icon": "./assets/icon.png",
     "newArchEnabled": true,
