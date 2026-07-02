@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { exchangeCodeAsync } from 'expo-auth-session';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import { SessionUser } from '@/types/sessionUser';
@@ -9,6 +10,8 @@ WebBrowser.maybeCompleteAuthSession();
 type SessionContextValue = {
   user: SessionUser | null;
   isGoogleLoginPrepared: boolean;
+  /** Status ao vivo da etapa final do login (troca de código + Firebase). */
+  authNotice: string;
   signInWithGoogle: () => Promise<string>;
   signOut: () => Promise<void>;
 };
@@ -21,12 +24,14 @@ const hasGoogleClientId = Boolean(webClientId || androidClientId || iosClientId)
 const SessionContext = createContext<SessionContextValue>({
   user: null,
   isGoogleLoginPrepared: false,
+  authNotice: '',
   signInWithGoogle: async () => 'Login Google ainda não configurado.',
   signOut: async () => {}
 });
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
+  const [authNotice, setAuthNotice] = useState('');
   const isGoogleLoginPrepared = Boolean(isNativeFirebaseConfigured && hasGoogleClientId);
 
   // Official Google provider: handles native redirect URIs (reverse client id),
@@ -41,22 +46,58 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     webClientId: webClientId || placeholderClientId,
     androidClientId: androidClientId || placeholderClientId,
     iosClientId: iosClientId || placeholderClientId,
-    scopes: ['openid', 'profile', 'email']
+    scopes: ['openid', 'profile', 'email'],
+    // A troca automática do provider engole erros (sem .catch) — fazemos a
+    // troca manualmente no efeito abaixo, com erro visível para o usuário.
+    shouldAutoExchangeCode: false
   });
 
   useEffect(() => listenToFirebaseUser(setUser), []);
 
-  // No Android/iOS o Google devolve um `code`, e o expo-auth-session troca por
-  // tokens em segundo plano — o id_token só aparece aqui, na resposta do hook,
-  // nunca no retorno imediato do promptAsync. Este efeito é o caminho único de
-  // conclusão do login nas duas plataformas (na web a resposta já vem pronta).
+  // No Android/iOS o Google devolve um `code` que precisa ser trocado por
+  // tokens; o id_token nunca vem no retorno imediato do promptAsync. Este
+  // efeito conclui o login nas duas plataformas (na web o id_token já chega
+  // direto nos params) e reporta cada etapa/falha via authNotice.
   useEffect(() => {
-    if (response?.type !== 'success') return;
-    const idToken = response.params?.id_token ?? response.authentication?.idToken;
-    if (!idToken) return;
-    signInFirebaseWithGoogleIdToken(idToken)
-      .then((loggedUser) => setUser(loggedUser))
-      .catch(() => {});
+    if (!response) return;
+    if (response.type === 'error') {
+      const detail = response.error?.message || response.error?.code || 'desconhecido';
+      setAuthNotice('O Google retornou um erro: ' + detail);
+      return;
+    }
+    if (response.type !== 'success') return;
+    async function finishLogin() {
+      try {
+        let idToken: string | undefined =
+          (response as { params?: Record<string, string> }).params?.id_token ||
+          (response as { authentication?: { idToken?: string } }).authentication?.idToken;
+        const code = (response as { params?: Record<string, string> }).params?.code;
+        if (!idToken && code && request) {
+          setAuthNotice('Login aprovado. Trocando código por sessão...');
+          const tokens = await exchangeCodeAsync(
+            {
+              clientId: request.clientId,
+              redirectUri: request.redirectUri,
+              code,
+              extraParams: { code_verifier: request.codeVerifier || '' }
+            },
+            Google.discovery
+          );
+          idToken = tokens.idToken || undefined;
+        }
+        if (!idToken) {
+          setAuthNotice('O Google não retornou um id_token. Verifique os Client IDs e a SHA-1.');
+          return;
+        }
+        setAuthNotice('Autenticando no Firebase...');
+        const loggedUser = await signInFirebaseWithGoogleIdToken(idToken);
+        setUser(loggedUser);
+        setAuthNotice(loggedUser?.email ? 'Login concluído: ' + loggedUser.email : 'Login concluído.');
+      } catch (error) {
+        setAuthNotice(error instanceof Error ? 'Falha ao concluir o login: ' + error.message : 'Falha ao concluir o login.');
+      }
+    }
+    finishLogin();
   }, [response]);
 
   async function signInWithGoogle() {
@@ -78,8 +119,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }
 
   const value = useMemo(
-    () => ({ user, isGoogleLoginPrepared, signInWithGoogle, signOut }),
-    [user, isGoogleLoginPrepared, request]
+    () => ({ user, isGoogleLoginPrepared, authNotice, signInWithGoogle, signOut }),
+    [user, isGoogleLoginPrepared, authNotice, request]
   );
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

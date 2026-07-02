@@ -6,7 +6,7 @@ import { useSession } from '@/contexts/SessionContext';
 import { appColors, appFonts } from '@/theme/tokens';
 
 export default function AccountScreen() {
-  const { user, isGoogleLoginPrepared, signInWithGoogle, signOut } = useSession();
+  const { user, isGoogleLoginPrepared, authNotice, signInWithGoogle, signOut } = useSession();
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -54,7 +54,7 @@ export default function AccountScreen() {
         </Card>
       )}
 
-      {message ? <Text style={styles.message}>{message}</Text> : null}
+      {authNotice || message ? <Text style={styles.message}>{authNotice || message}</Text> : null}
     </Screen>
   );
 }
