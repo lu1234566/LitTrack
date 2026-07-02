@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Shelf } from '@/types/shelf';
 import { loadShelves, saveShelves } from '@/services/shelfStorage';
 
@@ -27,12 +27,16 @@ const ShelfContext = createContext<ShelfContextValue>({
 export function ShelfProvider({ children }: { children: React.ReactNode }) {
   const [shelves, setShelves] = useState<Shelf[]>([]);
   const [loadingShelves, setLoadingShelves] = useState(true);
+  // Sempre a lista atual — mutadores chamados de closures antigas (callbacks
+  // assíncronos) não podem regravar uma lista desatualizada. Ver BookContext.
+  const shelvesRef = useRef<Shelf[]>([]);
 
   useEffect(() => {
-    loadShelves().then(setShelves).finally(() => setLoadingShelves(false));
+    loadShelves().then((loaded) => { shelvesRef.current = loaded; setShelves(loaded); }).finally(() => setLoadingShelves(false));
   }, []);
 
   async function persist(nextShelves: Shelf[]) {
+    shelvesRef.current = nextShelves;
     setShelves(nextShelves);
     await saveShelves(nextShelves);
   }
@@ -43,19 +47,19 @@ export function ShelfProvider({ children }: { children: React.ReactNode }) {
 
   async function addShelf(input: ShelfInput) {
     const now = Date.now();
-    await persist([{ ...input, id: 'shelf-' + String(now), createdAt: now, updatedAt: now }, ...shelves]);
+    await persist([{ ...input, id: 'shelf-' + String(now), createdAt: now, updatedAt: now }, ...shelvesRef.current]);
   }
 
   async function updateShelf(shelfId: string, patch: Partial<Shelf>) {
-    await persist(shelves.map((shelf) => shelf.id === shelfId ? { ...shelf, ...patch, updatedAt: Date.now() } : shelf));
+    await persist(shelvesRef.current.map((shelf) => shelf.id === shelfId ? { ...shelf, ...patch, updatedAt: Date.now() } : shelf));
   }
 
   async function deleteShelf(shelfId: string) {
-    await persist(shelves.filter((shelf) => shelf.id !== shelfId));
+    await persist(shelvesRef.current.filter((shelf) => shelf.id !== shelfId));
   }
 
   async function toggleBookInShelf(shelfId: string, bookId: string) {
-    await persist(shelves.map((shelf) => {
+    await persist(shelvesRef.current.map((shelf) => {
       if (shelf.id !== shelfId) return shelf;
       const hasBook = shelf.bookIds.includes(bookId);
       const bookIds = hasBook ? shelf.bookIds.filter((item) => item !== bookId) : [...shelf.bookIds, bookId];

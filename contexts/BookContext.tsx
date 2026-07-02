@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Book, BookStatus, ReadingStats } from '@/types/book';
 import { calculateProgress, loadBooks, saveBooks } from '@/services/bookStorage';
 
@@ -58,12 +58,19 @@ function favoriteGenreFrom(books: Book[]) {
 export function BookProvider({ children }: { children: React.ReactNode }) {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
+  // Fonte da verdade SEMPRE atual para os mutadores. Callbacks assíncronos
+  // (ex.: o enriquecimento em segundo plano após salvar um livro) guardam a
+  // função do render em que nasceram; se ela lesse `books` da closure, um
+  // updateBook tardio regravaria uma lista antiga — apagando livros criados
+  // nesse meio-tempo. Foi exatamente o bug do "salvei e o livro sumiu".
+  const booksRef = useRef<Book[]>([]);
 
   useEffect(() => {
-    loadBooks().then(setBooks).finally(() => setLoading(false));
+    loadBooks().then((loaded) => { booksRef.current = loaded; setBooks(loaded); }).finally(() => setLoading(false));
   }, []);
 
   async function persist(nextBooks: Book[]) {
+    booksRef.current = nextBooks;
     setBooks(nextBooks);
     await saveBooks(nextBooks);
   }
@@ -76,6 +83,7 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       const next = await loadBooks();
+      booksRef.current = next;
       setBooks(next);
     } finally {
       setLoading(false);
@@ -85,21 +93,21 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
   async function addBook(input: BookInput) {
     const now = Date.now();
     const nextBook: Book = { ...input, id: 'book-' + String(now), createdAt: now, updatedAt: now };
-    await persist([nextBook, ...books]);
+    await persist([nextBook, ...booksRef.current]);
     return nextBook;
   }
 
   async function updateBook(bookId: string, patch: Partial<Book>) {
-    const nextBooks = books.map((book) => book.id === bookId ? { ...book, ...patch, updatedAt: Date.now() } : book);
+    const nextBooks = booksRef.current.map((book) => book.id === bookId ? { ...book, ...patch, updatedAt: Date.now() } : book);
     await persist(nextBooks);
   }
 
   async function deleteBook(bookId: string) {
-    await persist(books.filter((book) => book.id !== bookId));
+    await persist(booksRef.current.filter((book) => book.id !== bookId));
   }
 
   async function updateProgress(bookId: string, currentPage: number) {
-    const nextBooks = books.map((book) => {
+    const nextBooks = booksRef.current.map((book) => {
       if (book.id !== bookId) return book;
       const totalPages = book.totalPages || 0;
       const nextCurrentPage = Math.max(0, Math.min(currentPage, totalPages || currentPage));
@@ -115,7 +123,7 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function updateStatus(bookId: string, status: BookStatus) {
-    const nextBooks = books.map((book) => book.id === bookId ? { ...book, status, updatedAt: Date.now(), finishedAt: status === 'finished' ? Date.now() : book.finishedAt } : book);
+    const nextBooks = booksRef.current.map((book) => book.id === bookId ? { ...book, status, updatedAt: Date.now(), finishedAt: status === 'finished' ? Date.now() : book.finishedAt } : book);
     await persist(nextBooks);
   }
 

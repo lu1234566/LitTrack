@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { ReadingSession } from '@/types/readingSession';
 import { loadReadingSessions, saveReadingSessions } from '@/services/readingSessionStorage';
 
@@ -25,12 +25,16 @@ const ReadingSessionContext = createContext<ReadingSessionContextValue>({
 export function ReadingSessionProvider({ children }: { children: React.ReactNode }) {
   const [sessions, setSessions] = useState<ReadingSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(true);
+  // Sempre a lista atual — mutadores chamados de closures antigas (callbacks
+  // assíncronos) não podem regravar uma lista desatualizada. Ver BookContext.
+  const sessionsRef = useRef<ReadingSession[]>([]);
 
   useEffect(() => {
-    loadReadingSessions().then(setSessions).finally(() => setLoadingSessions(false));
+    loadReadingSessions().then((loaded) => { sessionsRef.current = loaded; setSessions(loaded); }).finally(() => setLoadingSessions(false));
   }, []);
 
   async function persist(nextSessions: ReadingSession[]) {
+    sessionsRef.current = nextSessions;
     setSessions(nextSessions);
     await saveReadingSessions(nextSessions);
   }
@@ -45,11 +49,11 @@ export function ReadingSessionProvider({ children }: { children: React.ReactNode
     // `date` lets the user back-date a session (e.g. logging past reading); it
     // becomes the session's createdAt, which drives the streak and heatmap.
     const createdAt = date ?? now;
-    await persist([{ ...rest, id: 'session-' + String(now), createdAt, updatedAt: now }, ...sessions]);
+    await persist([{ ...rest, id: 'session-' + String(now), createdAt, updatedAt: now }, ...sessionsRef.current]);
   }
 
   async function deleteSession(sessionId: string) {
-    await persist(sessions.filter((session) => session.id !== sessionId));
+    await persist(sessionsRef.current.filter((session) => session.id !== sessionId));
   }
 
   function sessionsForBook(bookId: string) {

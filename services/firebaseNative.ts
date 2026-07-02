@@ -76,6 +76,13 @@ export async function signOutFirebaseUser() {
   await firebaseSignOut(nativeAuth);
 }
 
+// Firestore rejeita valores `undefined` (setDoc lança na hora) — e campos
+// opcionais como startedAt/finishedAt existem como undefined em objetos recém-
+// importados na memória. O round-trip JSON descarta essas chaves.
+function dropUndefined<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
 // Upserts every local item and deletes ONLY the ids the caller explicitly asks
 // to remove (tombstones). It never bulk-deletes "remote docs missing locally":
 // doing so would wipe cloud data whenever a device synced from an empty or
@@ -83,7 +90,7 @@ export async function signOutFirebaseUser() {
 async function syncCollection<T extends { id: string }>(userId: string, name: string, items: T[], deleteIds: string[] = []) {
   if (!nativeDb) return 0;
   await Promise.all([
-    ...items.map((item) => setDoc(doc(nativeDb, 'users', userId, name, item.id), item)),
+    ...items.map((item) => setDoc(doc(nativeDb, 'users', userId, name, item.id), dropUndefined(item))),
     ...deleteIds.map((id) => deleteDoc(doc(nativeDb, 'users', userId, name, id)))
   ]);
   return items.length;
@@ -113,7 +120,7 @@ export async function pushReadoraBundle(userId: string, bundle: SyncBundle, dele
   const quotes = await syncCollection(userId, 'quotes', bundle.quotes, deletions.quotes);
   const shelves = await syncCollection(userId, 'shelves', bundle.shelves, deletions.shelves);
   const sessions = await syncCollection(userId, 'sessions', bundle.sessions, deletions.sessions);
-  await setDoc(doc(nativeDb, 'users', userId, 'settings', 'preferences'), bundle.preferences);
+  await setDoc(doc(nativeDb, 'users', userId, 'settings', 'preferences'), dropUndefined(bundle.preferences));
   await setDoc(doc(nativeDb, 'users', userId, 'sync', 'metadata'), { updatedAt: Date.now(), books, quotes, shelves, sessions });
   return { ok: true, count: books + quotes + shelves + sessions };
 }
