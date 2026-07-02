@@ -37,7 +37,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   // needs the same fallback. The guarded signInWithGoogle below still refuses
   // to prompt until the real client ids are present.
   const placeholderClientId = 'unconfigured.apps.googleusercontent.com';
-  const [request, , promptAsync] = Google.useAuthRequest({
+  const [request, response, promptAsync] = Google.useAuthRequest({
     webClientId: webClientId || placeholderClientId,
     androidClientId: androidClientId || placeholderClientId,
     iosClientId: iosClientId || placeholderClientId,
@@ -46,6 +46,19 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => listenToFirebaseUser(setUser), []);
 
+  // No Android/iOS o Google devolve um `code`, e o expo-auth-session troca por
+  // tokens em segundo plano — o id_token só aparece aqui, na resposta do hook,
+  // nunca no retorno imediato do promptAsync. Este efeito é o caminho único de
+  // conclusão do login nas duas plataformas (na web a resposta já vem pronta).
+  useEffect(() => {
+    if (response?.type !== 'success') return;
+    const idToken = response.params?.id_token ?? response.authentication?.idToken;
+    if (!idToken) return;
+    signInFirebaseWithGoogleIdToken(idToken)
+      .then((loggedUser) => setUser(loggedUser))
+      .catch(() => {});
+  }, [response]);
+
   async function signInWithGoogle() {
     if (!isNativeFirebaseConfigured) return 'Configure as variáveis EXPO_PUBLIC_FIREBASE_* para ativar o Firebase.';
     if (!hasGoogleClientId) return 'Configure EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (e o Android/iOS client id).';
@@ -53,11 +66,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     try {
       const result = await promptAsync();
       if (result.type !== 'success') return 'Login cancelado ou não concluído.';
-      const idToken = result.params?.id_token ?? result.authentication?.idToken;
-      if (!idToken) return 'O Google não retornou um id_token. Verifique os Client IDs e a SHA-1.';
-      const loggedUser = await signInFirebaseWithGoogleIdToken(idToken);
-      setUser(loggedUser);
-      return loggedUser?.email ? 'Login concluído: ' + loggedUser.email : 'Login concluído.';
+      return 'Login aprovado no Google. Concluindo a sessão...';
     } catch (error) {
       return error instanceof Error ? 'Falha no login Google: ' + error.message : 'Falha no login Google.';
     }
