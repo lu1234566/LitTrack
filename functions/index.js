@@ -9,7 +9,8 @@ admin.initializeApp();
 const GEMINI_KEY = defineSecret('GEMINI_KEY');
 
 // The model is chosen server-side so the client can't ask for an expensive one.
-const MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+// gemini-2.0-flash no longer has a free tier (quota limit 0); 2.5-flash does.
+const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
 // Proxy: app -> this function -> Gemini. The app sends the Gemini request body
 // (contents / systemInstruction / generationConfig); we add the key and forward.

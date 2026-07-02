@@ -14,7 +14,7 @@ import { nativeAuth } from '@/services/firebaseNative';
 
 const PROXY_URL = process.env.EXPO_PUBLIC_AI_PROXY_URL;
 const API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
-const MODEL = process.env.EXPO_PUBLIC_GEMINI_MODEL || 'gemini-2.0-flash';
+const MODEL = process.env.EXPO_PUBLIC_GEMINI_MODEL || 'gemini-2.5-flash';
 
 export const isAiConfigured = Boolean(PROXY_URL || API_KEY);
 
@@ -25,8 +25,13 @@ export type ChatTurn = { role: 'user' | 'assistant'; content: string };
 type GeminiBody = {
   contents: GeminiContent[];
   systemInstruction?: { parts: { text: string }[] };
-  generationConfig?: { maxOutputTokens?: number };
+  generationConfig?: { maxOutputTokens?: number; thinkingConfig?: { thinkingBudget: number } };
 };
+
+// Modelos 2.5 "pensam" antes de responder por padrão, e os tokens de
+// raciocínio saem do free tier e do maxOutputTokens (podendo truncar a
+// resposta). OCR e papo sobre livro não precisam disso — orçamento zero.
+const NO_THINKING = { thinkingBudget: 0 };
 
 // In proxy mode, attach the signed-in user's Firebase ID token so the backend
 // can verify the caller and reject strangers. No-op in direct mode.
@@ -68,7 +73,7 @@ export async function extractQuoteFromImage(base64: string, mimeType = 'image/jp
   const prompt = 'Esta é a foto da página de um livro. Transcreva fielmente apenas o trecho/citação principal em destaque (ou todo o texto legível, se não houver destaque). Responda só com o texto transcrito, sem aspas, sem comentários, sem tradução.';
   return callGemini({
     contents: [{ role: 'user', parts: [{ inlineData: { mimeType, data: base64 } }, { text: prompt }] }],
-    generationConfig: { maxOutputTokens: 1024 }
+    generationConfig: { maxOutputTokens: 1024, thinkingConfig: NO_THINKING }
   });
 }
 
@@ -86,5 +91,5 @@ export async function askAboutBook(book: Book, question: string, history: ChatTu
     ...history.map((t) => ({ role: (t.role === 'assistant' ? 'model' : 'user') as 'user' | 'model', parts: [{ text: t.content }] })),
     { role: 'user', parts: [{ text: question }] }
   ];
-  return callGemini({ contents, systemInstruction: { parts: [{ text: system }] }, generationConfig: { maxOutputTokens: 1024 } });
+  return callGemini({ contents, systemInstruction: { parts: [{ text: system }] }, generationConfig: { maxOutputTokens: 1024, thinkingConfig: NO_THINKING } });
 }
