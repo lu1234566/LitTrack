@@ -1,9 +1,11 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { useBooks } from '@/contexts/BookContext';
 import { BookStatus } from '@/types/book';
+import { lookupExternalBooks } from '@/services/externalBookSearch';
+import { pickImageAsDataUrl } from '@/services/webPlatformTools';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors } from '@/theme/tokens';
 
@@ -27,6 +29,39 @@ export default function EditBookScreen() {
   const [review, setReview] = useState(book?.review || '');
   const [contentWarnings, setContentWarnings] = useState(book?.contentWarnings || '');
   const [status, setStatus] = useState<BookStatus>(book?.status || 'reading');
+  const [coverMessage, setCoverMessage] = useState('');
+  const [searchingCover, setSearchingCover] = useState(false);
+
+  async function chooseLocalCover() {
+    const image = await pickImageAsDataUrl();
+    if (!image) {
+      setCoverMessage('Nenhuma imagem foi escolhida ou a permissão de galeria foi negada.');
+      return;
+    }
+    setCoverUrl(image);
+    setCoverMessage('Imagem local carregada como capa. Salve as alterações para aplicar.');
+  }
+
+  async function searchCover() {
+    const query = isbn.trim() ? 'isbn:' + isbn.trim() : (title + ' ' + author).trim();
+    if (!query) { setCoverMessage('Preencha título/autor ou ISBN para buscar a capa.'); return; }
+    setSearchingCover(true);
+    setCoverMessage('Buscando capa...');
+    try {
+      const results = await lookupExternalBooks(query);
+      const withCover = results.find((item) => item.coverUrl);
+      if (!withCover?.coverUrl) {
+        setCoverMessage('Nenhuma capa encontrada. Tente pelo ISBN ou use uma imagem da galeria.');
+        return;
+      }
+      setCoverUrl(withCover.coverUrl);
+      setCoverMessage('Capa encontrada: ' + withCover.title + '. Salve as alterações para aplicar.');
+    } catch {
+      setCoverMessage('Não foi possível buscar agora. Tente novamente ou use uma imagem da galeria.');
+    } finally {
+      setSearchingCover(false);
+    }
+  }
 
   if (!book) {
     return (
@@ -74,7 +109,16 @@ export default function EditBookScreen() {
         <TextInput style={[styles.input, styles.half]} placeholder="Ano" placeholderTextColor={appColors.textDim} value={year} onChangeText={setYear} keyboardType="numeric" />
       </View>
       <TextInput style={styles.input} placeholder="ISBN" placeholderTextColor={appColors.textDim} value={isbn} onChangeText={setIsbn} />
+
+      <Text style={styles.label}>Capa do livro</Text>
+      <View style={styles.coverPlaceholder}>{coverUrl ? <Image source={{ uri: coverUrl }} style={styles.coverImage} /> : <><ReadoraIcon name="camera" size={42} color={appColors.textDim} /><Text style={styles.coverText}>Sem capa</Text></>}</View>
       <TextInput style={styles.input} placeholder="URL da capa" placeholderTextColor={appColors.textDim} value={coverUrl} onChangeText={setCoverUrl} />
+      <View style={styles.row}>
+        <Pressable style={[styles.outlineButton, styles.half, styles.btnRow]} disabled={searchingCover} onPress={searchCover}><ReadoraIcon name="search" size={16} color={appColors.gold} /><Text style={styles.outlineText}>{searchingCover ? 'Buscando...' : 'Buscar capa'}</Text></Pressable>
+        <Pressable style={[styles.outlineButton, styles.half, styles.btnRow]} onPress={chooseLocalCover}><ReadoraIcon name="gallery" size={16} color={appColors.gold} /><Text style={styles.outlineText}>Da galeria</Text></Pressable>
+      </View>
+      {coverMessage ? <Text style={styles.coverMessage}>{coverMessage}</Text> : null}
+
       <TextInput style={styles.input} placeholder="Origem/fonte" placeholderTextColor={appColors.textDim} value={source} onChangeText={setSource} />
       <View style={styles.row}>
         <TextInput style={[styles.input, styles.half]} placeholder="Paginas" placeholderTextColor={appColors.textDim} value={totalPages} onChangeText={setTotalPages} keyboardType="numeric" />
@@ -112,6 +156,13 @@ const styles = StyleSheet.create({
   subtitle: { color: appColors.textMuted, fontSize: 15, lineHeight: 22 },
   row: { flexDirection: 'row', gap: 10 },
   half: { flex: 1 },
+  label: { color: appColors.textMuted, fontSize: 16, fontWeight: '800', marginTop: 4 },
+  coverPlaceholder: { width: 132, height: 190, alignSelf: 'center', borderColor: appColors.border, borderStyle: 'dashed', borderWidth: 1, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: appColors.surface, overflow: 'hidden' },
+  coverImage: { width: '100%', height: '100%' },
+  coverText: { color: appColors.textDim, textAlign: 'center', marginTop: 6 },
+  outlineButton: { borderColor: appColors.goldDeep, backgroundColor: 'rgba(255,153,0,0.12)', borderWidth: 1, borderRadius: 14, paddingVertical: 13, alignItems: 'center' },
+  outlineText: { color: appColors.gold, fontWeight: '900', fontSize: 13 },
+  coverMessage: { color: appColors.textMuted, fontSize: 13 },
   input: { backgroundColor: appColors.surface, borderColor: appColors.border, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, color: appColors.text, fontSize: 16 },
   textArea: { backgroundColor: appColors.surface, borderColor: appColors.border, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, color: appColors.text, fontSize: 16, minHeight: 90, textAlignVertical: 'top' },
   statusRow: { flexDirection: 'row', gap: 8 },
