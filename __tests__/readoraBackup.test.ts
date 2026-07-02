@@ -22,6 +22,27 @@ describe('readoraBackup', () => {
     expect(d.getMonth()).toBe(5); // June
   });
 
+  it('anchors finishedAt to the reading month instead of the import time', () => {
+    const legacy = JSON.stringify({
+      books: [{ titulo: 'Brisingr', autor: 'Paolini', anoLeitura: 2025, mesLeitura: 'Março', notaGeral: 8, status: 'lido' }]
+    });
+    const parsed = parseReadoraBackup(legacy);
+    const finishedAt = parsed.books[0].finishedAt;
+    expect(finishedAt).toBeDefined();
+    const d = new Date(finishedAt as number);
+    expect(d.getFullYear()).toBe(2025);
+    expect(d.getMonth()).toBe(2); // março — não o mês da importação
+  });
+
+  it('leaves finishedAt/startedAt undefined when the legacy book has no dates', () => {
+    const legacy = JSON.stringify({
+      books: [{ titulo: 'Verity', autor: 'Hoover', notaGeral: 7, status: 'lido' }]
+    });
+    const parsed = parseReadoraBackup(legacy);
+    expect(parsed.books[0].finishedAt).toBeUndefined();
+    expect(parsed.books[0].startedAt).toBeUndefined();
+  });
+
   it('throws on invalid content', () => {
     expect(() => parseReadoraBackup('{"foo":true}')).toThrow();
   });

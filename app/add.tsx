@@ -4,7 +4,7 @@ import { Alert, Image, Platform, Pressable, StyleSheet, Text, TextInput, useWind
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
-import { searchGoogleBooks } from '@/services/externalBookSearch';
+import { lookupExternalBooks } from '@/services/externalBookSearch';
 import { pickImageAsDataUrl, scanBarcodeFromImage } from '@/services/webPlatformTools';
 import { Book, BookStatus } from '@/types/book';
 import { ExternalBook } from '@/types/externalBook';
@@ -58,10 +58,13 @@ export default function AddBookScreen() {
     setSearching(true);
     setSearchMessage('Buscando dados do livro...');
     try {
-      const results = await searchGoogleBooks(mode === 'isbn' ? 'isbn:' + cleaned : cleaned);
+      // Busca estrita (sem o fallback de livros demo): preencher o formulário
+      // com um "Eragon" de exemplo quando a rede falha apaga o que o usuário
+      // digitou — melhor avisar e deixar preencher manualmente.
+      const results = await lookupExternalBooks(mode === 'isbn' ? 'isbn:' + cleaned : cleaned);
       const best = results[0];
       if (!best) {
-        setSearchMessage('Nenhum resultado encontrado.');
+        setSearchMessage('Nenhum resultado encontrado. Confira o título ou preencha manualmente.');
         return;
       }
       applyExternalBook(best);

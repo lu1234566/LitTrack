@@ -132,6 +132,14 @@ function normalizeLegacyBook(input: LegacyReadoraBook): Book | null {
   const reading = readingMonthDate(input);
   const createdAt = reading ?? dateValue(input.dataCadastro || input.addedAt || input.createdAt || Date.now());
   const updatedAt = reading ?? dateValue(input.finishedAt || input.startedAt || input.dataCadastro || input.createdAt || createdAt);
+  const status = normalizeStatus(stringValue(input.status));
+  // startedAt/finishedAt só quando o backup realmente traz a informação (ou,
+  // para livros lidos, o mês de leitura). Um fallback para "agora" faria todo
+  // livro importado aparecer como terminado no mês da importação — e o
+  // finishedAt tem prioridade sobre createdAt/updatedAt na Cápsula Mensal,
+  // Linha do Tempo e Retrospectiva.
+  const startedAt = optionalDateValue(input.startedAt);
+  const finishedAt = optionalDateValue(input.finishedAt) ?? (status === 'finished' ? reading ?? undefined : undefined);
   const reviewParts = [
     stringValue(input.resenha || input.review),
     stringValue(input.pontosFortes) ? 'Pontos fortes: ' + stringValue(input.pontosFortes) : '',
@@ -145,9 +153,9 @@ function normalizeLegacyBook(input: LegacyReadoraBook): Book | null {
     title,
     author,
     genre: stringValue(input.genero || input.genre) || 'A definir',
-    status: normalizeStatus(stringValue(input.status)),
+    status,
     rating: legacyRating(input),
-    totalPages: numberValue(input.totalPages) || numberValue(input.pageCount),
+    totalPages: numberValue(input.totalPages) || numberValue(input.pageCount) || numberValue(input.paginas) || numberValue(input.totalPaginas) || numberValue(input.numeroPaginas) || numberValue(input.pages),
     currentPage: numberValue(input.currentPage),
     review: reviewParts.join('\n\n'),
     favoriteQuote: stringValue(input.citacaoFavorita || input.favoriteQuote),
@@ -161,8 +169,8 @@ function normalizeLegacyBook(input: LegacyReadoraBook): Book | null {
     mood: moods.join(', '),
     contentWarnings: stringValue(input.contentWarnings),
     notes: legacyNotes(input),
-    startedAt: dateValue(input.startedAt),
-    finishedAt: dateValue(input.finishedAt),
+    startedAt,
+    finishedAt,
     createdAt,
     updatedAt
   };
@@ -222,6 +230,22 @@ function stringValue(value: unknown) {
 function numberValue(value: unknown) {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
+}
+
+/** Como dateValue, mas devolve undefined quando o campo não existe/não parseia
+ *  — para datas opcionais (startedAt/finishedAt) que NÃO podem cair em "agora". */
+function optionalDateValue(value: unknown): number | undefined {
+  if (value === undefined || value === null || value === '') return undefined;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : undefined;
+  if (typeof value === 'string') {
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+  if (typeof value === 'object') {
+    const maybeTimestamp = value as { seconds?: number; nanoseconds?: number };
+    if (typeof maybeTimestamp.seconds === 'number') return maybeTimestamp.seconds * 1000 + Math.floor((maybeTimestamp.nanoseconds || 0) / 1000000);
+  }
+  return undefined;
 }
 
 function dateValue(value: unknown) {

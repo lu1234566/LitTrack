@@ -10,7 +10,7 @@ function pickIsbn(industryIdentifiers?: Array<{ type: string; identifier: string
   return industryIdentifiers.find((item) => item.type === 'ISBN_13')?.identifier || industryIdentifiers[0]?.identifier;
 }
 
-async function fetchWithTimeout(url: string, timeoutMs = 2500) {
+async function fetchWithTimeout(url: string, timeoutMs = 7000) {
   return Promise.race([
     fetch(url),
     new Promise<Response>((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs))
@@ -74,7 +74,7 @@ export async function lookupExternalBooks(query: string): Promise<ExternalBook[]
 
   try {
     const url = 'https://www.googleapis.com/books/v1/volumes?q=' + encodeURIComponent(cleaned) + '&maxResults=12';
-    const response = await fetchWithTimeout(url, 2200);
+    const response = await fetchWithTimeout(url, 7000);
     if (response.ok) {
       const data = await response.json();
       const items = Array.isArray(data.items) ? data.items : [];
@@ -101,7 +101,7 @@ export async function lookupExternalBooks(query: string): Promise<ExternalBook[]
 
   try {
     const url = 'https://openlibrary.org/search.json?q=' + encodeURIComponent(cleaned) + '&limit=12';
-    const response = await fetchWithTimeout(url, 2200);
+    const response = await fetchWithTimeout(url, 7000);
     if (response.ok) {
       const data = await response.json();
       const docs = Array.isArray(data.docs) ? data.docs : [];

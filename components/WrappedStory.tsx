@@ -52,7 +52,9 @@ function CountUp({ value, active, style }: { value: number; active: boolean; sty
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [active, value]);
-  return <Text style={style}>{n.toLocaleString('pt-BR')}</Text>;
+  // Números grandes (ex: 8.300 páginas) encolhem para caber numa linha em vez
+  // de quebrar no meio do algarismo.
+  return <Text style={style} numberOfLines={1} adjustsFontSizeToFit>{n.toLocaleString('pt-BR')}</Text>;
 }
 
 function Stars({ rating, size = 16 }: { rating: number; size?: number }) {
@@ -221,7 +223,7 @@ export function WrappedStory({ books, year, onClose }: { books: Book[]; year: nu
               </View>
               <Text style={styles.bestTitle} numberOfLines={2}>{data.longestBook.title}</Text>
               <Text style={styles.lead}>{data.longestBook.pageCount.toLocaleString('pt-BR')} páginas · {data.longestBook.author}</Text>
-              <Text style={styles.synopsis} numberOfLines={7}>{data.longestBook.description ? '“' + data.longestBook.description + '”' : 'Sem sinopse cadastrada — use “Completar dados” para buscá-la automaticamente.'}</Text>
+              <Text style={styles.synopsis} numberOfLines={6}>{data.longestBook.description ? '“' + data.longestBook.description + '”' : 'Sem sinopse cadastrada — use “Completar dados” para buscá-la automaticamente.'}</Text>
             </>
           ) : <Text style={styles.lead}>Sem livros com páginas registradas em {year}.</Text>}
         </View>
@@ -424,7 +426,9 @@ const styles = StyleSheet.create({
   progressFill: { height: '100%', backgroundColor: '#fff' },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 22, paddingTop: 14 },
   brand: { ...TS, color: '#fff', fontFamily: appFonts.display, fontStyle: 'italic', fontWeight: '900', fontSize: 22 },
-  slide: { flex: 1, paddingHorizontal: 30, justifyContent: 'center' },
+  // paddingBottom reserva a faixa dos botões "Compartilhar slide" (posicionados
+  // em absolute, bottom 38) para o conteúdo centralizado nunca ficar por baixo.
+  slide: { flex: 1, paddingHorizontal: 30, paddingBottom: 118, justifyContent: 'center' },
   center: { alignItems: 'center', justifyContent: 'center', gap: 14 },
   kicker: { ...TS, color: 'rgba(255,255,255,0.9)', fontWeight: '900', letterSpacing: 4, fontSize: 14, textTransform: 'uppercase', textAlign: 'center' },
   bigYear: { ...TS, color: '#fff', fontFamily: appFonts.display, fontStyle: 'italic', fontWeight: '900', fontSize: 110, lineHeight: 116, textShadowRadius: 18 },
