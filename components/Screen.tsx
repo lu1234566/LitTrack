@@ -134,9 +134,9 @@ function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <View style={styles.brandRow}>
       <View style={[styles.logoMark, compact && styles.logoMarkSmall]}><ReadoraIcon name="brand" size={compact ? 22 : 24} color={appColors.gold} /></View>
-      <View>
-        <Text style={[styles.brandName, compact && styles.brandNameSmall]}>Readora</Text>
-        <Text style={[styles.brandSub, compact && styles.brandSubSmall]}>DIÁRIO LITERÁRIO</Text>
+      <View style={{ flexShrink: 1 }}>
+        <Text numberOfLines={1} style={[styles.brandName, compact && styles.brandNameSmall]}>Readora</Text>
+        <Text numberOfLines={1} style={[styles.brandSub, compact && styles.brandSubSmall]}>DIÁRIO LITERÁRIO</Text>
       </View>
     </View>
   );
@@ -180,11 +180,11 @@ function Sidebar({ accent, textScale, user }: { accent: string; textScale?: stri
 
 function MobileTopbar({ accent, onMenu, user, insetTop }: { accent: string; onMenu: () => void; user: SessionUser | null; insetTop: number }) {
   return (
-    <View style={[styles.mobileTopbar, { height: 88 + insetTop }]}>
+    <View style={[styles.mobileTopbar, { height: 88 + insetTop, paddingTop: insetTop }]}>
       <Pressable onPress={onMenu} style={styles.menuButton}><ReadoraIcon name="menu" size={28} color={appColors.textMuted} /></Pressable>
-      <Brand compact />
+      <View style={styles.topbarBrand}><Brand compact /></View>
       <Link href="/account" asChild>
-        <Pressable hitSlop={8}>
+        <Pressable hitSlop={8} style={styles.topbarAvatar}>
           <UserAvatar uri={user?.photoURL} style={[styles.mobileAvatar, { borderColor: accent }]} iconSize={22} />
         </Pressable>
       </Link>
@@ -285,7 +285,11 @@ const styles = StyleSheet.create({
   userTextBox: { flex: 1 },
   userName: { color: appColors.text, fontWeight: '900' },
   userEmail: { color: appColors.textDim, fontSize: 12, marginTop: 2 },
-  mobileTopbar: { position: 'absolute', top: 0, left: 0, right: 0, height: 88, zIndex: 10, backgroundColor: appColors.sidebar, borderBottomColor: appColors.border, borderBottomWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 22 },
+  mobileTopbar: { position: 'absolute', top: 0, left: 0, right: 0, height: 88, zIndex: 10, backgroundColor: appColors.sidebar, borderBottomColor: appColors.border, borderBottomWidth: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
+  // Marca no centro absorve o espaço livre e ENCOLHE (overflow hidden) em vez de
+  // empurrar o avatar para fora da borda direita em telas estreitas.
+  topbarBrand: { flex: 1, alignItems: 'center', overflow: 'hidden', paddingHorizontal: 6 },
+  topbarAvatar: { width: 44, alignItems: 'flex-end', justifyContent: 'center' },
   menuButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   closeButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   drawerOverlay: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, zIndex: 50, flexDirection: 'row' },
