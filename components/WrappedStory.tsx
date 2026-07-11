@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Image, Modal, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
-import * as MediaLibrary from 'expo-media-library';
 import { Book } from '@/types/book';
 import { buildWrapped } from '@/services/wrapped';
 import { WrappedBackground } from '@/components/WrappedBackground';
@@ -242,7 +241,6 @@ export function WrappedStory({ books, year, onClose }: { books: Book[]; year: nu
             <Recap label="VIBE" value={data.vibe} />
           </View>
           <Pressable style={styles.shareBtn} onPress={handleShare}><ReadoraIcon name="share" size={17} color="#0b132b" /><Text style={styles.shareText}>Compartilhar retrospectiva</Text></Pressable>
-          {Platform.OS !== 'web' ? <Pressable style={styles.saveBtn} onPress={handleSave}><Text style={styles.saveText}>Salvar na galeria</Text></Pressable> : null}
           {message ? <Text style={styles.msg}>{message}</Text> : null}
         </View>
       )
@@ -302,16 +300,6 @@ export function WrappedStory({ books, year, onClose }: { books: Book[]; year: nu
     } catch { haptic('error'); setMessage('Não foi possível gerar a imagem.'); }
   }
 
-  async function handleSave() {
-    if (Platform.OS === 'web') return;
-    try {
-      const permission = await MediaLibrary.requestPermissionsAsync();
-      if (!permission.granted) { setMessage('Permita o acesso à galeria.'); return; }
-      const uri = await capture();
-      if (uri) { await MediaLibrary.saveToLibraryAsync(uri); haptic('success'); setMessage('Retrospectiva salva na galeria.'); }
-    } catch { haptic('error'); setMessage('Não foi possível salvar.'); }
-  }
-
   // Captura o slide visível (com a marca Readora e a barra de progresso), sem
   // os controles de UI — para que cada slide possa virar um story.
   async function captureSlide(): Promise<string | null> {
@@ -332,16 +320,6 @@ export function WrappedStory({ books, year, onClose }: { books: Book[]; year: nu
       if (uri && (await Sharing.isAvailableAsync())) { haptic('success'); await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Meu slide Readora Wrapped' }); }
       else setMessage('Compartilhamento não disponível.');
     } catch { haptic('error'); setMessage('Não foi possível gerar a imagem.'); }
-  }
-
-  async function saveSlide() {
-    if (Platform.OS === 'web') return;
-    try {
-      const permission = await MediaLibrary.requestPermissionsAsync();
-      if (!permission.granted) { setMessage('Permita o acesso à galeria.'); return; }
-      const uri = await captureSlide();
-      if (uri) { await MediaLibrary.saveToLibraryAsync(uri); haptic('success'); setMessage('Slide salvo na galeria.'); }
-    } catch { haptic('error'); setMessage('Não foi possível salvar.'); }
   }
 
   const slide = slides[index];
@@ -389,11 +367,6 @@ export function WrappedStory({ books, year, onClose }: { books: Book[]; year: nu
                 <ReadoraIcon name="share" size={16} color="#0b132b" />
                 <Text style={styles.actionText}>Compartilhar slide</Text>
               </Pressable>
-              {Platform.OS !== 'web' ? (
-                <Pressable style={styles.actionIcon} onPress={saveSlide} hitSlop={8}>
-                  <ReadoraIcon name="download" size={20} color="#fff" />
-                </Pressable>
-              ) : null}
             </View>
           </View>
         ) : null}

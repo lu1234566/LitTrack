@@ -64,8 +64,11 @@ export default function QuotesScreen() {
 
   async function captureQuotePhoto(fromCamera: boolean) {
     try {
-      const perm = fromCamera ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) { setOcrMessage('Permita o acesso à ' + (fromCamera ? 'câmera' : 'galeria') + '.'); return; }
+      // Câmera ainda exige permissão; a galeria usa o Photo Picker (sem permissão).
+      if (fromCamera) {
+        const perm = await ImagePicker.requestCameraPermissionsAsync();
+        if (!perm.granted) { setOcrMessage('Permita o acesso à câmera.'); return; }
+      }
       const result = fromCamera
         ? await ImagePicker.launchCameraAsync({ base64: true, quality: 0.6 })
         : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, base64: true, quality: 0.6 });

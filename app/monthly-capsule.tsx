@@ -2,7 +2,6 @@ import { useMemo, useRef, useState } from 'react';
 import { Image, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
-import * as MediaLibrary from 'expo-media-library';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { FeedCapsuleArt, FeedCapsuleBook } from '@/components/FeedCapsuleArt';
@@ -174,34 +173,6 @@ export default function MonthlyCapsuleScreen() {
     }
   }
 
-  // Save the rendered capsule straight to the device gallery.
-  async function handleSaveToGallery() {
-    if (Platform.OS === 'web') {
-      downloadOnWeb();
-      return;
-    }
-    try {
-      if (!shotRef.current) {
-        setMessage('A imagem da cápsula ainda está sendo preparada. Tente novamente em instantes.');
-        return;
-      }
-      const permission = await MediaLibrary.requestPermissionsAsync();
-      if (!permission.granted) {
-        haptic('warning');
-        setMessage('Permita o acesso à galeria para salvar a imagem.');
-        return;
-      }
-      await preloadCovers();
-      const uri = await captureRef(shotRef, { format: 'png', quality: 1, result: 'tmpfile' });
-      await MediaLibrary.saveToLibraryAsync(uri);
-      haptic('success');
-      setMessage('Cápsula salva na galeria.');
-    } catch {
-      haptic('error');
-      setMessage('Não foi possível salvar na galeria. Tente novamente.');
-    }
-  }
-
   return (
     <Screen>
       <View style={[styles.headerRow, mobile && styles.stack]}>
@@ -274,9 +245,6 @@ export default function MonthlyCapsuleScreen() {
             ) : null}
 
             <Pressable style={[styles.downloadButton, styles.btnRow]} onPress={handleShareImage}><ReadoraIcon name="share" size={17} color={appColors.background} /><Text style={styles.downloadText}>{Platform.OS === 'web' ? 'Baixar Cápsula PNG' : 'Compartilhar Cápsula'}</Text></Pressable>
-            {Platform.OS !== 'web' ? (
-              <Pressable style={[styles.saveButton, styles.btnRow]} onPress={handleSaveToGallery}><ReadoraIcon name="download" size={17} color={appColors.gold} /><Text style={styles.saveText}>Salvar na galeria</Text></Pressable>
-            ) : null}
           </View>
         </View>
       ) : (
@@ -290,9 +258,6 @@ export default function MonthlyCapsuleScreen() {
             <Text selectable style={styles.caption}>{caption}</Text>
           </Card>
           <Pressable style={[styles.downloadButton, styles.btnRow]} onPress={handleShareImage}><ReadoraIcon name="share" size={17} color={appColors.background} /><Text style={styles.downloadText}>{Platform.OS === 'web' ? 'Baixar imagem para o Instagram' : 'Compartilhar imagem da cápsula'}</Text></Pressable>
-          {Platform.OS !== 'web' ? (
-            <Pressable style={[styles.saveButton, styles.btnRow]} onPress={handleSaveToGallery}><ReadoraIcon name="download" size={17} color={appColors.gold} /><Text style={styles.saveText}>Salvar na galeria</Text></Pressable>
-          ) : null}
         </>
       )}
 

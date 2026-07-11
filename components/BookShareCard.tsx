@@ -2,7 +2,6 @@ import { forwardRef, useRef, useState } from 'react';
 import { Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
-import * as MediaLibrary from 'expo-media-library';
 import { Book } from '@/types/book';
 import { statusLabel } from '@/services/bookStorage';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
@@ -116,16 +115,6 @@ export function BookShareCard({ book, onClose }: { book: Book; onClose: () => vo
     } catch { haptic('error'); setMessage('Não foi possível gerar a imagem.'); }
   }
 
-  async function save() {
-    if (Platform.OS === 'web') return;
-    try {
-      const permission = await MediaLibrary.requestPermissionsAsync();
-      if (!permission.granted) { setMessage('Permita o acesso à galeria.'); return; }
-      const uri = await capture();
-      if (uri) { await MediaLibrary.saveToLibraryAsync(uri); haptic('success'); setMessage('Card salvo na galeria.'); }
-    } catch { haptic('error'); setMessage('Não foi possível salvar.'); }
-  }
-
   return (
     <Modal visible animationType="slide" onRequestClose={onClose}>
       <View style={styles.root}>
@@ -139,7 +128,6 @@ export function BookShareCard({ book, onClose }: { book: Book; onClose: () => vo
           </View>
           {message ? <Text style={styles.msg}>{message}</Text> : null}
           <Pressable style={styles.shareBtn} onPress={share}><ReadoraIcon name="share" size={18} color={appColors.background} /><Text style={styles.shareText}>Compartilhar</Text></Pressable>
-          {Platform.OS !== 'web' ? <Pressable style={styles.saveBtn} onPress={save}><ReadoraIcon name="download" size={18} color={appColors.gold} /><Text style={styles.saveText}>Salvar na galeria</Text></Pressable> : null}
         </ScrollView>
 
         {/* off-screen full-resolution capture source */}

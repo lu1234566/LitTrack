@@ -18,8 +18,7 @@ export type CapsulePngData = {
 
 export async function pickImageAsDataUrl(): Promise<string | null> {
   if (Platform.OS !== 'web') {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) return null;
+    // Photo Picker do Android/iOS: abre direto, sem exigir permissão de mídia.
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, quality: 0.85 });
     if (result.canceled) return null;
     return result.assets?.[0]?.uri || null;

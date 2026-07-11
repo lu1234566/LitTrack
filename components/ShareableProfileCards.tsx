@@ -2,7 +2,6 @@ import { forwardRef, useMemo, useRef, useState } from 'react';
 import { Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
-import * as MediaLibrary from 'expo-media-library';
 import { Book } from '@/types/book';
 import { analyzeLiteraryProfile, NativeLiteraryProfile } from '@/services/literaryProfile';
 import { ReadoraIcon, ReadoraIconName } from '@/components/ReadoraIcon';
@@ -294,22 +293,6 @@ export function ShareableProfileCards({ books, onClose }: { books: Book[]; onClo
     }
   }
 
-  async function handleSave() {
-    if (Platform.OS === 'web') { setMessage('Salvar imagem disponível no app.'); return; }
-    setBusy(true);
-    try {
-      const permission = await MediaLibrary.requestPermissionsAsync();
-      if (!permission.granted) { setMessage('Permita o acesso à galeria.'); setBusy(false); return; }
-      const uri = await capture();
-      if (uri) { await MediaLibrary.saveToLibraryAsync(uri); haptic('success'); setMessage('Cartão salvo na galeria.'); }
-    } catch {
-      haptic('error');
-      setMessage('Não foi possível salvar.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
   return (
     <Modal visible animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
@@ -341,11 +324,6 @@ export function ShareableProfileCards({ books, onClose }: { books: Book[]; onClo
             <Pressable style={[styles.primary, busy && styles.disabled]} onPress={handleShare} disabled={busy}>
               <ReadoraIcon name="share" size={17} color={appColors.background} /><Text style={styles.primaryText}>{busy ? 'Gerando...' : 'Compartilhar'}</Text>
             </Pressable>
-            {Platform.OS !== 'web' ? (
-              <Pressable style={[styles.secondary, busy && styles.disabled]} onPress={handleSave} disabled={busy}>
-                <ReadoraIcon name="download" size={17} color={appColors.gold} /><Text style={styles.secondaryText}>Salvar na galeria</Text>
-              </Pressable>
-            ) : null}
             {message ? <Text style={styles.message}>{message}</Text> : null}
           </ScrollView>
         </View>
