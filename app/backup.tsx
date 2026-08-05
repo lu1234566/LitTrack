@@ -306,7 +306,7 @@ export default function BackupScreen() {
 
       <Card>
         <View style={styles.titleRow}><ReadoraIcon name="sparkle" size={18} color={appColors.gold} /><Text style={styles.cardTitle}>Completar dados faltantes</Text></View>
-        <Text style={styles.body}>Busca automaticamente páginas, capa, gênero e sinopse que faltam nos seus livros (via Google Books, Open Library e Mercado Editorial) — sem sobrescrever o que você já preencheu.</Text>
+        <Text style={styles.body}>Busca automaticamente páginas, capa, gênero e sinopse que faltam nos seus livros (via Google Books, Open Library, Mercado Editorial e Apple Books) — sem sobrescrever o que você já preencheu.</Text>
         <Text style={styles.body}>Livros incompletos no momento: <Text style={styles.white}>{missingCount}</Text></Text>
 
         {incompleteList.length ? (

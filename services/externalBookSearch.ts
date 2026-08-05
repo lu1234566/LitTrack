@@ -232,6 +232,102 @@ async function fromMercadoEditorial(isbn: string): Promise<ExternalBook[]> {
   }
 }
 
+/** A sinopse da Apple vem em HTML; o app mostra texto puro. */
+function stripHtml(value: string) {
+  return String(value || '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+/**
+ * Apple Books (iTunes Search API) — gratuita e sem chave. Vale muito porque
+ * funciona por TÍTULO (não exige ISBN) e, com country=BR, devolve a sinopse em
+ * português da loja brasileira. Não traz número de páginas.
+ */
+async function fromAppleBooks(query: string): Promise<ExternalBook[]> {
+  if (!query) return [];
+  try {
+    const url = 'https://itunes.apple.com/search?media=ebook&country=BR&limit=5&term=' + encodeURIComponent(query);
+    const response = await fetchWithTimeout(url, 7000);
+    if (!response.ok) return [];
+    const data = await response.json();
+    const rows = Array.isArray(data?.results) ? data.results : [];
+    return rows.map((row: any): ExternalBook => ({
+      id: 'apple-' + (row?.trackId || row?.trackName || ''),
+      title: row?.trackName || '',
+      author: row?.artistName || '',
+      genre: Array.isArray(row?.genres) ? (row.genres[0] || 'A definir') : 'A definir',
+      publisher: '',
+      publishedDate: String(row?.releaseDate || '').slice(0, 4),
+      totalPages: 0,
+      isbn: undefined,
+      // artworkUrl100 é 100px; pedindo 600x600 vem uma capa utilizável.
+      coverUrl: normalizeCover(String(row?.artworkUrl100 || '').replace(/100x100bb/, '600x600bb')),
+      description: stripHtml(row?.description || ''),
+      source: 'apple-books'
+    })).filter((b: ExternalBook) => b.title);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Ficha da OBRA na Open Library (/works/OL...W.json). É onde mora a sinopse —
+ * o endpoint de busca não a devolve.
+ */
+async function fromOpenLibraryWork(workKey: string): Promise<ExternalBook[]> {
+  if (!workKey || !workKey.startsWith('/works/')) return [];
+  try {
+    const response = await fetchWithTimeout('https://openlibrary.org' + workKey + '.json', 7000);
+    if (!response.ok) return [];
+    const data = await response.json();
+    // `description` vem como string ou como { type, value }.
+    const description = typeof data?.description === 'string' ? data.description : (data?.description?.value || '');
+    const subjects = Array.isArray(data?.subjects) ? data.subjects : [];
+    if (!description && !subjects.length) return [];
+    return [{
+      id: 'ol-work-' + workKey,
+      title: data?.title || '',
+      author: '',
+      genre: subjects[0] || 'A definir',
+      publisher: '',
+      publishedDate: '',
+      totalPages: 0,
+      isbn: undefined,
+      coverUrl: undefined,
+      description: String(description),
+      source: 'open-library'
+    }];
+  } catch {
+    return [];
+  }
+}
+
+function normalizeTitle(value: string) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '') // tira acentos
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+/**
+ * Guarda-corpo para fontes casadas por TEXTO (Apple Books): só aceita o
+ * complemento se o título bater, senão a sinopse de outro livro entraria na
+ * ficha. Fontes casadas por ISBN não precisam disso — já são 1:1.
+ */
+function looksLikeSameBook(a: string, b: string) {
+  const x = normalizeTitle(a);
+  const y = normalizeTitle(b);
+  if (!x || !y) return false;
+  return x === y || x.startsWith(y) || y.startsWith(x);
+}
+
 /** Escolhe o valor "mais completo" entre o atual e o candidato. */
 function betterText(current: string | undefined, candidate: string | undefined) {
   const a = (current || '').trim();
@@ -296,24 +392,26 @@ export async function lookupExternalBooks(query: string): Promise<ExternalBook[]
   const [first, ...rest] = primaryList;
   const complements = [...olIsbn, ...mercado, ...olSearch.slice(0, 1)];
 
-  // 2ª etapa: numa busca por TEXTO, as fontes que dependem de ISBN (Mercado
-  // Editorial e Open Library por ISBN) não puderam ser consultadas na 1ª etapa.
-  // Agora que o ISBN do livro escolhido é conhecido, consultamos com ele — é o
-  // que traz sinopse em PT e a contagem de páginas da edição.
-  const matchIsbn = cleanIsbn(first.isbn);
-  const needsMore = !first.description || !(first.totalPages || 0);
-  if (!isbnQuery && matchIsbn && needsMore) {
-    const [olByMatch, meByMatch] = await Promise.all([
-      fromOpenLibraryIsbn(matchIsbn),
-      fromMercadoEditorial(matchIsbn)
-    ]);
-    complements.push(...olByMatch, ...meByMatch);
-  }
+  // 2ª etapa: busca dirigida ao livro já identificado. Roda quando ainda falta
+  // algo, consultando TODAS as fontes que ajudam nesse caso — inclusive as que
+  // não puderam entrar na 1ª etapa por dependerem do ISBN, que só agora é
+  // conhecido. Tudo em paralelo: o custo é uma rodada de rede, não uma por fonte.
+  const stillIncomplete = () => !first.description || !(first.totalPages || 0) || !first.coverUrl;
+  if (stillIncomplete()) {
+    const matchIsbn = cleanIsbn(first.isbn);
+    const titleQuery = [first.title, first.author].filter((v) => v && v !== 'Autor desconhecido').join(' ').trim();
+    const workKey = first.source === 'open-library' && first.id.startsWith('/works/') ? first.id : '';
 
-  // A lista do Google Books vem sem sinopse; o volume detalhado tem a ficha
-  // completa. Só é buscado quando ainda falta algo.
-  if (first.source === 'google-books' && (!first.description || !(first.totalPages || 0))) {
-    complements.push(...(await fromGoogleVolume(first.id)));
+    const [olByMatch, meByMatch, apple, olWork, googleDetail] = await Promise.all([
+      !isbnQuery && matchIsbn ? fromOpenLibraryIsbn(matchIsbn) : Promise.resolve([]),
+      !isbnQuery && matchIsbn ? fromMercadoEditorial(matchIsbn) : Promise.resolve([]),
+      fromAppleBooks(titleQuery),
+      fromOpenLibraryWork(workKey),
+      first.source === 'google-books' ? fromGoogleVolume(first.id) : Promise.resolve([])
+    ]);
+
+    const appleMatch = apple.filter((candidate) => looksLikeSameBook(candidate.title, first.title)).slice(0, 1);
+    complements.push(...olByMatch, ...meByMatch, ...olWork, ...googleDetail, ...appleMatch);
   }
 
   return [mergeBooks(first, complements.filter((c) => c !== first)), ...rest];

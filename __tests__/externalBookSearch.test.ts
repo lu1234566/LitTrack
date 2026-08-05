@@ -91,6 +91,47 @@ describe('lookupExternalBooks', () => {
     expect(book.totalPages).toBe(304);
   });
 
+  it('usa a Apple Books para a sinopse quando o titulo confere (e limpa o HTML)', async () => {
+    global.fetch = mockFetch({
+      'googleapis.com/books/v1/volumes?q': googleNoPages,
+      'itunes.apple.com': {
+        results: [{
+          trackId: 1, trackName: 'A Inquilina', artistName: 'Freida McFadden',
+          description: '<p>Sinopse <b>vinda</b> da Apple.</p>', artworkUrl100: 'http://x/100x100bb.jpg'
+        }]
+      }
+    }) as never;
+
+    const [book] = await lookupExternalBooks('A Inquilina Freida McFadden');
+    expect(book.description).toBe('Sinopse vinda da Apple.');
+    expect(book.description).not.toContain('<');
+  });
+
+  it('IGNORA resultado da Apple quando o titulo e de outro livro', async () => {
+    global.fetch = mockFetch({
+      'googleapis.com/books/v1/volumes?q': googleNoPages,
+      'itunes.apple.com': {
+        results: [{ trackId: 9, trackName: 'Outro Livro Totalmente Diferente', description: '<p>Sinopse errada.</p>' }]
+      }
+    }) as never;
+
+    const [book] = await lookupExternalBooks('A Inquilina Freida McFadden');
+    expect(book.description || '').not.toContain('errada');
+  });
+
+  it('pega a sinopse da obra na Open Library quando o Google nao acha nada', async () => {
+    global.fetch = mockFetch({
+      'openlibrary.org/search.json': {
+        docs: [{ key: '/works/OL123W', title: 'A Inquilina', author_name: ['Freida McFadden'], number_of_pages_median: 304 }]
+      },
+      'openlibrary.org/works/OL123W.json': { description: { value: 'Sinopse da obra na Open Library.' }, subjects: ['Suspense'] }
+    }) as never;
+
+    const [book] = await lookupExternalBooks('A Inquilina Freida McFadden');
+    expect(book.description).toContain('Open Library');
+    expect(book.totalPages).toBe(304);
+  });
+
   it('nao quebra quando todos os provedores falham', async () => {
     global.fetch = jest.fn(() => Promise.reject(new Error('offline'))) as never;
     await expect(lookupExternalBooks('isbn:9788595084742')).resolves.toEqual([]);

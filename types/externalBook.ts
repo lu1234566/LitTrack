@@ -9,5 +9,5 @@ export interface ExternalBook {
   isbn?: string;
   coverUrl?: string;
   description?: string;
-  source: 'google-books' | 'open-library' | 'mercado-editorial';
+  source: 'google-books' | 'open-library' | 'mercado-editorial' | 'apple-books';
 }
