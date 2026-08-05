@@ -9,7 +9,8 @@ export function bookNeedsEnrichment(book: Book): boolean {
   const noPages = !book.totalPages || book.totalPages <= 0;
   const noCover = !book.coverUrl;
   const noGenre = !book.genre || UNSET_GENRES.includes(book.genre.trim().toLowerCase());
-  return noPages || noCover || noGenre;
+  const noDescription = !book.description || !book.description.trim();
+  return noPages || noCover || noGenre || noDescription;
 }
 
 /** O candidato traz algo que este livro ainda não tem? */

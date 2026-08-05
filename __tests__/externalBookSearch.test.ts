@@ -63,6 +63,34 @@ describe('lookupExternalBooks', () => {
     expect(book.publisher).toBe('Editora BR');
   });
 
+  it('busca por TITULO tambem consulta as fontes por ISBN usando o ISBN do resultado', async () => {
+    // A busca textual acha o livro (com ISBN) mas sem paginas/sinopse. A 2a etapa
+    // precisa usar esse ISBN para consultar Mercado Editorial e Open Library.
+    global.fetch = mockFetch({
+      'googleapis.com/books/v1/volumes?q': googleNoPages,
+      'openlibrary.org/api/books': openLibraryIsbn,
+      'mercadoeditorial.org': mercadoEditorial
+    }) as never;
+
+    const [book] = await lookupExternalBooks('A Inquilina Freida McFadden');
+    expect(book.totalPages).toBe(304);
+    expect(book.description).toContain('portugues');
+  });
+
+  it('completa a sinopse pelo volume detalhado do Google Books', async () => {
+    global.fetch = mockFetch({
+      'googleapis.com/books/v1/volumes?q': googleNoPages,
+      'googleapis.com/books/v1/volumes/g1': {
+        id: 'g1',
+        volumeInfo: { title: 'A Inquilina', pageCount: 304, description: 'Sinopse completa do volume detalhado.' }
+      }
+    }) as never;
+
+    const [book] = await lookupExternalBooks('A Inquilina Freida McFadden');
+    expect(book.description).toContain('volume detalhado');
+    expect(book.totalPages).toBe(304);
+  });
+
   it('nao quebra quando todos os provedores falham', async () => {
     global.fetch = jest.fn(() => Promise.reject(new Error('offline'))) as never;
     await expect(lookupExternalBooks('isbn:9788595084742')).resolves.toEqual([]);

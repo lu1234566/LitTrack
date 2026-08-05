@@ -105,6 +105,38 @@ async function fromGoogleBooks(query: string): Promise<ExternalBook[]> {
   }
 }
 
+/**
+ * Detalhe de um volume do Google Books. A busca em lista (`volumes?q=`) costuma
+ * vir sem `description` e às vezes sem `pageCount`; o endpoint do volume traz a
+ * ficha completa. Usado só para o resultado escolhido.
+ */
+async function fromGoogleVolume(volumeId: string): Promise<ExternalBook[]> {
+  if (!volumeId) return [];
+  try {
+    const response = await fetchWithTimeout('https://www.googleapis.com/books/v1/volumes/' + encodeURIComponent(volumeId), 7000);
+    if (!response.ok) return [];
+    const item = await response.json();
+    const info = item?.volumeInfo;
+    if (!info) return [];
+    const categories = Array.isArray(info.categories) ? info.categories : [];
+    return [{
+      id: String(item.id || volumeId),
+      title: info.title || '',
+      author: Array.isArray(info.authors) ? info.authors.join(', ') : '',
+      genre: categories[0] || 'A definir',
+      publisher: info.publisher || '',
+      publishedDate: info.publishedDate || '',
+      totalPages: Number(info.pageCount) || 0,
+      isbn: pickIsbn(info.industryIdentifiers),
+      coverUrl: normalizeCover(info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail),
+      description: info.description || '',
+      source: 'google-books'
+    }];
+  } catch {
+    return [];
+  }
+}
+
 async function fromOpenLibrarySearch(query: string): Promise<ExternalBook[]> {
   try {
     const url = 'https://openlibrary.org/search.json?q=' + encodeURIComponent(query) + '&limit=12';
@@ -262,8 +294,29 @@ export async function lookupExternalBooks(query: string): Promise<ExternalBook[]
   // temos certeza de ser o mesmo livro (busca por ISBN é 1:1; por texto, é o
   // melhor palpite do provedor).
   const [first, ...rest] = primaryList;
-  const complements = [...olIsbn, ...mercado, ...olSearch.slice(0, 1)].filter((c) => c.id !== first.id);
-  return [mergeBooks(first, complements), ...rest];
+  const complements = [...olIsbn, ...mercado, ...olSearch.slice(0, 1)];
+
+  // 2ª etapa: numa busca por TEXTO, as fontes que dependem de ISBN (Mercado
+  // Editorial e Open Library por ISBN) não puderam ser consultadas na 1ª etapa.
+  // Agora que o ISBN do livro escolhido é conhecido, consultamos com ele — é o
+  // que traz sinopse em PT e a contagem de páginas da edição.
+  const matchIsbn = cleanIsbn(first.isbn);
+  const needsMore = !first.description || !(first.totalPages || 0);
+  if (!isbnQuery && matchIsbn && needsMore) {
+    const [olByMatch, meByMatch] = await Promise.all([
+      fromOpenLibraryIsbn(matchIsbn),
+      fromMercadoEditorial(matchIsbn)
+    ]);
+    complements.push(...olByMatch, ...meByMatch);
+  }
+
+  // A lista do Google Books vem sem sinopse; o volume detalhado tem a ficha
+  // completa. Só é buscado quando ainda falta algo.
+  if (first.source === 'google-books' && (!first.description || !(first.totalPages || 0))) {
+    complements.push(...(await fromGoogleVolume(first.id)));
+  }
+
+  return [mergeBooks(first, complements.filter((c) => c !== first)), ...rest];
 }
 
 export async function searchGoogleBooks(query: string): Promise<ExternalBook[]> {

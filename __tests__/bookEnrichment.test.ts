@@ -4,13 +4,16 @@ import { Book } from '@/types/book';
 function book(p: Partial<Book>): Book {
   return {
     id: '1', title: 'Dom Casmurro', author: 'Machado de Assis', genre: 'Ficção', status: 'finished',
-    totalPages: 200, coverUrl: 'http://x/cover.jpg', createdAt: 0, updatedAt: 0, ...p
+    totalPages: 200, coverUrl: 'http://x/cover.jpg', description: 'Sinopse.', createdAt: 0, updatedAt: 0, ...p
   } as Book;
 }
 
 describe('bookNeedsEnrichment', () => {
-  it('is false when pages, cover and genre are present', () => {
+  it('is false when pages, cover, genre and description are present', () => {
     expect(bookNeedsEnrichment(book({}))).toBe(false);
+  });
+  it('is true when the synopsis is missing', () => {
+    expect(bookNeedsEnrichment(book({ description: '' }))).toBe(true);
   });
   it('is true when pages are missing', () => {
     expect(bookNeedsEnrichment(book({ totalPages: 0 }))).toBe(true);
