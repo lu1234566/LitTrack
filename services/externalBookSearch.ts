@@ -10,6 +10,17 @@ function pickIsbn(industryIdentifiers?: Array<{ type: string; identifier: string
   return industryIdentifiers.find((item) => item.type === 'ISBN_13')?.identifier || industryIdentifiers[0]?.identifier;
 }
 
+/**
+ * Sem chave, o Google Books joga todas as requisições anônimas numa COTA
+ * COMPARTILHADA (consumer "project_number:624717413613") que estoura com o uso
+ * de terceiros — devolvendo 429 mesmo para livros comuns. Com a chave em
+ * EXPO_PUBLIC_GOOGLE_BOOKS_KEY o app passa a ter a própria cota.
+ */
+const GOOGLE_BOOKS_KEY = process.env.EXPO_PUBLIC_GOOGLE_BOOKS_KEY;
+function googleKeyParam() {
+  return GOOGLE_BOOKS_KEY ? '&key=' + GOOGLE_BOOKS_KEY : '';
+}
+
 async function fetchWithTimeout(url: string, timeoutMs = 7000) {
   return Promise.race([
     fetch(url),
@@ -78,7 +89,7 @@ function cleanIsbn(value?: string) {
 
 async function fromGoogleBooks(query: string): Promise<ExternalBook[]> {
   try {
-    const url = 'https://www.googleapis.com/books/v1/volumes?q=' + encodeURIComponent(query) + '&maxResults=12';
+    const url = 'https://www.googleapis.com/books/v1/volumes?q=' + encodeURIComponent(query) + '&maxResults=12' + googleKeyParam();
     const response = await fetchWithTimeout(url, 7000);
     if (!response.ok) return [];
     const data = await response.json();
@@ -113,7 +124,7 @@ async function fromGoogleBooks(query: string): Promise<ExternalBook[]> {
 async function fromGoogleVolume(volumeId: string): Promise<ExternalBook[]> {
   if (!volumeId) return [];
   try {
-    const response = await fetchWithTimeout('https://www.googleapis.com/books/v1/volumes/' + encodeURIComponent(volumeId), 7000);
+    const response = await fetchWithTimeout('https://www.googleapis.com/books/v1/volumes/' + encodeURIComponent(volumeId) + '?' + googleKeyParam().slice(1), 7000);
     if (!response.ok) return [];
     const item = await response.json();
     const info = item?.volumeInfo;

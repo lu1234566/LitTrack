@@ -307,6 +307,7 @@ export default function BackupScreen() {
       <Card>
         <View style={styles.titleRow}><ReadoraIcon name="sparkle" size={18} color={appColors.gold} /><Text style={styles.cardTitle}>Completar dados faltantes</Text></View>
         <Text style={styles.body}>Busca automaticamente páginas, capa, gênero e sinopse que faltam nos seus livros (via Google Books, Open Library, Mercado Editorial e Apple Books) — sem sobrescrever o que você já preencheu.</Text>
+        <Text style={styles.hintSmall}>Quando nenhum catálogo tem o dado, a IA do app preenche sinopse, gênero e páginas aproximadas. Por ser conteúdo gerado, confira antes de considerar exato.</Text>
         <Text style={styles.body}>Livros incompletos no momento: <Text style={styles.white}>{missingCount}</Text></Text>
 
         {incompleteList.length ? (
@@ -413,6 +414,7 @@ const styles = StyleSheet.create({
   ratingActive: { color: appColors.background, backgroundColor: appColors.gold, borderColor: appColors.gold, borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 7, overflow: 'hidden', fontWeight: '900' },
   gold: { color: appColors.gold },
   white: { color: appColors.text, fontWeight: '900' },
+  hintSmall: { color: appColors.textDim, fontSize: 12, lineHeight: 17, marginTop: 6 },
   missingBox: { backgroundColor: appColors.background, borderColor: appColors.border, borderWidth: 1, borderRadius: 14, padding: 12, marginTop: 10, gap: 9 },
   missingRow: { gap: 2 },
   missingTitle: { color: appColors.text, fontSize: 13, fontWeight: '800' },

@@ -93,3 +93,55 @@ export async function askAboutBook(book: Book, question: string, history: ChatTu
   ];
   return callGemini({ contents, systemInstruction: { parts: [{ text: system }] }, generationConfig: { maxOutputTokens: 1024, thinkingConfig: NO_THINKING } });
 }
+
+export type AiBookFacts = { description?: string; totalPages?: number; genre?: string };
+
+/**
+ * Último recurso quando nenhum catálogo tem os dados (ex.: Google Books com
+ * cota estourada, ou edição que não existe nas bases). O modelo conhece os
+ * livros mais comuns, então serve para preencher sinopse/gênero.
+ *
+ * IMPORTANTE: é conteúdo GERADO, não catálogo. O prompt exige `null` quando o
+ * modelo não tem certeza — melhor um campo vazio do que um número inventado —
+ * e quem chama deve deixar claro na interface que o dado veio da IA.
+ */
+export async function fetchBookFactsFromAi(title: string, author: string): Promise<AiBookFacts | null> {
+  if (!isAiConfigured || !title.trim()) return null;
+  const prompt = [
+    'Livro: "' + title + '"' + (author ? ' de ' + author : ''),
+    '',
+    'Responda APENAS com um JSON válido, sem markdown, no formato:',
+    '{"description": string|null, "totalPages": number|null, "genre": string|null}',
+    '',
+    '- description: sinopse em português do Brasil, 2 a 4 frases, sem spoilers do final.',
+    '- totalPages: número aproximado de páginas da edição mais comum.',
+    '- genre: um único gênero, em português.',
+    '',
+    'Use null em QUALQUER campo sobre o qual você não tenha certeza. Nunca invente.',
+    'Se não conhecer o livro, responda {"description":null,"totalPages":null,"genre":null}.'
+  ].join('\n');
+
+  try {
+    const raw = await callGemini({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: { maxOutputTokens: 700, thinkingConfig: NO_THINKING }
+    });
+    // O modelo às vezes embrulha o JSON em ```json ... ```
+    const json = raw.replace(/```json|```/g, '').trim();
+    const start = json.indexOf('{');
+    const end = json.lastIndexOf('}');
+    if (start < 0 || end < 0) return null;
+    const parsed = JSON.parse(json.slice(start, end + 1));
+
+    const pages = Number(parsed?.totalPages);
+    const facts: AiBookFacts = {
+      description: typeof parsed?.description === 'string' && parsed.description.trim() ? parsed.description.trim() : undefined,
+      // Faixa sanitária: descarta valores absurdos que denunciam alucinação.
+      totalPages: Number.isFinite(pages) && pages > 20 && pages < 5000 ? Math.round(pages) : undefined,
+      genre: typeof parsed?.genre === 'string' && parsed.genre.trim() ? parsed.genre.trim() : undefined
+    };
+    return facts.description || facts.totalPages || facts.genre ? facts : null;
+  } catch {
+    return null;
+  }
+}

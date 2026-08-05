@@ -45,6 +45,19 @@ function isUsefulFor(candidate: ExternalBook, book: Book): boolean {
   );
 }
 
+/** Campos do resultado externo que o livro ainda não tem — nunca sobrescreve. */
+function patchFrom(match: ExternalBook, book: Book): Partial<Book> {
+  const patch: Partial<Book> = {};
+  if ((!book.totalPages || book.totalPages <= 0) && (match.totalPages || 0) > 0) patch.totalPages = match.totalPages;
+  if (!book.coverUrl && match.coverUrl) patch.coverUrl = match.coverUrl;
+  if ((!book.genre || UNSET_GENRES.includes(book.genre.trim().toLowerCase())) && match.genre && !UNSET_GENRES.includes(match.genre.trim().toLowerCase())) patch.genre = match.genre;
+  if (!book.description && match.description) patch.description = match.description;
+  if (!book.publisher && match.publisher) patch.publisher = match.publisher;
+  if (!book.publishedDate && match.publishedDate) patch.publishedDate = match.publishedDate;
+  if (!book.isbn && match.isbn) patch.isbn = match.isbn;
+  return patch;
+}
+
 function bestMatch(results: ExternalBook[], book: Book): ExternalBook | undefined {
   const title = book.title.trim().toLowerCase();
   const author = book.author.trim().toLowerCase();
@@ -74,16 +87,31 @@ export async function enrichBookPatch(book: Book): Promise<Partial<Book> | null>
     const titleMatch = bestMatch(byTitle, book);
     if (titleMatch && (!match || isUsefulFor(titleMatch, book))) match = titleMatch;
   }
+  // Último recurso: quando os catálogos não têm (ou estão fora do ar / com cota
+  // estourada), a IA do app preenche sinopse, gênero e páginas aproximadas.
+  // Só entra no que continuar faltando — nunca sobrescreve catálogo.
+  const afterCatalogs: Book = match ? { ...book, ...patchFrom(match, book) } : book;
+  const gaps = missingFields(afterCatalogs);
+  if (gaps.length) {
+    // Import sob demanda: o aiClient puxa o Firebase, que não deve entrar na
+    // árvore de módulos (nem no bundle inicial) de quem só quer os catálogos.
+    const facts = await import('@/services/aiClient')
+      .then((ai) => (ai.isAiConfigured ? ai.fetchBookFactsFromAi(book.title, book.author) : null))
+      .catch(() => null);
+    if (facts) {
+      const aiPatch: Partial<Book> = {};
+      if (gaps.includes('sinopse') && facts.description) aiPatch.description = facts.description;
+      if (gaps.includes('páginas') && facts.totalPages) aiPatch.totalPages = facts.totalPages;
+      if (gaps.includes('gênero') && facts.genre) aiPatch.genre = facts.genre;
+      if (Object.keys(aiPatch).length) {
+        return { ...(match ? patchFrom(match, book) : {}), ...aiPatch };
+      }
+    }
+  }
+
   if (!match) return null;
 
-  const patch: Partial<Book> = {};
-  if ((!book.totalPages || book.totalPages <= 0) && (match.totalPages || 0) > 0) patch.totalPages = match.totalPages;
-  if (!book.coverUrl && match.coverUrl) patch.coverUrl = match.coverUrl;
-  if ((!book.genre || UNSET_GENRES.includes(book.genre.trim().toLowerCase())) && match.genre && !UNSET_GENRES.includes(match.genre.trim().toLowerCase())) patch.genre = match.genre;
-  if (!book.description && match.description) patch.description = match.description;
-  if (!book.publisher && match.publisher) patch.publisher = match.publisher;
-  if (!book.publishedDate && match.publishedDate) patch.publishedDate = match.publishedDate;
-  if (!book.isbn && match.isbn) patch.isbn = match.isbn;
+  const patch = patchFrom(match, book);
 
   return Object.keys(patch).length ? patch : null;
 }
