@@ -5,12 +5,31 @@ import { lookupExternalBooks } from '@/services/externalBookSearch';
 const UNSET_GENRES = ['', 'a definir', 'diverso', 'indefinido'];
 
 /** True when the book is missing data that hurts stats/capsule (pages, cover, genre). */
+/** Nomes (em PT) dos dados que faltam neste livro — vazio quando está completo. */
+export function missingFields(book: Book): string[] {
+  const missing: string[] = [];
+  if (!book.totalPages || book.totalPages <= 0) missing.push('páginas');
+  if (!book.coverUrl) missing.push('capa');
+  if (!book.genre || UNSET_GENRES.includes(book.genre.trim().toLowerCase())) missing.push('gênero');
+  if (!book.description || !book.description.trim()) missing.push('sinopse');
+  return missing;
+}
+
 export function bookNeedsEnrichment(book: Book): boolean {
-  const noPages = !book.totalPages || book.totalPages <= 0;
-  const noCover = !book.coverUrl;
-  const noGenre = !book.genre || UNSET_GENRES.includes(book.genre.trim().toLowerCase());
-  const noDescription = !book.description || !book.description.trim();
-  return noPages || noCover || noGenre || noDescription;
+  return missingFields(book).length > 0;
+}
+
+/** Rótulo em PT de cada campo que um patch preencheu. */
+function filledLabels(patch: Partial<Book>): string[] {
+  const labels: string[] = [];
+  if (patch.totalPages) labels.push('páginas');
+  if (patch.coverUrl) labels.push('capa');
+  if (patch.genre) labels.push('gênero');
+  if (patch.description) labels.push('sinopse');
+  if (patch.publisher) labels.push('editora');
+  if (patch.publishedDate) labels.push('ano');
+  if (patch.isbn) labels.push('ISBN');
+  return labels;
 }
 
 /** O candidato traz algo que este livro ainda não tem? */
@@ -75,12 +94,15 @@ export type EnrichProgress = { done: number; total: number; updated: number; cur
  * Enriches every book that needs it, sequentially (gentle on the API), applying
  * each patch through `applyPatch`. Reports progress so the UI can show a count.
  */
+export type EnrichedBookReport = { title: string; filled: string[]; stillMissing: string[] };
+
 export async function enrichLibrary(
   books: Book[],
   applyPatch: (bookId: string, patch: Partial<Book>) => Promise<void>,
   onProgress?: (p: EnrichProgress) => void
-): Promise<{ updated: number; checked: number }> {
+): Promise<{ updated: number; checked: number; reports: EnrichedBookReport[] }> {
   const targets = books.filter(bookNeedsEnrichment);
+  const reports: EnrichedBookReport[] = [];
   let updated = 0;
   for (let i = 0; i < targets.length; i++) {
     const book = targets[i];
@@ -90,11 +112,20 @@ export async function enrichLibrary(
       if (patch) {
         await applyPatch(book.id, patch);
         updated += 1;
+        // O que ficou faltando DEPOIS do patch — é isso que explica um livro
+        // continuar na contagem de incompletos mesmo tendo sido atualizado.
+        reports.push({
+          title: book.title,
+          filled: filledLabels(patch),
+          stillMissing: missingFields({ ...book, ...patch })
+        });
+      } else {
+        reports.push({ title: book.title, filled: [], stillMissing: missingFields(book) });
       }
     } catch {
-      /* skip this book, keep going */
+      reports.push({ title: book.title, filled: [], stillMissing: missingFields(book) });
     }
   }
   onProgress?.({ done: targets.length, total: targets.length, updated, currentTitle: '' });
-  return { updated, checked: targets.length };
+  return { updated, checked: targets.length, reports };
 }

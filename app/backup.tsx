@@ -11,7 +11,7 @@ import { createReadoraBackup, parseReadoraBackup, stringifyBackup } from '@/serv
 import { csvToBooks, mergeImported } from '@/services/csvImport';
 import { exportPdfDocument, pickTextFile, saveTextFile } from '@/services/webPlatformTools';
 import { copyText, haptic } from '@/services/feedback';
-import { bookNeedsEnrichment, enrichLibrary } from '@/services/bookEnrichment';
+import { bookNeedsEnrichment, enrichLibrary, missingFields, type EnrichedBookReport } from '@/services/bookEnrichment';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors, appFonts } from '@/theme/tokens';
 import type { Book, BookStatus } from '@/types/book';
@@ -35,16 +35,24 @@ export default function BackupScreen() {
   const [importText, setImportText] = useState('');
   const [message, setMessage] = useState('');
   const [enriching, setEnriching] = useState(false);
+  const [enrichReport, setEnrichReport] = useState<EnrichedBookReport[]>([]);
 
   const missingCount = useMemo(() => books.filter(bookNeedsEnrichment).length, [books]);
+  // Amostra do que está faltando, para o usuário conferir livro a livro em vez
+  // de só ver um número.
+  const incompleteList = useMemo(
+    () => books.filter(bookNeedsEnrichment).slice(0, 8).map((b) => ({ id: b.id, title: b.title, missing: missingFields(b) })),
+    [books]
+  );
 
   async function runEnrich() {
     if (enriching) return;
     if (missingCount === 0) {
-      notify('Tudo completo', 'Todos os livros já têm páginas, capa e gênero preenchidos.');
+      notify('Tudo completo', 'Todos os livros já têm páginas, capa, gênero e sinopse preenchidos.');
       return;
     }
     setEnriching(true);
+    setEnrichReport([]);
     setMessage('Completando dados... 0/' + missingCount);
     try {
       const result = await enrichLibrary(
@@ -52,8 +60,21 @@ export default function BackupScreen() {
         updateBook,
         (p) => setMessage('Completando dados... ' + p.done + '/' + p.total + ' (' + p.updated + ' atualizados)')
       );
+      setEnrichReport(result.reports);
       haptic(result.updated > 0 ? 'success' : 'warning');
-      notify('Dados completados', result.updated + ' de ' + result.checked + ' livro(s) atualizados a partir do Google Books, Open Library e Mercado Editorial.');
+      // Nomeia os livros atualizados: só o número não deixa claro o que mudou —
+      // e um livro pode ser atualizado e AINDA seguir incompleto (ex.: ganhou
+      // páginas mas continua sem sinopse), então a contagem pode não cair.
+      const changed = result.reports.filter((r) => r.filled.length);
+      const detail = changed.length
+        ? changed.slice(0, 5).map((r) => '• ' + r.title + ': ' + r.filled.join(', ')).join('\n')
+          + (changed.length > 5 ? '\n• + ' + (changed.length - 5) + ' livro(s)' : '')
+        : 'Nenhuma fonte tinha os dados que faltavam nesses livros.';
+      notify(
+        'Dados completados',
+        result.updated + ' de ' + result.checked + ' livro(s) atualizados:\n\n' + detail
+          + '\n\nVeja a lista completa na tela — livros que ainda tiverem campos faltando continuam na contagem.'
+      );
     } catch {
       haptic('error');
       notify('Falha ao completar', 'Não foi possível completar os dados agora. Verifique a conexão e tente novamente.');
@@ -285,12 +306,42 @@ export default function BackupScreen() {
 
       <Card>
         <View style={styles.titleRow}><ReadoraIcon name="sparkle" size={18} color={appColors.gold} /><Text style={styles.cardTitle}>Completar dados faltantes</Text></View>
-        <Text style={styles.body}>Busca automaticamente páginas, capa e gênero que faltam nos seus livros (via Google Books, Open Library e Mercado Editorial) — sem sobrescrever o que você já preencheu.</Text>
+        <Text style={styles.body}>Busca automaticamente páginas, capa, gênero e sinopse que faltam nos seus livros (via Google Books, Open Library e Mercado Editorial) — sem sobrescrever o que você já preencheu.</Text>
         <Text style={styles.body}>Livros incompletos no momento: <Text style={styles.white}>{missingCount}</Text></Text>
+
+        {incompleteList.length ? (
+          <View style={styles.missingBox}>
+            {incompleteList.map((item) => (
+              <View key={item.id} style={styles.missingRow}>
+                <Text style={styles.missingTitle} numberOfLines={1}>{item.title}</Text>
+                <Text style={styles.missingFields}>falta {item.missing.join(', ')}</Text>
+              </View>
+            ))}
+            {missingCount > incompleteList.length ? (
+              <Text style={styles.missingMore}>+ {missingCount - incompleteList.length} livro(s)</Text>
+            ) : null}
+          </View>
+        ) : null}
+
         <Pressable style={[styles.downloadButton, enriching && styles.buttonDisabled]} onPress={runEnrich} disabled={enriching}>
           <ReadoraIcon name="cloudDownload" size={17} color={appColors.background} />
           <Text style={styles.downloadText}>{enriching ? 'Completando...' : 'Completar dados agora'}</Text>
         </Pressable>
+
+        {enrichReport.length ? (
+          <View style={styles.reportBox}>
+            <Text style={styles.reportKicker}>ÚLTIMA EXECUÇÃO</Text>
+            {enrichReport.map((item, index) => (
+              <View key={item.title + index} style={styles.missingRow}>
+                <Text style={styles.missingTitle} numberOfLines={1}>{item.title}</Text>
+                <Text style={item.filled.length ? styles.reportOk : styles.reportNone}>
+                  {item.filled.length ? '+ ' + item.filled.join(', ') : 'nada encontrado'}
+                  {item.stillMissing.length ? ' · ainda falta ' + item.stillMissing.join(', ') : ''}
+                </Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
       </Card>
 
       {backupText ? (
@@ -362,6 +413,15 @@ const styles = StyleSheet.create({
   ratingActive: { color: appColors.background, backgroundColor: appColors.gold, borderColor: appColors.gold, borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 7, overflow: 'hidden', fontWeight: '900' },
   gold: { color: appColors.gold },
   white: { color: appColors.text, fontWeight: '900' },
+  missingBox: { backgroundColor: appColors.background, borderColor: appColors.border, borderWidth: 1, borderRadius: 14, padding: 12, marginTop: 10, gap: 9 },
+  missingRow: { gap: 2 },
+  missingTitle: { color: appColors.text, fontSize: 13, fontWeight: '800' },
+  missingFields: { color: appColors.textDim, fontSize: 12 },
+  missingMore: { color: appColors.textDim, fontSize: 12, fontStyle: 'italic' },
+  reportBox: { backgroundColor: appColors.background, borderColor: appColors.goldDeep, borderWidth: 1, borderRadius: 14, padding: 12, marginTop: 12, gap: 9 },
+  reportKicker: { color: appColors.gold, fontSize: 10, letterSpacing: 3, fontWeight: '900' },
+  reportOk: { color: appColors.gold, fontSize: 12 },
+  reportNone: { color: appColors.textDim, fontSize: 12 },
   body: { color: appColors.textMuted, lineHeight: 22, marginTop: 10 },
   exportIcon: { alignSelf: 'center', width: 54, height: 54, borderRadius: 16, backgroundColor: appColors.goldDeep, alignItems: 'center', justifyContent: 'center' },
   exportIconText: { color: appColors.gold, fontSize: 28 },
