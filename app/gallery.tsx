@@ -107,7 +107,7 @@ function labelFor(status: 'all' | BookStatus) {
 }
 
 const styles = StyleSheet.create({
-  stack: { flexDirection: 'column' },
+  stack: { flexDirection: 'column', alignItems: 'stretch' },
   header: { gap: 8 },
   kicker: { color: appColors.gold, fontSize: 12, fontWeight: '900', letterSpacing: 5 },
   title: { color: appColors.text, fontFamily: appFonts.display, fontSize: 52, lineHeight: 58, fontWeight: '900' },

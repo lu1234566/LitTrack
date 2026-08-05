@@ -5,6 +5,7 @@ import { useFonts } from 'expo-font';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { AutoSyncBridge } from '@/components/AutoSyncBridge';
+import { UpdateBanner } from '@/components/UpdateBanner';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { BookProvider } from '@/contexts/BookContext';
 import { PreferencesProvider } from '@/contexts/PreferencesContext';
@@ -71,6 +72,7 @@ export default function RootLayout() {
                   <Stack.Screen name="export" options={{ title: 'Exportar' }} />
                 </Stack>
                 <AutoSyncBridge />
+                <UpdateBanner />
               </ReadingSessionProvider>
             </ShelfProvider>
           </QuoteProvider>

@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   primaryText: { color: appColors.background, fontSize: 12, fontWeight: '900', letterSpacing: 1 },
   darkPill: { backgroundColor: appColors.background, borderColor: appColors.border, borderWidth: 1, borderRadius: 999, paddingVertical: 16, paddingHorizontal: 34, minWidth: 170, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 },
   darkPillText: { color: appColors.text, fontSize: 12, fontWeight: '900', letterSpacing: 1 },
-  stack: { flexDirection: 'column' },
+  stack: { flexDirection: 'column', alignItems: 'stretch' },
   statsGrid: { flexDirection: 'row', gap: 18 },
   mobileGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   metricLabel: { color: appColors.textDim, fontSize: 11, fontWeight: '900', letterSpacing: 4 },

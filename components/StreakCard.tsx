@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
   badge: { flexDirection: 'row', alignItems: 'center', gap: 5, borderColor: appColors.goldDeep, borderWidth: 1, backgroundColor: appColors.goldDeep, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5 },
   badgeText: { color: appColors.gold, fontSize: 10, fontWeight: '900', letterSpacing: 2 },
   body: { flexDirection: 'row', gap: 22 },
-  stack: { flexDirection: 'column' },
+  stack: { flexDirection: 'column', alignItems: 'stretch' },
   col: { flex: 1, gap: 12, justifyContent: 'center' },
   colCenter: { justifyContent: 'center' },
   colLabel: { color: appColors.textDim, fontSize: 10, letterSpacing: 2, fontWeight: '900' },

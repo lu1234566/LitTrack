@@ -91,7 +91,7 @@ function Highlight({ title, value, detail, color }: { title: string; value: stri
 }
 
 const styles = StyleSheet.create({
-  stack: { flexDirection: 'column' },
+  stack: { flexDirection: 'column', alignItems: 'stretch' },
   hero: { minHeight: 250, borderColor: appColors.borderSoft, borderWidth: 1, borderRadius: 42, backgroundColor: appColors.backgroundSoft, alignItems: 'center', justifyContent: 'center', padding: 34, gap: 10 },
   kicker: { color: appColors.gold, letterSpacing: 6, fontSize: 11, fontWeight: '900' },
   title: { color: appColors.text, fontFamily: appFonts.display, fontSize: 52, lineHeight: 58, fontWeight: '900', textAlign: 'center' },

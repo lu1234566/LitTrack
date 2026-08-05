@@ -66,7 +66,7 @@ function Metric({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  stack: { flexDirection: 'column' },
+  stack: { flexDirection: 'column', alignItems: 'stretch' },
   header: { gap: 8 },
   title: { color: appColors.text, fontFamily: appFonts.display, fontSize: 48, lineHeight: 56, fontWeight: '900' },
   subtitle: { color: appColors.textMuted, fontSize: 18, lineHeight: 26 },

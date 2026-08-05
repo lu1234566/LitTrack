@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   btnRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   row: { flexDirection: 'row', gap: 18 },
-  stack: { flexDirection: 'column' },
+  stack: { flexDirection: 'column', alignItems: 'stretch' },
   fieldBox: { flex: 1, gap: 8 },
   label: { color: appColors.textMuted, fontSize: 13, fontWeight: '800', marginTop: 12 },
   input: { backgroundColor: appColors.background, borderColor: appColors.border, borderWidth: 1, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, color: appColors.text, fontSize: 16, marginTop: 8 },

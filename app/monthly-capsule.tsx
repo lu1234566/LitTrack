@@ -284,7 +284,7 @@ function capitalize(value: string) {
 }
 
 const styles = StyleSheet.create({
-  stack: { flexDirection: 'column' },
+  stack: { flexDirection: 'column', alignItems: 'stretch' },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 28 },
   headerText: { flex: 1 },
   kicker: { color: appColors.gold, fontSize: 12, letterSpacing: 4, fontWeight: '900' },

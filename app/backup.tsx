@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
@@ -9,7 +9,7 @@ import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { useShelves } from '@/contexts/ShelfContext';
 import { createReadoraBackup, parseReadoraBackup, stringifyBackup } from '@/services/readoraBackup';
 import { csvToBooks, mergeImported } from '@/services/csvImport';
-import { downloadTextFile, pickTextFile, printTextDocument } from '@/services/webPlatformTools';
+import { exportPdfDocument, pickTextFile, saveTextFile } from '@/services/webPlatformTools';
 import { copyText, haptic } from '@/services/feedback';
 import { bookNeedsEnrichment, enrichLibrary } from '@/services/bookEnrichment';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
@@ -83,11 +83,14 @@ export default function BackupScreen() {
     setMessage('Backup JSON filtrado gerado com ' + selectedBooks.length + ' livro(s).');
   }
 
-  function downloadBackup() {
+  async function downloadBackup() {
     const text = backupText || buildBackupText();
     setBackupText(text);
-    const ok = downloadTextFile('readora-backup-' + new Date().toISOString().slice(0, 10) + '.json', text, 'application/json;charset=utf-8');
-    setMessage(ok ? 'Arquivo JSON baixado.' : 'Download direto disponível apenas no navegador. Copie o JSON manualmente.');
+    setMessage('Gerando arquivo JSON...');
+    const ok = await saveTextFile('readora-backup-' + new Date().toISOString().slice(0, 10) + '.json', text, 'application/json;charset=utf-8');
+    setMessage(ok
+      ? (Platform.OS === 'web' ? 'Arquivo JSON baixado.' : 'Arquivo JSON pronto — escolha onde salvar ou enviar.')
+      : 'Não foi possível gerar o arquivo. Copie o JSON manualmente.');
   }
 
   function buildReportText() {
@@ -127,11 +130,14 @@ export default function BackupScreen() {
     setMessage('Relatório textual filtrado gerado.');
   }
 
-  function downloadReport() {
+  async function downloadReport() {
     const text = reportText || buildReportText();
     setReportText(text);
-    const ok = downloadTextFile('readora-relatorio-' + new Date().toISOString().slice(0, 10) + '.txt', text);
-    setMessage(ok ? 'Relatório .txt baixado.' : 'Download direto disponível apenas no navegador. Copie o relatório manualmente.');
+    setMessage('Gerando relatório .txt...');
+    const ok = await saveTextFile('readora-relatorio-' + new Date().toISOString().slice(0, 10) + '.txt', text);
+    setMessage(ok
+      ? (Platform.OS === 'web' ? 'Relatório .txt baixado.' : 'Relatório .txt pronto — escolha onde salvar ou enviar.')
+      : 'Não foi possível gerar o arquivo. Copie o relatório manualmente.');
   }
 
   async function copyReport() {
@@ -144,11 +150,14 @@ export default function BackupScreen() {
     setMessage('Selecione o relatório gerado e copie manualmente.');
   }
 
-  function printReport() {
+  async function printReport() {
     const text = reportText || buildReportText();
     setReportText(text);
-    const ok = printTextDocument('Readora — Relatório da Biblioteca', text);
-    setMessage(ok ? 'Janela de impressão aberta. Use “Salvar como PDF” no navegador.' : 'Impressão disponível apenas no navegador.');
+    setMessage('Gerando PDF...');
+    const ok = await exportPdfDocument('Readora — Relatório da Biblioteca', text);
+    setMessage(ok
+      ? (Platform.OS === 'web' ? 'Janela de impressão aberta. Use “Salvar como PDF”.' : 'PDF gerado — escolha onde salvar ou enviar.')
+      : 'Não foi possível gerar o PDF. Tente novamente.');
   }
 
   function notify(title: string, msg: string) {
@@ -340,7 +349,7 @@ const styles = StyleSheet.create({
   header: { gap: 8 },
   title: { color: appColors.text, fontFamily: appFonts.display, fontSize: 38, lineHeight: 46, fontWeight: '900' },
   subtitle: { color: appColors.textMuted, fontSize: 16, lineHeight: 24, maxWidth: 720 },
-  stack: { flexDirection: 'column' },
+  stack: { flexDirection: 'column', alignItems: 'stretch' },
   topGrid: { flexDirection: 'row', gap: 18 },
   midGrid: { flexDirection: 'row', gap: 18 },
   cardTitle: { color: appColors.gold, fontFamily: appFonts.display, fontSize: 18, fontWeight: '900' },
@@ -373,8 +382,10 @@ const styles = StyleSheet.create({
   outlineText: { color: '#3b82f6', fontWeight: '900' },
   csvDivider: { height: 1, backgroundColor: appColors.border, marginVertical: 18 },
   bullet: { color: appColors.textMuted, lineHeight: 24, marginTop: 10 },
-  reportHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
-  reportButtons: { flexDirection: 'row', gap: 8 },
+  // flexWrap: em telas estreitas os 3 botões descem para a linha de baixo em vez
+  // de o último (PDF) ser empurrado para fora da borda direita do cartão.
+  reportHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' },
+  reportButtons: { flexDirection: 'row', gap: 8, flexShrink: 0 },
   copyButton: { backgroundColor: appColors.surfaceMuted, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10 },
   copyText: { color: appColors.text, fontWeight: '900' },
   printButton: { backgroundColor: '#3b82f6', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10 },

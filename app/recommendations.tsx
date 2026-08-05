@@ -218,7 +218,7 @@ function Metric({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  stack: { flexDirection: 'column' },
+  stack: { flexDirection: 'column', alignItems: 'stretch' },
   header: { gap: 8 },
   kicker: { color: appColors.gold, fontSize: 12, letterSpacing: 5, fontWeight: '900' },
   title: { color: appColors.text, fontFamily: appFonts.display, fontSize: 52, lineHeight: 58, fontWeight: '900' },

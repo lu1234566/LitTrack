@@ -114,7 +114,7 @@ function resolveArchetype(genre: string, averageRating: number, sessions: number
 }
 
 const styles = StyleSheet.create({
-  stack: { flexDirection: 'column' },
+  stack: { flexDirection: 'column', alignItems: 'stretch' },
   hero: { gap: 8 },
   kicker: { color: appColors.gold, fontSize: 12, fontWeight: '900', letterSpacing: 5 },
   title: { color: appColors.text, fontFamily: appFonts.display, fontSize: 50, lineHeight: 56, fontWeight: '900' },

@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
   chevron: { marginLeft: 'auto' },
   btnRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 },
   row: { flexDirection: 'row', gap: 24 },
-  stack: { flexDirection: 'column' },
+  stack: { flexDirection: 'column', alignItems: 'stretch' },
   full: { width: '100%' },
   flex: { flex: 1 },
   fieldBox: { flex: 1, gap: 8 },

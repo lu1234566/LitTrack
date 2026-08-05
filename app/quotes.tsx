@@ -218,7 +218,7 @@ export default function QuotesScreen() {
 const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 20 },
   titleBox: { flex: 1 },
-  stack: { flexDirection: 'column' },
+  stack: { flexDirection: 'column', alignItems: 'stretch' },
   title: { color: appColors.text, fontFamily: appFonts.display, fontSize: 48, lineHeight: 58, fontWeight: '900' },
   titleIcon: { color: appColors.gold },
   subtitle: { color: appColors.textMuted, fontSize: 20, lineHeight: 30 },

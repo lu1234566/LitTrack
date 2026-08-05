@@ -2,6 +2,8 @@ import { Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import * as Print from 'expo-print';
 
 export type CapsulePngData = {
   readerName: string;
@@ -287,4 +289,49 @@ function wrapText(ctx: any, text: string, x: number, y: number, maxWidth: number
 
 function escapeHtml(value: string) {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
+/**
+ * Salva um arquivo de texto e devolve ao usuário.
+ * Web: download direto pelo navegador.
+ * Nativo: grava no armazenamento do app e abre a folha de compartilhamento,
+ * de onde dá para salvar em Arquivos/Drive ou enviar para outro app — o
+ * `downloadTextFile` sozinho é no-op no celular (não existe `document`).
+ */
+export async function saveTextFile(filename: string, content: string, mimeType = 'text/plain;charset=utf-8'): Promise<boolean> {
+  if (Platform.OS === 'web') return downloadTextFile(filename, content, mimeType);
+  try {
+    const dir = FileSystem.cacheDirectory || FileSystem.documentDirectory;
+    if (!dir) return false;
+    const uri = dir + filename;
+    await FileSystem.writeAsStringAsync(uri, content, { encoding: FileSystem.EncodingType.UTF8 });
+    if (!(await Sharing.isAvailableAsync())) return false;
+    await Sharing.shareAsync(uri, { mimeType: mimeType.split(';')[0], dialogTitle: filename, UTI: 'public.plain-text' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Gera o relatório em PDF.
+ * Web: janela de impressão ("Salvar como PDF").
+ * Nativo: renderiza um PDF de verdade com expo-print e compartilha o arquivo.
+ */
+export async function exportPdfDocument(title: string, body: string): Promise<boolean> {
+  if (Platform.OS === 'web') return printTextDocument(title, body);
+  try {
+    const html = `<!doctype html><html><head><meta charset="utf-8" /><style>
+      @page{margin:36px}
+      body{font-family:Georgia,serif;color:#111;line-height:1.6}
+      h1{font-size:24px;margin:0 0 18px;border-bottom:2px solid #c8922a;padding-bottom:10px}
+      pre{white-space:pre-wrap;word-wrap:break-word;font-family:Georgia,serif;font-size:12px;margin:0}
+    </style></head><body><h1>${escapeHtml(title)}</h1><pre>${escapeHtml(body)}</pre></body></html>`;
+    const { uri } = await Print.printToFileAsync({ html });
+    if (!(await Sharing.isAvailableAsync())) return false;
+    await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: title, UTI: 'com.adobe.pdf' });
+    return true;
+  } catch {
+    return false;
+  }
 }

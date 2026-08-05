@@ -59,9 +59,9 @@ export default function LibraryScreen() {
         <Text style={styles.subtitle}>Sua biblioteca pessoal.</Text>
       </View>
 
-      <View style={[styles.topActions, mobile && styles.stack]}>
-        <Link href="/shelves" asChild><Pressable style={styles.createShelf}><ReadoraIcon name="shelves" size={30} color={appColors.textMuted} /><Text style={styles.createShelfText}>Criar{mobile ? '\n' : ' '}Estante</Text></Pressable></Link>
-        <Link href="/add" asChild><Pressable style={styles.addReading}><ReadoraIcon name="addBook" size={30} color={appColors.background} /><Text style={styles.addReadingText}>Adicionar{mobile ? '\n' : ' '}Leitura</Text></Pressable></Link>
+      <View style={styles.topActions}>
+        <Link href="/shelves" asChild><Pressable style={styles.createShelf}><ReadoraIcon name="shelves" size={17} color={appColors.textMuted} /><Text style={styles.createShelfText} numberOfLines={1}>Criar Estante</Text></Pressable></Link>
+        <Link href="/add" asChild><Pressable style={styles.addReading}><ReadoraIcon name="addBook" size={17} color={appColors.background} /><Text style={styles.addReadingText} numberOfLines={1}>Adicionar Leitura</Text></Pressable></Link>
       </View>
 
       <Text style={styles.kicker}>MINHAS ESTANTES</Text>
@@ -141,14 +141,14 @@ const styles = StyleSheet.create({
   header: { gap: 8 },
   title: { color: appColors.text, fontFamily: appFonts.display, fontSize: 54, lineHeight: 62, fontWeight: '900' },
   subtitle: { color: appColors.textMuted, fontSize: 24, lineHeight: 30 },
-  topActions: { flexDirection: 'row', gap: 22 },
-  stack: { flexDirection: 'column' },
-  createShelf: { flex: 1, minHeight: 110, borderColor: appColors.border, borderWidth: 1, borderRadius: 24, backgroundColor: appColors.surface, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18 },
-  addReading: { flex: 1, minHeight: 110, borderRadius: 24, backgroundColor: appColors.gold, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18 },
+  topActions: { flexDirection: 'row', gap: 12 },
+  stack: { flexDirection: 'column', alignItems: 'stretch' },
+  createShelf: { flex: 1, minHeight: 56, paddingHorizontal: 8, borderColor: appColors.border, borderWidth: 1, borderRadius: 16, backgroundColor: appColors.surface, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  addReading: { flex: 1, minHeight: 56, paddingHorizontal: 8, borderRadius: 16, backgroundColor: appColors.gold, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   actionIcon: { color: appColors.textMuted, fontSize: 30 },
   actionIconDark: { color: appColors.background, fontSize: 30 },
-  createShelfText: { color: appColors.text, fontSize: 26, fontWeight: '900', textAlign: 'center' },
-  addReadingText: { color: appColors.background, fontSize: 26, fontWeight: '900', textAlign: 'center' },
+  createShelfText: { color: appColors.text, fontSize: 13.5, fontWeight: '900', textAlign: 'center', flexShrink: 1 },
+  addReadingText: { color: appColors.background, fontSize: 13.5, fontWeight: '900', textAlign: 'center', flexShrink: 1 },
   kicker: { color: appColors.textDim, fontSize: 16, letterSpacing: 7, fontWeight: '900', marginTop: 12 },
   chipScroller: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
   shelfChip: { minHeight: 58, borderColor: appColors.border, borderWidth: 1, borderRadius: 18, backgroundColor: appColors.surface, paddingHorizontal: 24, alignItems: 'center', justifyContent: 'center' },
