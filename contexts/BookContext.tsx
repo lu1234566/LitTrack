@@ -115,7 +115,9 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
         ...book,
         currentPage: nextCurrentPage,
         status: totalPages > 0 && nextCurrentPage >= totalPages ? 'finished' : book.status,
-        finishedAt: totalPages > 0 && nextCurrentPage >= totalPages ? Date.now() : book.finishedAt,
+        // Só carimba a conclusão se ainda não houver data — assim o mês de
+        // leitura escolhido à mão não é sobrescrito por "hoje".
+        finishedAt: totalPages > 0 && nextCurrentPage >= totalPages ? (book.finishedAt || Date.now()) : book.finishedAt,
         updatedAt: Date.now()
       };
     });
@@ -123,7 +125,8 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function updateStatus(bookId: string, status: BookStatus) {
-    const nextBooks = booksRef.current.map((book) => book.id === bookId ? { ...book, status, updatedAt: Date.now(), finishedAt: status === 'finished' ? Date.now() : book.finishedAt } : book);
+    // Idem: preserva o mês de leitura já definido pelo usuário.
+    const nextBooks = booksRef.current.map((book) => book.id === bookId ? { ...book, status, updatedAt: Date.now(), finishedAt: status === 'finished' ? (book.finishedAt || Date.now()) : book.finishedAt } : book);
     await persist(nextBooks);
   }
 

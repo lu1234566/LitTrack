@@ -92,6 +92,10 @@ export default function BookDetailsScreen() {
         <Card><Text style={styles.smallValue}>{currentBook.publisher || '-'}</Text><Text style={styles.smallLabel}>editora</Text></Card>
         <Card><Text style={styles.smallValue}>{currentBook.publishedDate || '-'}</Text><Text style={styles.smallLabel}>ano</Text></Card>
         <Card><Text style={styles.smallValue}>{bookSessions.length}</Text><Text style={styles.smallLabel}>sessoes</Text></Card>
+        <Card>
+          <Text style={styles.smallValue}>{currentBook.finishedAt ? capitalize(new Date(currentBook.finishedAt).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })) : '-'}</Text>
+          <Text style={styles.smallLabel}>mes de leitura</Text>
+        </Card>
       </View>
 
       <Card>
@@ -129,6 +133,10 @@ export default function BookDetailsScreen() {
       <Pressable style={[styles.deleteButton, styles.btnRow]} onPress={handleDelete}><ReadoraIcon name="trash" size={16} color={appColors.red} /><Text style={styles.deleteText}>Remover da biblioteca local</Text></Pressable>
     </Screen>
   );
+}
+
+function capitalize(value: string) {
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 function percent(value: number) {

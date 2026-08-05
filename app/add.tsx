@@ -11,6 +11,7 @@ import { ExternalBook } from '@/types/externalBook';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { haptic } from '@/services/feedback';
 import { bookNeedsEnrichment, enrichBookPatch } from '@/services/bookEnrichment';
+import { MonthYearField } from '@/components/MonthYearField';
 import { appColors, appFonts } from '@/theme/tokens';
 
 const moods = ['Sombrio', 'Tenso', 'Reflexivo', 'Aconchegante', 'Emocional', 'Misterioso', 'Caótico', 'Inspirador', 'Cerebral', 'Mágico'];
@@ -38,6 +39,7 @@ export default function AddBookScreen() {
   const [coverUrl, setCoverUrl] = useState('');
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
   const [status, setStatus] = useState<BookStatus>('finished');
+  const [readAt, setReadAt] = useState<number | undefined>(undefined);
   const [searchMessage, setSearchMessage] = useState('');
   const [searching, setSearching] = useState(false);
 
@@ -149,7 +151,10 @@ export default function AddBookScreen() {
       contentWarnings: contentWarnings.trim(),
       notes: isbn ? 'ISBN: ' + isbn : '',
       isbn: isbn.trim(),
-      coverUrl: coverUrl.trim()
+      coverUrl: coverUrl.trim(),
+      // Mês de leitura (opcional): agrupa o livro na Cápsula Mensal e na
+      // Retrospectiva. Sem ele, o livro cai no mês do cadastro.
+      finishedAt: readAt
     };
 
     const created = await addBook(draft);
@@ -211,6 +216,12 @@ export default function AddBookScreen() {
             </Pressable>
           ))}
         </View>
+
+        <MonthYearField
+          value={readAt}
+          onChange={setReadAt}
+          hint="Opcional. Use quando estiver cadastrando uma leitura de outro mês."
+        />
       </Card>
 
       <Card>

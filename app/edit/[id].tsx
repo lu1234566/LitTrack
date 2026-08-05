@@ -6,6 +6,7 @@ import { useBooks } from '@/contexts/BookContext';
 import { BookStatus } from '@/types/book';
 import { lookupExternalBooks } from '@/services/externalBookSearch';
 import { pickImageAsDataUrl } from '@/services/webPlatformTools';
+import { MonthYearField } from '@/components/MonthYearField';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors } from '@/theme/tokens';
 
@@ -29,6 +30,7 @@ export default function EditBookScreen() {
   const [review, setReview] = useState(book?.review || '');
   const [contentWarnings, setContentWarnings] = useState(book?.contentWarnings || '');
   const [status, setStatus] = useState<BookStatus>(book?.status || 'reading');
+  const [readAt, setReadAt] = useState<number | undefined>(book?.finishedAt);
   const [coverMessage, setCoverMessage] = useState('');
   const [searchingCover, setSearchingCover] = useState(false);
 
@@ -90,7 +92,11 @@ export default function EditBookScreen() {
       reasonToRead: reason.trim(),
       favoriteQuote: quote.trim(),
       review: review.trim(),
-      contentWarnings: contentWarnings.trim()
+      contentWarnings: contentWarnings.trim(),
+      // Mês de leitura escolhido pelo usuário: é o campo que agrupa o livro na
+      // Cápsula Mensal, na Linha do Tempo e na Retrospectiva. Quando limpo
+      // (undefined), o livro volta a usar a data de cadastro.
+      finishedAt: readAt
     });
     router.replace({ pathname: '/book/[id]', params: { id: currentBook.id } } as never);
   }
@@ -132,6 +138,13 @@ export default function EditBookScreen() {
           </Pressable>
         ))}
       </View>
+
+      <MonthYearField
+        value={readAt}
+        onChange={setReadAt}
+        hint="Define em qual mês este livro aparece na Cápsula Mensal e na Retrospectiva."
+      />
+
       <TextInput style={styles.textArea} placeholder="Motivo de leitura" placeholderTextColor={appColors.textDim} value={reason} onChangeText={setReason} multiline />
       <TextInput style={styles.textArea} placeholder="Citacao favorita" placeholderTextColor={appColors.textDim} value={quote} onChangeText={setQuote} multiline />
       <TextInput style={styles.textArea} placeholder="Resenha" placeholderTextColor={appColors.textDim} value={review} onChangeText={setReview} multiline />
