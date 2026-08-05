@@ -53,7 +53,7 @@ export default function BackupScreen() {
         (p) => setMessage('Completando dados... ' + p.done + '/' + p.total + ' (' + p.updated + ' atualizados)')
       );
       haptic(result.updated > 0 ? 'success' : 'warning');
-      notify('Dados completados', result.updated + ' de ' + result.checked + ' livro(s) atualizados a partir do Google Books / Open Library.');
+      notify('Dados completados', result.updated + ' de ' + result.checked + ' livro(s) atualizados a partir do Google Books, Open Library e Mercado Editorial.');
     } catch {
       haptic('error');
       notify('Falha ao completar', 'Não foi possível completar os dados agora. Verifique a conexão e tente novamente.');
@@ -285,7 +285,7 @@ export default function BackupScreen() {
 
       <Card>
         <View style={styles.titleRow}><ReadoraIcon name="sparkle" size={18} color={appColors.gold} /><Text style={styles.cardTitle}>Completar dados faltantes</Text></View>
-        <Text style={styles.body}>Busca automaticamente páginas, capa e gênero que faltam nos seus livros (via Google Books / Open Library) — sem sobrescrever o que você já preencheu.</Text>
+        <Text style={styles.body}>Busca automaticamente páginas, capa e gênero que faltam nos seus livros (via Google Books, Open Library e Mercado Editorial) — sem sobrescrever o que você já preencheu.</Text>
         <Text style={styles.body}>Livros incompletos no momento: <Text style={styles.white}>{missingCount}</Text></Text>
         <Pressable style={[styles.downloadButton, enriching && styles.buttonDisabled]} onPress={runEnrich} disabled={enriching}>
           <ReadoraIcon name="cloudDownload" size={17} color={appColors.background} />

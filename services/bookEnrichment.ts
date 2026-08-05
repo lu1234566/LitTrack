@@ -12,6 +12,19 @@ export function bookNeedsEnrichment(book: Book): boolean {
   return noPages || noCover || noGenre;
 }
 
+/** O candidato traz algo que este livro ainda não tem? */
+function isUsefulFor(candidate: ExternalBook, book: Book): boolean {
+  const needsPages = !book.totalPages || book.totalPages <= 0;
+  const needsCover = !book.coverUrl;
+  const needsGenre = !book.genre || UNSET_GENRES.includes(book.genre.trim().toLowerCase());
+  return (
+    (needsPages && (candidate.totalPages || 0) > 0) ||
+    (needsCover && Boolean(candidate.coverUrl)) ||
+    (needsGenre && Boolean(candidate.genre) && !UNSET_GENRES.includes(candidate.genre.trim().toLowerCase())) ||
+    (!book.description && Boolean(candidate.description))
+  );
+}
+
 function bestMatch(results: ExternalBook[], book: Book): ExternalBook | undefined {
   const title = book.title.trim().toLowerCase();
   const author = book.author.trim().toLowerCase();
@@ -25,14 +38,22 @@ function bestMatch(results: ExternalBook[], book: Book): ExternalBook | undefine
  * Returns null when nothing useful is found (offline, no match, no new data).
  */
 export async function enrichBookPatch(book: Book): Promise<Partial<Book> | null> {
-  const query = book.isbn?.trim()
-    ? 'isbn:' + book.isbn.trim().replace(/[^0-9Xx]/g, '')
-    : [book.title, book.author].filter(Boolean).join(' ').trim();
-  if (!query) return null;
+  const isbn = (book.isbn || '').replace(/[^0-9Xx]/g, '');
+  const titleQuery = [book.title, book.author].filter(Boolean).join(' ').trim();
 
-  const results = await lookupExternalBooks(query);
-  if (!results.length) return null;
-  const match = bestMatch(results, book);
+  // Busca por ISBN primeiro (1:1, mais confiável). Se ela não vier ou não trouxer
+  // o que falta, cai para título+autor — antes o código escolhia UMA das duas e
+  // desistia, então um ISBN sem correspondência deixava o livro incompleto.
+  let match: ExternalBook | undefined;
+  if (isbn) {
+    const byIsbn = await lookupExternalBooks('isbn:' + isbn);
+    match = byIsbn[0];
+  }
+  if ((!match || !isUsefulFor(match, book)) && titleQuery) {
+    const byTitle = await lookupExternalBooks(titleQuery);
+    const titleMatch = bestMatch(byTitle, book);
+    if (titleMatch && (!match || isUsefulFor(titleMatch, book))) match = titleMatch;
+  }
   if (!match) return null;
 
   const patch: Partial<Book> = {};
