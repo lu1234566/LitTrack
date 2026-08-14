@@ -1,4 +1,10 @@
 {
-  "buildCommand": "expo export -p web",
-  "outputDirectory": "dist"
+  "buildCommand": "expo export -p web --clear",
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/((?!_expo|assets|favicon|.*\\.[a-zA-Z0-9]+$).*)",
+      "destination": "/index.html"
+    }
+  ]
 }

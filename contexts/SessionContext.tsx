@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { Platform } from 'react-native';
 import { exchangeCodeAsync } from 'expo-auth-session';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import { SessionUser } from '@/types/sessionUser';
-import { isNativeFirebaseConfigured, listenToFirebaseUser, signInFirebaseWithGoogleIdToken, signOutFirebaseUser } from '@/services/firebaseNative';
+import { isNativeFirebaseConfigured, listenToFirebaseUser, signInFirebaseWithGoogleIdToken, signInFirebaseWithGooglePopup, signOutFirebaseUser } from '@/services/firebaseNative';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -32,7 +33,8 @@ const SessionContext = createContext<SessionContextValue>({
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [authNotice, setAuthNotice] = useState('');
-  const isGoogleLoginPrepared = Boolean(isNativeFirebaseConfigured && hasGoogleClientId);
+  // Na web basta o Firebase: o popup não usa os Client IDs do expo-auth-session.
+  const isGoogleLoginPrepared = Boolean(isNativeFirebaseConfigured && (Platform.OS === 'web' || hasGoogleClientId));
 
   // Official Google provider: handles native redirect URIs (reverse client id),
   // PKCE and the correct id_token audience per platform. A placeholder id per
@@ -102,6 +104,23 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   async function signInWithGoogle() {
     if (!isNativeFirebaseConfigured) return 'Configure as variáveis EXPO_PUBLIC_FIREBASE_* para ativar o Firebase.';
+
+    // Na web o fluxo nativo não existe (ele depende do redirect por esquema de
+    // URI do app), então usamos o popup do Firebase. Mesmo projeto, mesmo uid —
+    // é assim que a biblioteca do celular aparece no site.
+    if (Platform.OS === 'web') {
+      try {
+        const loggedUser = await signInFirebaseWithGooglePopup();
+        setUser(loggedUser);
+        setAuthNotice(loggedUser?.email ? 'Login concluído: ' + loggedUser.email : 'Login concluído.');
+        return 'Login concluído.';
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Falha no login Google.';
+        setAuthNotice('Falha no login: ' + message);
+        return 'Falha no login Google: ' + message;
+      }
+    }
+
     if (!hasGoogleClientId) return 'Configure EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (e o Android/iOS client id).';
     if (!request) return 'Login Google ainda está preparando a sessão. Tente novamente em instantes.';
     try {

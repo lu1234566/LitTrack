@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initializeApp, getApp, getApps, type FirebaseApp } from 'firebase/app';
 import { collection, deleteDoc, doc, getDoc, getDocs, getFirestore, setDoc } from 'firebase/firestore';
-import { getAuth, initializeAuth, GoogleAuthProvider, onAuthStateChanged, signInWithCredential, signOut as firebaseSignOut, type Auth, type Persistence, type User } from 'firebase/auth';
+import { getAuth, initializeAuth, GoogleAuthProvider, onAuthStateChanged, signInWithCredential, signInWithPopup, signOut as firebaseSignOut, type Auth, type Persistence, type User } from 'firebase/auth';
 import * as FirebaseAuthModule from 'firebase/auth';
 import { Book } from '@/types/book';
 import { Quote } from '@/types/quote';
@@ -68,6 +68,20 @@ export async function signInFirebaseWithGoogleIdToken(idToken: string) {
   if (!nativeAuth) throw new Error('Firebase Auth não configurado.');
   const credential = GoogleAuthProvider.credential(idToken);
   const result = await signInWithCredential(nativeAuth, credential);
+  return toSessionUser(result.user);
+}
+
+/**
+ * Login na WEB. No navegador não existe o fluxo nativo do expo-auth-session
+ * (que depende do redirect por esquema de URI do app), então usamos o popup do
+ * próprio Firebase. O uid resultante é o MESMO do app — é isso que faz a
+ * biblioteca do celular aparecer no site.
+ */
+export async function signInFirebaseWithGooglePopup() {
+  if (!nativeAuth) throw new Error('Firebase Auth não configurado.');
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+  const result = await signInWithPopup(nativeAuth, provider);
   return toSessionUser(result.user);
 }
 

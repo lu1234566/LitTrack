@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Platform, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useBooks } from '@/contexts/BookContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
@@ -40,7 +40,7 @@ export function AutoSyncBridge() {
 
   // Restore the last successful sync time so the user sees it on open.
   useEffect(() => {
-    if (Platform.OS === 'web' || !user) return;
+    if (!user) return;
     AsyncStorage.getItem(SYNC_KEY).then((raw) => {
       const ts = Number(raw);
       if (ts) setStatus('Última sincronização ' + formatSyncTime(ts));
@@ -48,7 +48,6 @@ export function AutoSyncBridge() {
   }, [user]);
 
   useEffect(() => {
-    if (Platform.OS === 'web') return;
     const userId: string = user?.uid ?? '';
     if (!userId || !isNativeFirebaseConfigured || firstPullDone.current) return;
     firstPullDone.current = true;
@@ -80,7 +79,6 @@ export function AutoSyncBridge() {
   }, [user?.uid]);
 
   useEffect(() => {
-    if (Platform.OS === 'web') return;
     const userId: string = user?.uid ?? '';
     if (!userId || !isNativeFirebaseConfigured || !hydrated) return;
 
@@ -128,7 +126,7 @@ export function AutoSyncBridge() {
     return () => clearTimeout(timeout);
   }, [hydrated, user?.uid, books, quotes, shelves, sessions, preferences]);
 
-  if (Platform.OS === 'web' || !user || !status) return null;
+  if (!user || !status) return null;
   return <View style={{ position: 'absolute', right: 14, bottom: 14, backgroundColor: appColors.surface, borderColor: appColors.border, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, zIndex: 100 }}><Text style={{ color: appColors.textMuted, fontSize: 11, fontWeight: '900' }}>{status}</Text></View>;
 }
 
