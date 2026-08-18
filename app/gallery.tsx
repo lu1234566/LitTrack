@@ -67,7 +67,9 @@ export default function GalleryScreen() {
       <View style={styles.grid}>
         {visibleBooks.map((book, index) => (
           <Link key={book.id} href={{ pathname: '/book/[id]', params: { id: book.id } }} asChild>
-            <Pressable style={[styles.tile, mobile ? styles.tileMobile : styles.tileDesktop]}>
+            {/* Ver shelves.tsx: com Link asChild o style vai parar num <a> do DOM na web,
+                que não aceita array. Flatten resolve sem mudar o resultado visual. */}
+            <Pressable style={StyleSheet.flatten([styles.tile, mobile ? styles.tileMobile : styles.tileDesktop])}>
               <View style={[styles.cover, index % 3 === 1 && styles.coverTall]}>
                 {book.coverUrl ? <Image source={{ uri: book.coverUrl }} style={styles.coverImage} /> : <FallbackCover title={book.title} genre={book.genre} author={book.author} />}
                 <View style={styles.statusPill}><Text style={styles.statusPillText}>{statusLabel(book.status)}</Text></View>

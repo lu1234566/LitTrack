@@ -55,7 +55,10 @@ export default function ShelvesScreen() {
             </View>
             <View style={styles.actionRow}>
               <Link href={{ pathname: '/shelf/[id]', params: { id: shelf.id } }} asChild>
-                <Pressable style={[styles.openButton, styles.btnRow]}><ReadoraIcon name="forward" size={15} color={appColors.gold} /><Text style={styles.openText}>Abrir estante</Text></Pressable>
+                {/* Link asChild repassa o style adiante; na web ele chega a um <a> do DOM,
+                    que não aceita array de estilos (vira style[0] = ... e estoura). Flatten
+                    entrega um objeto único e funciona igual nas duas plataformas. */}
+                <Pressable style={StyleSheet.flatten([styles.openButton, styles.btnRow])}><ReadoraIcon name="forward" size={15} color={appColors.gold} /><Text style={styles.openText}>Abrir estante</Text></Pressable>
               </Link>
               <Pressable style={[styles.danger, styles.btnRow]} onPress={() => deleteShelf(shelf.id)}><ReadoraIcon name="trash" size={15} color={appColors.red} /><Text style={styles.dangerText}>Remover</Text></Pressable>
             </View>
