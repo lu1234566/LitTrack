@@ -1,8 +1,9 @@
 import { Link } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
+import { BookCover } from '@/components/BookCover';
 import { useBooks } from '@/contexts/BookContext';
 import { statusLabel } from '@/services/bookStorage';
 import { BookStatus } from '@/types/book';
@@ -70,8 +71,8 @@ export default function GalleryScreen() {
             {/* Ver shelves.tsx: com Link asChild o style vai parar num <a> do DOM na web,
                 que não aceita array. Flatten resolve sem mudar o resultado visual. */}
             <Pressable style={StyleSheet.flatten([styles.tile, mobile ? styles.tileMobile : styles.tileDesktop])}>
-              <View style={[styles.cover, index % 3 === 1 && styles.coverTall]}>
-                {book.coverUrl ? <Image source={{ uri: book.coverUrl }} style={styles.coverImage} /> : <FallbackCover title={book.title} genre={book.genre} author={book.author} />}
+              <View style={styles.coverWrap}>
+                <BookCover book={book} height={index % 3 === 1 ? 290 : 250} radius={28} reserveBottom={54} />
                 <View style={styles.statusPill}><Text style={styles.statusPillText}>{statusLabel(book.status)}</Text></View>
               </View>
               <Text style={styles.bookTitle} numberOfLines={2}>{book.title}</Text>
@@ -82,17 +83,6 @@ export default function GalleryScreen() {
         ))}
       </View>
     </Screen>
-  );
-}
-
-function FallbackCover({ title, genre, author }: { title: string; genre: string; author: string }) {
-  return (
-    <View style={styles.fallback}>
-      <Text style={styles.fallbackKicker}>{genre || 'READORA'}</Text>
-      <Text style={styles.initial}>{title.slice(0, 1).toUpperCase()}</Text>
-      <Text style={styles.fallbackTitle} numberOfLines={3}>{title}</Text>
-      <Text style={styles.fallbackAuthor} numberOfLines={1}>{author}</Text>
-    </View>
   );
 }
 
@@ -126,16 +116,9 @@ const styles = StyleSheet.create({
   count: { color: appColors.textMuted, fontSize: 13, fontWeight: '800' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 18 },
   tile: { gap: 8 },
+  coverWrap: { position: 'relative' },
   tileDesktop: { width: '22.7%' },
   tileMobile: { width: '47%' },
-  cover: { height: 250, borderRadius: 28, backgroundColor: appColors.surface, borderColor: appColors.borderSoft, borderWidth: 1, justifyContent: 'center', alignItems: 'center', padding: 0, overflow: 'hidden', position: 'relative' },
-  coverTall: { height: 290 },
-  coverImage: { width: '100%', height: '100%' },
-  fallback: { flex: 1, width: '100%', padding: 18, alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'rgb(25,23,20)' },
-  fallbackKicker: { color: appColors.gold, fontSize: 10, letterSpacing: 3, fontWeight: '900', textAlign: 'center' },
-  initial: { color: appColors.gold, fontFamily: appFonts.display, fontSize: 74, fontWeight: '900' },
-  fallbackTitle: { color: appColors.text, fontFamily: appFonts.display, fontSize: 22, lineHeight: 26, fontWeight: '900', textAlign: 'center' },
-  fallbackAuthor: { color: appColors.textMuted, fontSize: 12, fontWeight: '800' },
   statusPill: { position: 'absolute', left: 12, right: 12, bottom: 12, backgroundColor: 'rgba(0,0,0,0.72)', borderColor: appColors.borderSoft, borderWidth: 1, borderRadius: 999, paddingVertical: 8, alignItems: 'center' },
   statusPillText: { color: appColors.gold, fontSize: 10, fontWeight: '900', letterSpacing: 2 },
   bookTitle: { color: appColors.text, fontWeight: '900', lineHeight: 19, fontSize: 15 },

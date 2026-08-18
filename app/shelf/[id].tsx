@@ -1,9 +1,9 @@
-import { useLocalSearchParams } from 'expo-router';
+import { Link, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
-import { BookCard } from '@/components/BookCard';
+import { BookCover } from '@/components/BookCover';
 import { useBooks } from '@/contexts/BookContext';
 import { useShelves } from '@/contexts/ShelfContext';
 import { appColors } from '@/theme/tokens';
@@ -13,6 +13,13 @@ export default function ShelfDetailScreen() {
   const shelfId = Array.isArray(params.id) ? params.id[0] : params.id;
   const { books } = useBooks();
   const { shelves, updateShelf, toggleBookInShelf } = useShelves();
+  // Antes do early return abaixo: hook não pode ficar atrás de um return.
+  const { width } = useWindowDimensions();
+  const mobile = width < 760;
+  // 3 miniaturas por linha no celular, 6 no desktop — a sobra das porcentagens
+  // é o respiro do gap.
+  const thumbWidth = mobile ? '31%' : '15.4%';
+  const thumbHeight = mobile ? 150 : 190;
   const shelf = shelves.find((item) => item.id === shelfId);
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState('');
@@ -65,7 +72,20 @@ export default function ShelfDetailScreen() {
 
       <Text style={styles.section}>Livros da estante</Text>
       {shelfBooks.length === 0 ? <Text style={styles.muted}>Ainda nao ha livros nesta estante.</Text> : null}
-      {shelfBooks.map((book) => <BookCard key={book.id} book={book} />)}
+      {/* Miniaturas, como arquivos numa pasta: a estante é uma coleção visual,
+          e a capa identifica o livro mais rápido do que uma linha de texto.
+          As outras telas seguem com a lista detalhada do BookCard. */}
+      <View style={styles.thumbGrid}>
+        {shelfBooks.map((book) => (
+          <Link key={book.id} href={{ pathname: '/book/[id]', params: { id: book.id } }} asChild>
+            <Pressable style={StyleSheet.flatten([styles.thumb, { width: thumbWidth }])}>
+              <BookCover book={book} height={thumbHeight} />
+              <Text style={styles.thumbTitle} numberOfLines={2}>{book.title}</Text>
+              <Text style={styles.thumbAuthor} numberOfLines={1}>{book.author}</Text>
+            </Pressable>
+          </Link>
+        ))}
+      </View>
 
       <Text style={styles.section}>Adicionar ou remover</Text>
       <Card>
@@ -99,6 +119,10 @@ const styles = StyleSheet.create({
   label: { color: appColors.textMuted, fontSize: 12 },
   section: { color: appColors.text, fontSize: 19, fontWeight: '900' },
   muted: { color: appColors.textMuted },
+  thumbGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  thumb: { gap: 6 },
+  thumbTitle: { color: appColors.text, fontSize: 13, fontWeight: '900', lineHeight: 17 },
+  thumbAuthor: { color: appColors.textMuted, fontSize: 11, fontWeight: '700' },
   bookList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { borderColor: appColors.border, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, maxWidth: 180 },
   chipActive: { backgroundColor: appColors.gold, borderColor: appColors.gold },
