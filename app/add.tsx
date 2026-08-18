@@ -4,6 +4,7 @@ import { Alert, Image, Platform, Pressable, StyleSheet, Text, TextInput, useWind
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
+import { stripHtml } from '@/services/plainText';
 import { lookupExternalBooks } from '@/services/externalBookSearch';
 import { pickImageAsDataUrl, scanBarcodeFromImage } from '@/services/webPlatformTools';
 import { Book, BookStatus } from '@/types/book';
@@ -87,7 +88,7 @@ export default function AddBookScreen() {
     setTotalPages(book.totalPages ? String(book.totalPages) : totalPages);
     setIsbn(book.isbn || isbn);
     setCoverUrl(book.coverUrl || coverUrl);
-    setReason(book.description || reason);
+    setReason(stripHtml(book.description) || reason);
   }
 
   async function chooseLocalCover() {

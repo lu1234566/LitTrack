@@ -97,7 +97,11 @@ export function stripHtml(value: string | undefined | null): string {
     .replace(/<\/(p|div|h[1-6]|blockquote)\s*>/gi, '\n\n')
     .replace(/<li[^>]*>/gi, '\n• ')
     .replace(/<\/li\s*>/gi, '')
-    .replace(/<[^>]*>/g, '');
+    .replace(/<[^>]*>/g, '')
+    // Tag sem fechamento no fim da string: acontece com texto que já foi
+    // cortado por tamanho (a importação guarda os primeiros 220 caracteres da
+    // sinopse), onde o corte cai no meio de um `<i`.
+    .replace(/<[^>]*$/, '');
 
   return decodeEntities(withoutTags)
     // Espaços/tabs repetidos viram um só, sem tocar nas quebras de linha.

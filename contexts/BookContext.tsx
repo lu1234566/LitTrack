@@ -4,14 +4,28 @@ import { calculateProgress, loadBooks, saveBooks } from '@/services/bookStorage'
 import { looksLikeHtml, stripHtml } from '@/services/plainText';
 
 /**
- * Livros salvos antes da limpeza de HTML guardam a sinopse com a marcação crua
- * do Google Books (`<p>`, `<b>`, `&quot;`). Normaliza uma única vez, na carga.
+ * Livros salvos antes da limpeza de HTML guardam a marcação crua do Google
+ * Books (`<p>`, `<b>`, `&quot;`) nos campos de texto livre. Normaliza uma única
+ * vez, na carga.
+ *
+ * São três campos, não só a sinopse: a importação copia a `description` para
+ * `reasonToRead` (é esse que aparece no cartão da lista), e a `review` pode ter
+ * vindo de um backup antigo pelo mesmo caminho.
+ *
  * `updatedAt` fica intacto de propósito: isto é correção de formatação, não
  * edição do usuário, e não deve ganhar a disputa contra uma alteração real
  * feita no outro aparelho.
  */
-function withCleanDescriptions(books: Book[]) {
-  return books.map((book) => (looksLikeHtml(book.description) ? { ...book, description: stripHtml(book.description) } : book));
+const TEXT_FIELDS = ['description', 'reasonToRead', 'review'] as const;
+
+function withCleanText(books: Book[]) {
+  return books.map((book) => {
+    const dirty = TEXT_FIELDS.filter((field) => looksLikeHtml(book[field]));
+    if (!dirty.length) return book;
+    const patch: Partial<Book> = {};
+    dirty.forEach((field) => { patch[field] = stripHtml(book[field]); });
+    return { ...book, ...patch };
+  });
 }
 
 type BookInput = Omit<Book, 'id' | 'createdAt' | 'updatedAt'>;
@@ -79,7 +93,7 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     loadBooks().then(async (loaded) => {
-      const cleaned = withCleanDescriptions(loaded);
+      const cleaned = withCleanText(loaded);
       booksRef.current = cleaned;
       setBooks(cleaned);
       // Só regrava se algo realmente mudou — o mapa devolve o mesmo objeto
@@ -97,7 +111,7 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
   async function replaceBooks(nextBooks: Book[]) {
     // Caminho da sincronização: a nuvem pode trazer sinopses ainda com HTML,
     // gravadas por um aparelho que não recebeu esta versão.
-    await persist(withCleanDescriptions(nextBooks));
+    await persist(withCleanText(nextBooks));
   }
 
   async function reload() {

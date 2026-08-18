@@ -3,6 +3,7 @@ import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-nativ
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
+import { stripHtml } from '@/services/plainText';
 import { searchGoogleBooks } from '@/services/externalBookSearch';
 import { ExternalBook } from '@/types/externalBook';
 import { appColors } from '@/theme/tokens';
@@ -95,7 +96,9 @@ export default function DiscoverScreen() {
       isbn: book.isbn || '',
       coverUrl: book.coverUrl || '',
       priority: 'media',
-      reasonToRead: book.description ? book.description.slice(0, 220) : 'Importado da busca externa.',
+      // Limpa ANTES de cortar: cortar em 220 caracteres um texto com marcação
+      // deixava uma tag pela metade no campo que aparece no cartão da lista.
+      reasonToRead: book.description ? stripHtml(book.description).slice(0, 220) : 'Importado da busca externa.',
       mood: '',
       notes: book.source
     });

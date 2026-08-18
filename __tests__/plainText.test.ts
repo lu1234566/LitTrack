@@ -43,6 +43,15 @@ describe('stripHtml', () => {
     expect(stripHtml('antes &#99999999999; depois')).toBe('antes depois');
   });
 
+  it('limpa texto que já foi cortado no meio de uma tag', () => {
+    // Caso real: a importação guardava os primeiros 220 caracteres da sinopse
+    // em reasonToRead, e o corte caía dentro de uma tag.
+    const cortado = '<p><b>AN INSTANT <i>NEW YORK TIMES</i> BESTSELLER</b></p><p><b>"Everything ';
+    expect(stripHtml(cortado)).toBe('AN INSTANT NEW YORK TIMES BESTSELLER\n\n"Everything');
+    expect(stripHtml('fim abrupto <i')).toBe('fim abrupto');
+    expect(stripHtml('fim abrupto <')).toBe('fim abrupto');
+  });
+
   it('remove script e style junto com o conteúdo', () => {
     expect(stripHtml('Texto<script>alert(1)</script> final')).toBe('Texto final');
   });
