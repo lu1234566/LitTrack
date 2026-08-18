@@ -1,4 +1,5 @@
 import { ExternalBook } from '@/types/externalBook';
+import { stripHtml } from '@/services/plainText';
 
 function normalizeCover(url?: string) {
   if (!url) return undefined;
@@ -107,7 +108,7 @@ async function fromGoogleBooks(query: string): Promise<ExternalBook[]> {
         totalPages: Number(info.pageCount) || 0,
         isbn: pickIsbn(info.industryIdentifiers),
         coverUrl: normalizeCover(info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail),
-        description: info.description || '',
+        description: stripHtml(info.description),
         source: 'google-books'
       };
     });
@@ -140,7 +141,7 @@ async function fromGoogleVolume(volumeId: string): Promise<ExternalBook[]> {
       totalPages: Number(info.pageCount) || 0,
       isbn: pickIsbn(info.industryIdentifiers),
       coverUrl: normalizeCover(info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail),
-      description: info.description || '',
+      description: stripHtml(info.description),
       source: 'google-books'
     }];
   } catch {
@@ -196,7 +197,7 @@ async function fromOpenLibraryIsbn(isbn: string): Promise<ExternalBook[]> {
       totalPages: Number(item.number_of_pages) || 0,
       isbn,
       coverUrl: normalizeCover(item.cover?.large || item.cover?.medium),
-      description: typeof item.notes === 'string' ? item.notes : '',
+      description: stripHtml(typeof item.notes === 'string' ? item.notes : ''),
       source: 'open-library'
     }];
   } catch {
@@ -234,7 +235,7 @@ async function fromMercadoEditorial(isbn: string): Promise<ExternalBook[]> {
         totalPages: Number(row?.paginas) || 0,
         isbn: row?.isbn || isbn,
         coverUrl: normalizeCover(covers?.grande || covers?.media || covers?.pequena),
-        description: row?.sinopse || '',
+        description: stripHtml(row?.sinopse),
         source: 'mercado-editorial'
       };
     }).filter((b: ExternalBook) => b.title);
@@ -244,17 +245,6 @@ async function fromMercadoEditorial(isbn: string): Promise<ExternalBook[]> {
 }
 
 /** A sinopse da Apple vem em HTML; o app mostra texto puro. */
-function stripHtml(value: string) {
-  return String(value || '')
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/p>/gi, '\n\n')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-}
-
 /**
  * Apple Books (iTunes Search API) — gratuita e sem chave. Vale muito porque
  * funciona por TÍTULO (não exige ISBN) e, com country=BR, devolve a sinopse em
@@ -279,7 +269,7 @@ async function fromAppleBooks(query: string): Promise<ExternalBook[]> {
       isbn: undefined,
       // artworkUrl100 é 100px; pedindo 600x600 vem uma capa utilizável.
       coverUrl: normalizeCover(String(row?.artworkUrl100 || '').replace(/100x100bb/, '600x600bb')),
-      description: stripHtml(row?.description || ''),
+      description: stripHtml(row?.description),
       source: 'apple-books'
     })).filter((b: ExternalBook) => b.title);
   } catch {
@@ -311,7 +301,7 @@ async function fromOpenLibraryWork(workKey: string): Promise<ExternalBook[]> {
       totalPages: 0,
       isbn: undefined,
       coverUrl: undefined,
-      description: String(description),
+      description: stripHtml(String(description)),
       source: 'open-library'
     }];
   } catch {

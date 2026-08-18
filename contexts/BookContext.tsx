@@ -1,6 +1,18 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Book, BookStatus, ReadingStats } from '@/types/book';
 import { calculateProgress, loadBooks, saveBooks } from '@/services/bookStorage';
+import { looksLikeHtml, stripHtml } from '@/services/plainText';
+
+/**
+ * Livros salvos antes da limpeza de HTML guardam a sinopse com a marcação crua
+ * do Google Books (`<p>`, `<b>`, `&quot;`). Normaliza uma única vez, na carga.
+ * `updatedAt` fica intacto de propósito: isto é correção de formatação, não
+ * edição do usuário, e não deve ganhar a disputa contra uma alteração real
+ * feita no outro aparelho.
+ */
+function withCleanDescriptions(books: Book[]) {
+  return books.map((book) => (looksLikeHtml(book.description) ? { ...book, description: stripHtml(book.description) } : book));
+}
 
 type BookInput = Omit<Book, 'id' | 'createdAt' | 'updatedAt'>;
 
@@ -66,7 +78,14 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
   const booksRef = useRef<Book[]>([]);
 
   useEffect(() => {
-    loadBooks().then((loaded) => { booksRef.current = loaded; setBooks(loaded); }).finally(() => setLoading(false));
+    loadBooks().then(async (loaded) => {
+      const cleaned = withCleanDescriptions(loaded);
+      booksRef.current = cleaned;
+      setBooks(cleaned);
+      // Só regrava se algo realmente mudou — o mapa devolve o mesmo objeto
+      // quando a sinopse já está limpa.
+      if (cleaned.some((book, index) => book !== loaded[index])) await saveBooks(cleaned);
+    }).finally(() => setLoading(false));
   }, []);
 
   async function persist(nextBooks: Book[]) {
@@ -76,7 +95,9 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function replaceBooks(nextBooks: Book[]) {
-    await persist(nextBooks);
+    // Caminho da sincronização: a nuvem pode trazer sinopses ainda com HTML,
+    // gravadas por um aparelho que não recebeu esta versão.
+    await persist(withCleanDescriptions(nextBooks));
   }
 
   async function reload() {

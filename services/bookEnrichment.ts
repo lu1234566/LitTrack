@@ -1,6 +1,7 @@
 import { Book } from '@/types/book';
 import { ExternalBook } from '@/types/externalBook';
 import { lookupExternalBooks } from '@/services/externalBookSearch';
+import { stripHtml } from '@/services/plainText';
 
 const UNSET_GENRES = ['', 'a definir', 'diverso', 'indefinido'];
 
@@ -100,7 +101,7 @@ export async function enrichBookPatch(book: Book): Promise<Partial<Book> | null>
       .catch(() => null);
     if (facts) {
       const aiPatch: Partial<Book> = {};
-      if (gaps.includes('sinopse') && facts.description) aiPatch.description = facts.description;
+      if (gaps.includes('sinopse') && facts.description) aiPatch.description = stripHtml(facts.description);
       if (gaps.includes('páginas') && facts.totalPages) aiPatch.totalPages = facts.totalPages;
       if (gaps.includes('gênero') && facts.genre) aiPatch.genre = facts.genre;
       if (Object.keys(aiPatch).length) {
