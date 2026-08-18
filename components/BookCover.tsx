@@ -43,6 +43,16 @@ export function BookCover({
 function FallbackCover({ book, height, reserveBottom }: { book: Book; height: number; reserveBottom: number }) {
   const scale = height / 250;
   const compact = height < 170;
+  // Abaixo disso (pilha de capas da lista de estantes) só cabe a inicial —
+  // qualquer texto viraria borrão cortado pelo overflow.
+  const tiny = height < 90;
+  if (tiny) {
+    return (
+      <View style={styles.tiny}>
+        <Text style={[styles.initial, { fontSize: Math.max(18, height * 0.42) }]}>{book.title.slice(0, 1).toUpperCase()}</Text>
+      </View>
+    );
+  }
   return (
     <View style={[styles.fallback, compact && styles.fallbackCompact, reserveBottom > 0 && { paddingBottom: reserveBottom }]}>
       {!compact ? <Text style={styles.kicker} numberOfLines={1}>{book.genre || 'READORA'}</Text> : null}
@@ -68,6 +78,7 @@ const styles = StyleSheet.create({
   image: { width: '100%', height: '100%' },
   fallback: { flex: 1, width: '100%', padding: 18, alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'rgb(25,23,20)' },
   fallbackCompact: { padding: 10, justifyContent: 'center', gap: 6 },
+  tiny: { flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgb(25,23,20)' },
   kicker: { color: appColors.gold, fontSize: 10, letterSpacing: 3, fontWeight: '900', textAlign: 'center' },
   initial: { color: appColors.gold, fontFamily: appFonts.display, fontWeight: '900' },
   title: { color: appColors.text, fontFamily: appFonts.display, fontWeight: '900', textAlign: 'center' },
