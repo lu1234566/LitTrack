@@ -4,9 +4,8 @@ import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
 import { useQuotes } from '@/contexts/QuoteContext';
-import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { useShelves } from '@/contexts/ShelfContext';
-import { buildAchievements, calculateReadingStreak } from '@/services/readingAchievements';
+import { buildAchievements } from '@/services/readingAchievements';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors } from '@/theme/tokens';
 
@@ -15,13 +14,9 @@ export default function ProgressScreen() {
   const { preferences } = usePreferences();
   const { quotes } = useQuotes();
   const { shelves } = useShelves();
-  const { sessions } = useReadingSessions();
-  const achievements = buildAchievements(books, quotes, shelves, sessions);
+  const achievements = buildAchievements(books, quotes, shelves);
   const unlocked = achievements.filter((item) => item.unlocked).length;
-  const streak = calculateReadingStreak(sessions);
   const goalProgress = preferences.yearlyGoal > 0 ? Math.min(100, Math.round((stats.finishedBooks / preferences.yearlyGoal) * 100)) : 0;
-  const sessionPages = sessions.reduce((sum, session) => sum + session.pagesRead, 0);
-  const sessionMinutes = sessions.reduce((sum, session) => sum + session.minutesRead, 0);
 
   return (
     <Screen>
@@ -36,10 +31,9 @@ export default function ProgressScreen() {
       </Card>
 
       <View style={styles.grid}>
-        <Card><Text style={styles.big}>{streak}</Text><Text style={styles.label}>dias em sequencia</Text></Card>
         <Card><Text style={styles.big}>{unlocked}/{achievements.length}</Text><Text style={styles.label}>conquistas</Text></Card>
-        <Card><Text style={styles.big}>{sessionPages}</Text><Text style={styles.label}>paginas em sessoes</Text></Card>
-        <Card><Text style={styles.big}>{sessionMinutes}</Text><Text style={styles.label}>minutos</Text></Card>
+        <Card><Text style={styles.big}>{stats.finishedBooks}</Text><Text style={styles.label}>livros concluidos</Text></Card>
+        <Card><Text style={styles.big}>{stats.pagesRead.toLocaleString('pt-BR')}</Text><Text style={styles.label}>paginas lidas</Text></Card>
       </View>
 
       <Text style={styles.section}>Conquistas</Text>

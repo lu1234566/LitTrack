@@ -1,5 +1,7 @@
 import { Stack } from 'expo-router';
+import { useEffect } from 'react';
 import { Text as RNText, TextInput as RNTextInput } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -11,7 +13,6 @@ import { BookProvider } from '@/contexts/BookContext';
 import { PreferencesProvider } from '@/contexts/PreferencesContext';
 import { QuoteProvider } from '@/contexts/QuoteContext';
 import { ShelfProvider } from '@/contexts/ShelfContext';
-import { ReadingSessionProvider } from '@/contexts/ReadingSessionContext';
 import { SessionProvider } from '@/contexts/SessionContext';
 import { appColors, appFonts } from '@/theme/tokens';
 
@@ -28,7 +29,16 @@ const textDefaults = { allowFontScaling: false, style: { fontFamily: appFonts.bo
   ...textDefaults
 };
 
+// Chave do armazenamento local das sessões de leitura, recurso removido do app.
+// Nada mais lê esses dados; apagar libera espaço e evita que um backup antigo
+// os traga de volta sem dono.
+const LEGACY_SESSIONS_KEY = '@readora_native_reading_sessions';
+
 export default function RootLayout() {
+  useEffect(() => {
+    AsyncStorage.removeItem(LEGACY_SESSIONS_KEY).catch(() => {});
+  }, []);
+
   // Kick off icon-font preload, but never block rendering on it: gating the
   // whole app on font loading risks a permanent black screen if the load
   // stalls. The icon glyphs paint as soon as the font resolves.
@@ -45,7 +55,6 @@ export default function RootLayout() {
         <BookProvider>
           <QuoteProvider>
             <ShelfProvider>
-              <ReadingSessionProvider>
                 <Stack
                   screenOptions={{
                     headerShown: false,
@@ -73,7 +82,6 @@ export default function RootLayout() {
                 </Stack>
                 <AutoSyncBridge />
                 <UpdateBanner />
-              </ReadingSessionProvider>
             </ShelfProvider>
           </QuoteProvider>
         </BookProvider>

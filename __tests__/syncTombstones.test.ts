@@ -49,10 +49,10 @@ describe('tombstone persistence', () => {
 
   it('keeps collections independent', async () => {
     await addTombstones('books', ['a']);
-    await addTombstones('sessions', ['s1']);
+    await addTombstones('shelves', ['s1']);
     const t = await loadTombstones();
     expect(tombstoneIds(t, 'books')).toEqual(['a']);
-    expect(tombstoneIds(t, 'sessions')).toEqual(['s1']);
+    expect(tombstoneIds(t, 'shelves')).toEqual(['s1']);
     expect(tombstoneIds(t, 'quotes')).toEqual([]);
   });
 

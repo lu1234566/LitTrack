@@ -4,10 +4,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useBooks } from '@/contexts/BookContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
 import { useQuotes } from '@/contexts/QuoteContext';
-import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { useSession } from '@/contexts/SessionContext';
 import { useShelves } from '@/contexts/ShelfContext';
-import { isNativeFirebaseConfigured, pullReadoraBundle, pushReadoraBundle } from '@/services/firebaseNative';
+import { isNativeFirebaseConfigured, pullReadoraBundle, purgeRemoteReadingSessions, pushReadoraBundle } from '@/services/firebaseNative';
 import { addTombstones, clearTombstones, dropTombstoned, loadTombstones, SyncCollectionName, tombstoneIds } from '@/services/syncTombstones';
 import { appColors } from '@/theme/tokens';
 
@@ -22,7 +21,6 @@ export function AutoSyncBridge() {
   const { books, replaceBooks } = useBooks();
   const { quotes, setQuoteList } = useQuotes();
   const { shelves, setShelfList } = useShelves();
-  const { sessions, setSessionList } = useReadingSessions();
   const { preferences, updatePreferences } = usePreferences();
   const [status, setStatus] = useState('');
   const [hydrated, setHydrated] = useState(false);
@@ -31,12 +29,12 @@ export function AutoSyncBridge() {
   // Snapshot of the ids present after the last sync, per collection. Comparing
   // against the current ids tells us exactly what the user deleted, so we can
   // propagate that deletion instead of inferring it destructively.
-  const prevIds = useRef<Record<SyncCollectionName, Set<string>>>({ books: new Set(), quotes: new Set(), shelves: new Set(), sessions: new Set() });
+  const prevIds = useRef<Record<SyncCollectionName, Set<string>>>({ books: new Set(), quotes: new Set(), shelves: new Set() });
   // Always-current snapshot of local state, so the pull effect (which only
   // runs once, at mount) merges against whatever the user has edited since —
   // not a stale copy captured when the effect was first defined.
-  const latest = useRef({ books, quotes, shelves, sessions, preferences });
-  latest.current = { books, quotes, shelves, sessions, preferences };
+  const latest = useRef({ books, quotes, shelves, preferences });
+  latest.current = { books, quotes, shelves, preferences };
 
   // Restore the last successful sync time so the user sees it on open.
   useEffect(() => {
@@ -63,8 +61,10 @@ export function AutoSyncBridge() {
         if (bundle.books?.length) await replaceBooks(mergeByUpdatedAt(latest.current.books, dropTombstoned(bundle.books, tombstones, 'books')));
         if (bundle.quotes?.length) await setQuoteList(mergeByUpdatedAt(latest.current.quotes, dropTombstoned(bundle.quotes, tombstones, 'quotes')));
         if (bundle.shelves?.length) await setShelfList(mergeByUpdatedAt(latest.current.shelves, dropTombstoned(bundle.shelves, tombstones, 'shelves')));
-        if (bundle.sessions?.length) await setSessionList(mergeByUpdatedAt(latest.current.sessions, dropTombstoned(bundle.sessions, tombstones, 'sessions')));
         if (bundle.preferences) await updatePreferences({ ...latest.current.preferences, ...bundle.preferences });
+        // Limpeza única: derruba a coleção `sessions` que ficou na nuvem de
+        // quando o app tinha sessões de leitura.
+        void purgeRemoteReadingSessions(currentUserId);
         setStatus('Dados sincronizados.');
       } catch {
         setStatus('Não foi possível receber dados remotos.');
@@ -87,8 +87,7 @@ export function AutoSyncBridge() {
     const current: Record<SyncCollectionName, Set<string>> = {
       books: new Set(books.map((b) => b.id)),
       quotes: new Set(quotes.map((q) => q.id)),
-      shelves: new Set(shelves.map((s) => s.id)),
-      sessions: new Set(sessions.map((s) => s.id))
+      shelves: new Set(shelves.map((s) => s.id))
     };
     (Object.keys(current) as SyncCollectionName[]).forEach((name) => {
       const removed = [...prevIds.current[name]].filter((id) => !current[name].has(id));
@@ -96,7 +95,7 @@ export function AutoSyncBridge() {
       prevIds.current[name] = current[name];
     });
 
-    const payload = JSON.stringify({ books, quotes, shelves, sessions, preferences });
+    const payload = JSON.stringify({ books, quotes, shelves, preferences });
     if (payload === lastPayload.current) return;
     lastPayload.current = payload;
     const timeout = setTimeout(async () => {
@@ -106,10 +105,9 @@ export function AutoSyncBridge() {
         const deletions = {
           books: tombstoneIds(tombstones, 'books'),
           quotes: tombstoneIds(tombstones, 'quotes'),
-          shelves: tombstoneIds(tombstones, 'shelves'),
-          sessions: tombstoneIds(tombstones, 'sessions')
+          shelves: tombstoneIds(tombstones, 'shelves')
         };
-        const result = await pushReadoraBundle(userId, { books, quotes, shelves, sessions, preferences }, deletions);
+        const result = await pushReadoraBundle(userId, { books, quotes, shelves, preferences }, deletions);
         if (result.ok) {
           // Deletions confirmed remotely — drop their tombstones.
           await Promise.all((Object.keys(deletions) as SyncCollectionName[]).map((name) => clearTombstones(name, deletions[name])));
@@ -124,7 +122,7 @@ export function AutoSyncBridge() {
       }
     }, 1800);
     return () => clearTimeout(timeout);
-  }, [hydrated, user?.uid, books, quotes, shelves, sessions, preferences]);
+  }, [hydrated, user?.uid, books, quotes, shelves, preferences]);
 
   if (!user || !status) return null;
   return <View style={{ position: 'absolute', right: 14, bottom: 14, backgroundColor: appColors.surface, borderColor: appColors.border, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, zIndex: 100 }}><Text style={{ color: appColors.textMuted, fontSize: 11, fontWeight: '900' }}>{status}</Text></View>;

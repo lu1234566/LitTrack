@@ -3,21 +3,16 @@ import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-na
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
-import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { WrappedStory } from '@/components/WrappedStory';
 import { appColors, appFonts } from '@/theme/tokens';
 
 export default function RetrospectiveScreen() {
   const { books, stats } = useBooks();
-  const { sessions } = useReadingSessions();
   const { width } = useWindowDimensions();
   const mobile = width < 760;
   const best = books.filter((book) => book.rating && book.rating > 0).sort((a, b) => (b.rating || 0) - (a.rating || 0))[0];
   const longest = [...books].sort((a, b) => (b.totalPages || 0) - (a.totalPages || 0))[0];
-  const sessionPages = sessions.reduce((sum, session) => sum + session.pagesRead, 0);
-  const sessionMinutes = sessions.reduce((sum, session) => sum + session.minutesRead, 0);
-  const longestSession = [...sessions].sort((a, b) => b.pagesRead - a.pagesRead)[0];
 
   const year = new Date().getFullYear();
   const monthlyFinished = Array.from({ length: 12 }, () => 0);
@@ -47,14 +42,14 @@ export default function RetrospectiveScreen() {
 
       <View style={[styles.grid, mobile && styles.stack]}>
         <Metric label="LIVROS CONCLUÍDOS" value={String(stats.finishedBooks)} />
-        <Metric label="PÁGINAS EM SESSÕES" value={String(sessionPages)} />
-        <Metric label="MINUTOS REGISTRADOS" value={String(sessionMinutes)} />
+        <Metric label="PÁGINAS LIDAS" value={stats.pagesRead.toLocaleString('pt-BR')} />
+        <Metric label="NOTA MÉDIA" value={stats.averageRating.toFixed(1) + '/5'} />
       </View>
 
       <View style={[styles.featureGrid, mobile && styles.stack]}>
         <Highlight title="Melhor avaliado" value={best ? best.title : 'Ainda sem notas'} detail={best ? best.rating + '/5 estrelas' : 'Avalie seus livros para destacar favoritos.'} color={appColors.gold} />
         <Highlight title="Maior livro" value={longest ? longest.title : 'Ainda sem livros'} detail={longest ? (longest.totalPages || 0) + ' páginas' : 'Cadastre leituras para criar marcos.'} color={appColors.purple} />
-        <Highlight title="Sessão mais intensa" value={longestSession ? longestSession.bookTitle : 'Ainda sem sessões'} detail={longestSession ? longestSession.pagesRead + ' páginas em uma sessão' : 'Atualize o progresso dos seus livros para mapear seu ritmo.'} color={appColors.emerald} />
+        <Highlight title="Mês mais forte" value={monthlyFinished[bestMonthIdx] > 0 ? monthNames[bestMonthIdx] : 'Ainda sem marcos'} detail={monthlyFinished[bestMonthIdx] > 0 ? monthlyFinished[bestMonthIdx] + ' livro(s) concluído(s)' : 'Conclua leituras para destacar seu melhor mês.'} color={appColors.emerald} />
       </View>
 
       <Card>

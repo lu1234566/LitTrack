@@ -2,42 +2,39 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
-import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { appColors } from '@/theme/tokens';
 
 export default function YearlyComparisonScreen() {
   const { books } = useBooks();
-  const { sessions } = useReadingSessions();
   const currentYear = new Date().getFullYear();
   const years = [currentYear, currentYear - 1, currentYear - 2];
 
   const rows = years.map((year) => {
     const yearBooks = books.filter((book) => new Date(book.createdAt).getFullYear() === year || (book.finishedAt && new Date(book.finishedAt).getFullYear() === year));
-    const yearSessions = sessions.filter((session) => new Date(session.createdAt).getFullYear() === year);
     return {
       year,
       books: yearBooks.length,
       finished: yearBooks.filter((book) => book.status === 'finished').length,
-      pages: yearSessions.reduce((sum, session) => sum + session.pagesRead, 0),
-      minutes: yearSessions.reduce((sum, session) => sum + session.minutesRead, 0),
-      sessions: yearSessions.length
+      // Páginas do próprio livro: o total quando concluído, o progresso atual
+      // quando em andamento.
+      pages: yearBooks.reduce((sum, book) => sum + (book.status === 'finished' ? (book.totalPages || 0) : (book.currentPage || 0)), 0),
+      rated: yearBooks.filter((book) => (book.rating || 0) > 0).length
     };
   });
 
   return (
     <Screen>
       <Text style={styles.title}>Comparativo anual</Text>
-      <Text style={styles.subtitle}>Comparacao entre anos usando livros cadastrados e sessoes de leitura.</Text>
+      <Text style={styles.subtitle}>Comparacao entre anos usando os livros cadastrados e seu progresso.</Text>
       {rows.map((row) => (
         <Card key={row.year}>
           <Text style={styles.year}>{row.year}</Text>
           <View style={styles.grid}>
             <View style={styles.item}><Text style={styles.big}>{row.books}</Text><Text style={styles.label}>livros</Text></View>
             <View style={styles.item}><Text style={styles.big}>{row.finished}</Text><Text style={styles.label}>lidos</Text></View>
-            <View style={styles.item}><Text style={styles.big}>{row.pages}</Text><Text style={styles.label}>paginas</Text></View>
-            <View style={styles.item}><Text style={styles.big}>{row.minutes}</Text><Text style={styles.label}>min</Text></View>
+            <View style={styles.item}><Text style={styles.big}>{row.pages.toLocaleString('pt-BR')}</Text><Text style={styles.label}>paginas</Text></View>
+            <View style={styles.item}><Text style={styles.big}>{row.rated}</Text><Text style={styles.label}>avaliados</Text></View>
           </View>
-          <Text style={styles.body}>{row.sessions} sessao(oes) registradas neste ano.</Text>
         </Card>
       ))}
     </Screen>

@@ -4,7 +4,6 @@ import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from 'reac
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { calculateProgress, useBooks } from '@/contexts/BookContext';
-import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { statusLabel } from '@/services/bookStorage';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { BookShareCard } from '@/components/BookShareCard';
@@ -15,7 +14,6 @@ import { appColors } from '@/theme/tokens';
 export default function BookDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getBook, updateProgress, updateStatus, deleteBook } = useBooks();
-  const { addSession, sessionsForBook } = useReadingSessions();
   const book = useMemo(() => getBook(String(id)), [getBook, id]);
   const [page, setPage] = useState(book?.currentPage ? String(book.currentPage) : '');
   const [showCard, setShowCard] = useState(false);
@@ -32,7 +30,6 @@ export default function BookDetailsScreen() {
 
   const currentBook = book;
   const progress = calculateProgress(currentBook);
-  const bookSessions = sessionsForBook(currentBook.id);
 
   async function handleProgress() {
     const rawPage = Number(page);
@@ -40,17 +37,10 @@ export default function BookDetailsScreen() {
       Alert.alert('Pagina invalida', 'Digite um numero valido.');
       return;
     }
-    // Auto-registra a leitura: ao avançar páginas, cria uma sessão silenciosa
-    // (sem formulário) para alimentar streak, heatmap e linha do tempo.
-    // O clamp espelha o que updateProgress aplica internamente, para que o
-    // total de páginas da sessão nunca ultrapasse o avanço real do livro.
+    // O clamp espelha o que updateProgress aplica internamente.
     const totalPages = currentBook.totalPages || 0;
     const nextPage = Math.max(0, Math.min(rawPage, totalPages || rawPage));
-    const advanced = nextPage - (currentBook.currentPage || 0);
     await updateProgress(currentBook.id, nextPage);
-    if (advanced > 0) {
-      await addSession({ bookId: currentBook.id, bookTitle: currentBook.title, pagesRead: advanced, minutesRead: 0, note: '', mood: '' });
-    }
   }
 
   async function handleDelete() {
@@ -91,7 +81,7 @@ export default function BookDetailsScreen() {
         <Card><Text style={styles.smallValue}>{currentBook.rating || 0}/5</Text><Text style={styles.smallLabel}>nota</Text></Card>
         <Card><Text style={styles.smallValue}>{currentBook.publisher || '-'}</Text><Text style={styles.smallLabel}>editora</Text></Card>
         <Card><Text style={styles.smallValue}>{currentBook.publishedDate || '-'}</Text><Text style={styles.smallLabel}>ano</Text></Card>
-        <Card><Text style={styles.smallValue}>{bookSessions.length}</Text><Text style={styles.smallLabel}>sessoes</Text></Card>
+        <Card><Text style={styles.smallValue}>{currentBook.genre || '-'}</Text><Text style={styles.smallLabel}>genero</Text></Card>
         <Card>
           <Text style={styles.smallValue}>{currentBook.finishedAt ? capitalize(new Date(currentBook.finishedAt).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })) : '-'}</Text>
           <Text style={styles.smallLabel}>mes de leitura</Text>
@@ -114,15 +104,6 @@ export default function BookDetailsScreen() {
         <Pressable style={styles.secondaryButton} onPress={() => updateStatus(currentBook.id, 'wishlist')}><Text style={styles.secondaryText}>Quero ler</Text></Pressable>
         <Pressable style={styles.secondaryButton} onPress={() => updateStatus(currentBook.id, 'dnf')}><Text style={styles.secondaryText}>Abandonei</Text></Pressable>
       </View>
-
-      {bookSessions.slice(0, 3).map((session) => (
-        <Card key={session.id}>
-          <Text style={styles.cardTitle}>Leitura registrada</Text>
-          <Text style={styles.body}>{session.pagesRead} paginas{session.minutesRead ? ' • ' + session.minutesRead + ' min' : ''} • {new Date(session.createdAt).toLocaleDateString('pt-BR')}</Text>
-          {session.mood ? <Text style={styles.body}>Humor: {session.mood}</Text> : null}
-          {session.note ? <Text style={styles.body}>{session.note}</Text> : null}
-        </Card>
-      ))}
 
       {currentBook.contentWarnings ? <Card><Text style={[styles.cardTitle, { color: appColors.red }]}>Alertas de conteúdo</Text><Text style={styles.body}>{currentBook.contentWarnings}</Text></Card> : null}
       {currentBook.reasonToRead ? <Card><Text style={styles.cardTitle}>Motivo de leitura</Text><Text style={styles.body}>{currentBook.reasonToRead}</Text></Card> : null}
@@ -169,7 +150,6 @@ const styles = StyleSheet.create({
   body: { color: appColors.textMuted, lineHeight: 22 },
   input: { backgroundColor: appColors.surface, borderColor: appColors.border, borderWidth: 1, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, color: appColors.text, fontSize: 16 },
   textArea: { backgroundColor: appColors.surface, borderColor: appColors.border, borderWidth: 1, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, color: appColors.text, fontSize: 16, minHeight: 90, textAlignVertical: 'top' },
-  sessionRow: { flexDirection: 'row', gap: 10 },
   half: { flex: 1 },
   primaryButton: { backgroundColor: appColors.gold, borderRadius: 999, paddingVertical: 14, alignItems: 'center' },
   primaryText: { color: appColors.background, fontWeight: '900' },

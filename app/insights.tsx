@@ -3,7 +3,6 @@ import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
 import { useQuotes } from '@/contexts/QuoteContext';
-import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { useShelves } from '@/contexts/ShelfContext';
 import { buildReadingInsights } from '@/services/readingInsights';
 import { buildDiversity } from '@/services/diversity';
@@ -13,8 +12,7 @@ export default function InsightsScreen() {
   const { books } = useBooks();
   const { quotes } = useQuotes();
   const { shelves } = useShelves();
-  const { sessions } = useReadingSessions();
-  const insights = buildReadingInsights(books, quotes, shelves, sessions);
+  const insights = buildReadingInsights(books, quotes, shelves);
   const diversity = buildDiversity(books);
   const maxDecade = Math.max(1, ...diversity.decades.map((d) => d.count));
 
@@ -24,8 +22,8 @@ export default function InsightsScreen() {
       <Text style={styles.subtitle}>Leitura analitica dos seus autores, generos, citacoes, humores e ritmo.</Text>
 
       <View style={styles.grid}>
-        <Card><Text style={styles.big}>{insights.averagePagesPerSession}</Text><Text style={styles.label}>paginas por sessao</Text></Card>
-        <Card><Text style={styles.big}>{insights.averageMinutesPerSession}</Text><Text style={styles.label}>minutos por sessao</Text></Card>
+        <Card><Text style={styles.big}>{insights.totalPages.toLocaleString('pt-BR')}</Text><Text style={styles.label}>paginas lidas</Text></Card>
+        <Card><Text style={styles.big}>{insights.averagePagesPerBook}</Text><Text style={styles.label}>paginas por livro</Text></Card>
       </View>
 
       <Card>

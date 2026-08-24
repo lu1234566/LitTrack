@@ -5,7 +5,6 @@ import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
 import { useQuotes } from '@/contexts/QuoteContext';
-import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { useShelves } from '@/contexts/ShelfContext';
 import { createReadoraBackup, parseReadoraBackup, stringifyBackup } from '@/services/readoraBackup';
 import { csvToBooks, mergeImported } from '@/services/csvImport';
@@ -24,7 +23,6 @@ export default function BackupScreen() {
   const { preferences, updatePreferences } = usePreferences();
   const { quotes, setQuoteList } = useQuotes();
   const { shelves, setShelfList } = useShelves();
-  const { sessions, setSessionList } = useReadingSessions();
   const { width } = useWindowDimensions();
   const mobile = width < 760;
   const [scope, setScope] = useState<'all' | BookStatus>('all');
@@ -92,7 +90,6 @@ export default function BackupScreen() {
       books: selectedBooks,
       quotes: quotes.filter((quote) => !quote.bookId || selectedIds.has(quote.bookId)),
       shelves,
-      sessions: sessions.filter((session) => selectedBooks.some((book) => book.id === session.bookId)),
       preferences
     });
     return stringifyBackup(backup);
@@ -117,7 +114,6 @@ export default function BackupScreen() {
   function buildReportText() {
     const selectedIds = new Set(selectedBooks.map((book) => book.id));
     const selectedQuotes = quotes.filter((quote) => !quote.bookId || selectedIds.has(quote.bookId));
-    const selectedSessions = sessions.filter((session) => selectedBooks.some((book) => book.id === session.bookId));
     const selectedPages = selectedBooks.reduce((sum, book) => sum + (book.totalPages || 0), 0);
     const selectedAverage = selectedBooks.length ? selectedBooks.reduce((sum, book) => sum + (book.rating || 0), 0) / selectedBooks.length : 0;
     return [
@@ -133,16 +129,12 @@ export default function BackupScreen() {
       '- Páginas cadastradas: ' + selectedPages,
       '- Média filtrada: ' + selectedAverage.toFixed(1),
       '- Citações relacionadas: ' + selectedQuotes.length,
-      '- Sessões relacionadas: ' + selectedSessions.length,
       '',
       'LIVROS',
       ...(selectedBooks.length ? selectedBooks.map((book, index) => (index + 1) + '. ' + book.title + ' — ' + book.author + ' | ' + book.genre + ' | ' + statusLabel(book.status) + ' | ' + (book.rating || 0) + '/5') : ['Nenhum livro selecionado.']),
       '',
       'CITAÇÕES FAVORITAS',
-      ...(selectedQuotes.filter((quote) => quote.favorite).map((quote) => '- “' + quote.text + '” — ' + quote.bookTitle)),
-      '',
-      'SESSÕES RECENTES',
-      ...(selectedSessions.slice(0, 10).map((session) => '- ' + session.bookTitle + ': ' + session.pagesRead + ' páginas em ' + session.minutesRead + ' minutos'))
+      ...(selectedQuotes.filter((quote) => quote.favorite).map((quote) => '- “' + quote.text + '” — ' + quote.bookTitle))
     ].join('\n');
   }
 
@@ -197,10 +189,9 @@ export default function BackupScreen() {
       await replaceBooks(backup.books);
       await setQuoteList(backup.quotes);
       await setShelfList(backup.shelves);
-      await setSessionList(backup.sessions);
       if (backup.preferences) await updatePreferences({ ...preferences, ...backup.preferences });
       haptic('success');
-      notify('Importação concluída', backup.books.length + ' livros, ' + backup.quotes.length + ' citações, ' + backup.shelves.length + ' estantes e ' + backup.sessions.length + ' sessões importados.');
+      notify('Importação concluída', backup.books.length + ' livros, ' + backup.quotes.length + ' citações, ' + backup.shelves.length + ' estantes importados.');
     } catch (error) {
       haptic('error');
       notify('Falha ao importar', error instanceof Error ? error.message : 'erro desconhecido ao processar o JSON.');

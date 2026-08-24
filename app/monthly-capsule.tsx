@@ -8,7 +8,6 @@ import { FeedCapsuleArt, FeedCapsuleBook } from '@/components/FeedCapsuleArt';
 import { StoryCapsuleArt } from '@/components/StoryCapsuleArt';
 import { useBooks } from '@/contexts/BookContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
-import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { downloadCapsulePng } from '@/services/webPlatformTools';
 import { copyText, haptic } from '@/services/feedback';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
@@ -17,7 +16,6 @@ import { appColors, appFonts } from '@/theme/tokens';
 export default function MonthlyCapsuleScreen() {
   const { books, stats } = useBooks();
   const { preferences } = usePreferences();
-  const { sessions } = useReadingSessions();
   const { width } = useWindowDimensions();
   const mobile = width < 760;
   const [message, setMessage] = useState('');
@@ -48,29 +46,14 @@ export default function MonthlyCapsuleScreen() {
     const d = bookDate(book);
     return isYear ? d.getFullYear() === periodYear : (d.getMonth() === selMonth && d.getFullYear() === selYear);
   }), [books, isYear, periodYear, selMonth, selYear]);
-  const monthSessions = useMemo(() => sessions.filter((session) => {
-    const d = new Date(session.createdAt);
-    return isYear ? d.getFullYear() === periodYear : (d.getMonth() === selMonth && d.getFullYear() === selYear);
-  }), [sessions, isYear, periodYear, selMonth, selYear]);
 
   const monthFinished = monthBooks.filter((book) => book.status === 'finished').length;
-  const monthMinutes = monthSessions.reduce((sum, session) => sum + session.minutesRead, 0);
-  // Páginas percorridas no período. O `||` de antes só caía no total dos livros
-  // quando as sessões somavam exatamente zero — bastava UMA sessão de 20 páginas
-  // para ela vencer 11 livros concluídos e o card mostrar "20 páginas".
-  //
-  // Livro concluído conta o livro inteiro; sessão só conta para livro que NÃO
-  // foi concluído no período, senão as páginas seriam contadas duas vezes.
-  const monthPages = useMemo(() => {
-    const finishedIds = new Set(monthBooks.filter((book) => book.status === 'finished').map((book) => book.id));
-    const fromFinished = monthBooks
-      .filter((book) => finishedIds.has(book.id))
-      .reduce((sum, book) => sum + (book.totalPages || 0), 0);
-    const fromSessions = monthSessions
-      .filter((session) => !finishedIds.has(session.bookId))
-      .reduce((sum, session) => sum + session.pagesRead, 0);
-    return fromFinished + fromSessions;
-  }, [monthBooks, monthSessions]);
+  // Páginas percorridas no período: o livro inteiro quando concluído, o
+  // progresso atual quando ainda em andamento.
+  const monthPages = useMemo(() => monthBooks.reduce(
+    (sum, book) => sum + (book.status === 'finished' ? (book.totalPages || 0) : (book.currentPage || 0)),
+    0
+  ), [monthBooks]);
   const ratedBooks = monthBooks.filter((book) => (book.rating || 0) > 0);
   const monthAverage = ratedBooks.length ? ratedBooks.reduce((sum, book) => sum + (book.rating || 0), 0) / ratedBooks.length : 0;
   const ratingOutOf10 = monthAverage * 2;
@@ -78,8 +61,7 @@ export default function MonthlyCapsuleScreen() {
   const monthName = selected.toLocaleDateString('pt-BR', { month: 'long' });
   const periodLabel = isYear ? String(periodYear) : capitalize(month);
   const periodName = isYear ? 'em ' + periodYear : 'em ' + monthName;
-  const vibe = monthSessions[0]?.mood || monthBooks.find((book) => book.mood)?.mood || 'Sereno';
-  const minutesLabel = Math.floor(monthMinutes / 60) + 'h ' + (monthMinutes % 60) + 'm';
+  const vibe = monthBooks.find((book) => book.mood)?.mood || 'Sereno';
 
   // Top 10: maior nota, mais páginas, ordem alfabética — igual à web.
   const rankedBooks: FeedCapsuleBook[] = useMemo(() => (
@@ -143,7 +125,6 @@ export default function MonthlyCapsuleScreen() {
       year: String(selYear),
       finishedBooks: monthFinished,
       pages: monthPages,
-      minutesLabel,
       averageRating: ratingOutOf10.toFixed(1),
       vibe,
       genre: stats.favoriteGenre || 'Diverso',

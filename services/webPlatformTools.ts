@@ -11,7 +11,6 @@ export type CapsulePngData = {
   year: string;
   finishedBooks: number;
   pages: number;
-  minutesLabel: string;
   averageRating: string;
   vibe: string;
   genre: string;
@@ -177,7 +176,7 @@ export function downloadCapsulePng(data: CapsulePngData) {
   const statY = 825;
   drawStat(ctx, 140, statY, 'LIVROS LIDOS', String(data.finishedBooks), gold, text, muted);
   drawStat(ctx, 560, statY, 'PÁGINAS', String(data.pages), gold, text, muted);
-  drawStat(ctx, 140, statY + 205, 'TEMPO DE FOCO', data.minutesLabel, gold, text, muted);
+  drawStat(ctx, 140, statY + 205, 'ACERVO', String(data.bookCount), gold, text, muted);
   drawStat(ctx, 560, statY + 205, 'MÉDIA DO MÊS', data.averageRating, gold, text, muted);
 
   roundedRect(ctx, 130, 1325, 820, 76, 8, '#0b0b0b', 'rgba(255,255,255,0.10)');

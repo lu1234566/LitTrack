@@ -10,7 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const KEY = '@readora_tombstones';
 
-export type SyncCollectionName = 'books' | 'quotes' | 'shelves' | 'sessions';
+export type SyncCollectionName = 'books' | 'quotes' | 'shelves';
 export type Tombstones = Partial<Record<SyncCollectionName, Record<string, number>>>;
 
 export async function loadTombstones(): Promise<Tombstones> {

@@ -5,7 +5,6 @@ import { Card } from '@/components/Card';
 import { BookCard } from '@/components/BookCard';
 import { useBooks } from '@/contexts/BookContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
-import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { useShelves } from '@/contexts/ShelfContext';
 import { ReadoraIcon, ReadoraIconName } from '@/components/ReadoraIcon';
 import { appColors, appFonts } from '@/theme/tokens';
@@ -13,12 +12,10 @@ import { appColors, appFonts } from '@/theme/tokens';
 export default function DashboardScreen() {
   const { books, stats, loading } = useBooks();
   const { preferences } = usePreferences();
-  const { sessions } = useReadingSessions();
   const { shelves } = useShelves();
   const { width } = useWindowDimensions();
   const mobile = width < 760;
   const recentBooks = books.filter((book) => book.status === 'finished').slice(0, 3);
-  const sessionMinutes = sessions.reduce((sum, session) => sum + session.minutesRead, 0);
   const year = new Date().getFullYear();
   const finishedThisYear = books.filter((book) => book.status === 'finished' && new Date(book.finishedAt || book.updatedAt || book.createdAt).getFullYear() === year).length;
   const yearlyGoal = preferences.yearlyGoal || 0;
@@ -99,7 +96,7 @@ export default function DashboardScreen() {
       <View style={[styles.bottomStats, mobile && styles.stack]}>
         <Metric label="ACERVO TOTAL" value={stats.totalBooks + ' Livros'} />
         <Metric label="HORIZONTES" value={stats.finishedBooks + ' Lidos'} />
-        <Metric label="TEMPO DE FOCO" value={Math.floor(sessionMinutes / 60) + 'h ' + (sessionMinutes % 60) + 'm'} />
+        <Metric label="PAGINAS LIDAS" value={stats.pagesRead.toLocaleString('pt-BR')} />
       </View>
     </Screen>
   );

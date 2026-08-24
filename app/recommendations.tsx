@@ -5,7 +5,6 @@ import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
 import { useQuotes } from '@/contexts/QuoteContext';
-import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { useShelves } from '@/contexts/ShelfContext';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors, appFonts } from '@/theme/tokens';
@@ -15,7 +14,6 @@ import { LENGTH_OPTIONS, LengthBucket, MOOD_OPTIONS, pickWhatToRead } from '@/se
 export default function RecommendationsScreen() {
   const { books, stats, updateStatus } = useBooks();
   const { quotes } = useQuotes();
-  const { sessions } = useReadingSessions();
   const { shelves } = useShelves();
   const { width } = useWindowDimensions();
   const mobile = width < 760;
@@ -25,7 +23,7 @@ export default function RecommendationsScreen() {
   const picks = useMemo(() => pickWhatToRead(books, { moods, length }), [books, moods, length]);
   const toggleMood = (mood: string) => setMoods((prev) => prev.includes(mood) ? prev.filter((m) => m !== mood) : [...prev, mood]);
 
-  const recommendations = useMemo(() => buildRecommendations(books, quotes, sessions), [books, quotes, sessions]);
+  const recommendations = useMemo(() => buildRecommendations(books, quotes), [books, quotes]);
   const wishlist = books.filter((book) => book.status === 'wishlist');
   const reading = books.filter((book) => book.status === 'reading');
   const highRatedGenres = topGenres(books.filter((book) => (book.rating || 0) >= 4));
@@ -137,16 +135,12 @@ export default function RecommendationsScreen() {
   );
 }
 
-function buildRecommendations(books: Book[], quotes: Array<{ bookId?: string; favorite?: boolean }>, sessions: Array<{ bookId: string; pagesRead: number }>) {
+function buildRecommendations(books: Book[], quotes: Array<{ bookId?: string; favorite?: boolean }>) {
   const wishlist = books.filter((book) => book.status === 'wishlist');
   const reading = books.filter((book) => book.status === 'reading');
   const finished = books.filter((book) => book.status === 'finished');
   const favoriteGenres = topGenres(finished.filter((book) => (book.rating || 0) >= 4));
   const favoriteAuthors = topAuthors(finished.filter((book) => (book.rating || 0) >= 4));
-  const activePages = sessions.reduce<Record<string, number>>((acc, session) => {
-    acc[session.bookId] = (acc[session.bookId] || 0) + session.pagesRead;
-    return acc;
-  }, {});
   const quoteBookIds = new Set(quotes.filter((quote) => quote.favorite && quote.bookId).map((quote) => quote.bookId));
 
   const candidates = [...wishlist, ...reading].map((book) => {
@@ -178,9 +172,10 @@ function buildRecommendations(books: Book[], quotes: Array<{ bookId?: string; fa
       score += 8;
       reasons.push('é uma leitura mais rápida para encaixar agora');
     }
-    if (activePages[book.id]) {
-      score += Math.min(20, activePages[book.id] / 10);
-      reasons.push('tem sessões registradas recentemente');
+    // Progresso já feito no livro pesa: quem começou tende a querer terminar.
+    if ((book.currentPage || 0) > 0) {
+      score += Math.min(20, (book.currentPage || 0) / 10);
+      reasons.push('você já começou e tem progresso registrado');
     }
     if (quoteBookIds.has(book.id)) {
       score += 12;

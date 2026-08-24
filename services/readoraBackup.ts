@@ -1,6 +1,5 @@
 import { Book, BookStatus } from '@/types/book';
 import { Quote } from '@/types/quote';
-import { ReadingSession } from '@/types/readingSession';
 import { ReaderPreferences } from '@/types/preferences';
 import { Shelf } from '@/types/shelf';
 
@@ -12,7 +11,6 @@ export type ReadoraBackup = {
   books: Book[];
   quotes: Quote[];
   shelves: Shelf[];
-  sessions: ReadingSession[];
 };
 
 type LegacyReadoraBook = Record<string, unknown>;
@@ -23,7 +21,6 @@ type LegacyReadoraBackup = {
   books?: LegacyReadoraBook[];
   quotes?: unknown[];
   shelves?: unknown[];
-  sessions?: unknown[];
 };
 
 export function createReadoraBackup(input: Omit<ReadoraBackup, 'app' | 'version' | 'exportedAt'>): ReadoraBackup {
@@ -51,8 +48,7 @@ export function parseReadoraBackup(raw: string): ReadoraBackup {
       preferences: parsed.preferences,
       books: Array.isArray(parsed.books) ? parsed.books : [],
       quotes: Array.isArray(parsed.quotes) ? parsed.quotes as Quote[] : [],
-      shelves: Array.isArray(parsed.shelves) ? parsed.shelves as Shelf[] : [],
-      sessions: Array.isArray(parsed.sessions) ? parsed.sessions as ReadingSession[] : []
+      shelves: Array.isArray(parsed.shelves) ? parsed.shelves as Shelf[] : []
     };
   }
 
@@ -67,8 +63,7 @@ export function parseReadoraBackup(raw: string): ReadoraBackup {
       exportedAt: new Date().toISOString(),
       books: parsed.books as Book[],
       quotes: [],
-      shelves: [],
-      sessions: []
+      shelves: []
     };
   }
 
@@ -105,8 +100,7 @@ function parseLegacyReadoraBackup(parsed: LegacyReadoraBackup): ReadoraBackup {
     preferences,
     books,
     quotes,
-    shelves: [],
-    sessions: []
+    shelves: []
   };
 }
 

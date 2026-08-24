@@ -18,7 +18,6 @@ const menuItems: { icon: ReadoraIconName; label: string; href: string }[] = [
   { icon: 'quotes', label: 'Citações', href: '/quotes' },
   { icon: 'literaryProfile', label: 'Perfil Literário', href: '/literary-profile' },
   { icon: 'monthlyCapsule', label: 'Cápsula Mensal', href: '/monthly-capsule' },
-  { icon: 'timeline', label: 'Linha do Tempo', href: '/timeline' },
   { icon: 'retrospective', label: 'Retrospectiva', href: '/retrospective' },
   { icon: 'recommendations', label: 'Recomendações', href: '/recommendations' },
   { icon: 'backup', label: 'Backup e Exportação', href: '/backup' },

@@ -1,6 +1,5 @@
 import { Book } from '@/types/book';
 import { Quote } from '@/types/quote';
-import { ReadingSession } from '@/types/readingSession';
 import { Shelf } from '@/types/shelf';
 
 export function topItems(items: string[], limit = 5) {
@@ -11,15 +10,18 @@ export function topItems(items: string[], limit = 5) {
   return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, limit).map(([label, count]) => ({ label, count }));
 }
 
-export function buildReadingInsights(books: Book[], quotes: Quote[], shelves: Shelf[], sessions: ReadingSession[]) {
+export function buildReadingInsights(books: Book[], quotes: Quote[], shelves: Shelf[]) {
   const topAuthors = topItems(books.map((book) => book.author));
   const topGenres = topItems(books.map((book) => book.genre));
   const topQuoteTags = topItems(quotes.flatMap((quote) => quote.tags));
-  const topMoods = topItems(sessions.map((session) => session.mood || ''));
-  const totalPages = sessions.reduce((sum, session) => sum + session.pagesRead, 0);
-  const totalMinutes = sessions.reduce((sum, session) => sum + session.minutesRead, 0);
-  const averagePagesPerSession = sessions.length ? Math.round(totalPages / sessions.length) : 0;
-  const averageMinutesPerSession = sessions.length ? Math.round(totalMinutes / sessions.length) : 0;
+  const topMoods = topItems(books.map((book) => book.mood || ''));
+  // Páginas a partir do próprio livro: total quando concluído, progresso atual
+  // quando em andamento. Antes vinha das sessões de leitura, removidas.
+  const totalPages = books.reduce((sum, book) => sum + (book.status === 'finished' ? (book.totalPages || 0) : (book.currentPage || 0)), 0);
+  const finishedBooks = books.filter((book) => book.status === 'finished');
+  const averagePagesPerBook = finishedBooks.length
+    ? Math.round(finishedBooks.reduce((sum, book) => sum + (book.totalPages || 0), 0) / finishedBooks.length)
+    : 0;
   const largestShelf = [...shelves].sort((a, b) => b.bookIds.length - a.bookIds.length)[0];
   const longestBook = [...books].sort((a, b) => (b.totalPages || 0) - (a.totalPages || 0))[0];
   const highestRated = [...books].sort((a, b) => (b.rating || 0) - (a.rating || 0))[0];
@@ -30,9 +32,7 @@ export function buildReadingInsights(books: Book[], quotes: Quote[], shelves: Sh
     topQuoteTags,
     topMoods,
     totalPages,
-    totalMinutes,
-    averagePagesPerSession,
-    averageMinutesPerSession,
+    averagePagesPerBook,
     largestShelf,
     longestBook,
     highestRated

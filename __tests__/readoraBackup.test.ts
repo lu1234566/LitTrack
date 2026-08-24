@@ -3,7 +3,7 @@ import { createReadoraBackup, stringifyBackup, parseReadoraBackup } from '@/serv
 describe('readoraBackup', () => {
   it('round-trips a modern backup', () => {
     const book = { id: 'b1', title: 'Eragon', author: 'Paolini', genre: 'Fantasia', status: 'finished', createdAt: 1, updatedAt: 2 };
-    const backup = createReadoraBackup({ books: [book] as any, quotes: [], shelves: [], sessions: [] });
+    const backup = createReadoraBackup({ books: [book] as any, quotes: [], shelves: [] });
     const parsed = parseReadoraBackup(stringifyBackup(backup));
     expect(parsed.app).toBe('Readora');
     expect(parsed.books).toHaveLength(1);

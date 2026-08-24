@@ -7,7 +7,6 @@ import * as FirebaseAuthModule from 'firebase/auth';
 import { Book } from '@/types/book';
 import { Quote } from '@/types/quote';
 import { Shelf } from '@/types/shelf';
-import { ReadingSession } from '@/types/readingSession';
 import { ReaderPreferences } from '@/types/preferences';
 import { SessionUser } from '@/types/sessionUser';
 
@@ -50,7 +49,6 @@ type SyncBundle = {
   books: Book[];
   quotes: Quote[];
   shelves: Shelf[];
-  sessions: ReadingSession[];
   preferences: ReaderPreferences;
 };
 
@@ -126,17 +124,16 @@ export async function pullBooksFromFirestore(userId: string): Promise<Book[]> {
   return pullCollection<Book>(userId, 'books');
 }
 
-export type SyncDeletions = Partial<Record<'books' | 'quotes' | 'shelves' | 'sessions', string[]>>;
+export type SyncDeletions = Partial<Record<'books' | 'quotes' | 'shelves', string[]>>;
 
 export async function pushReadoraBundle(userId: string, bundle: SyncBundle, deletions: SyncDeletions = {}) {
   if (!nativeDb) return { ok: false, count: 0 };
   const books = await syncCollection(userId, 'books', bundle.books, deletions.books);
   const quotes = await syncCollection(userId, 'quotes', bundle.quotes, deletions.quotes);
   const shelves = await syncCollection(userId, 'shelves', bundle.shelves, deletions.shelves);
-  const sessions = await syncCollection(userId, 'sessions', bundle.sessions, deletions.sessions);
   await setDoc(doc(nativeDb, 'users', userId, 'settings', 'preferences'), dropUndefined(bundle.preferences));
-  await setDoc(doc(nativeDb, 'users', userId, 'sync', 'metadata'), { updatedAt: Date.now(), books, quotes, shelves, sessions });
-  return { ok: true, count: books + quotes + shelves + sessions };
+  await setDoc(doc(nativeDb, 'users', userId, 'sync', 'metadata'), { updatedAt: Date.now(), books, quotes, shelves });
+  return { ok: true, count: books + quotes + shelves };
 }
 
 export async function pullReadoraBundle(userId: string): Promise<Partial<SyncBundle>> {
@@ -144,7 +141,24 @@ export async function pullReadoraBundle(userId: string): Promise<Partial<SyncBun
   const books = await pullCollection<Book>(userId, 'books');
   const quotes = await pullCollection<Quote>(userId, 'quotes');
   const shelves = await pullCollection<Shelf>(userId, 'shelves');
-  const sessions = await pullCollection<ReadingSession>(userId, 'sessions');
   const prefDoc = await getDoc(doc(nativeDb, 'users', userId, 'settings', 'preferences'));
-  return { books, quotes, shelves, sessions, preferences: prefDoc.exists() ? prefDoc.data() as ReaderPreferences : undefined };
+  return { books, quotes, shelves, preferences: prefDoc.exists() ? prefDoc.data() as ReaderPreferences : undefined };
+}
+
+/**
+ * Apaga a coleção `sessions` que ficou na nuvem de quando existiam sessões de
+ * leitura. Roda uma vez por dispositivo depois do primeiro pull: nada mais lê
+ * esses documentos, e deixá-los só ocupa espaço e confunde quem abrir o banco.
+ * Falha silenciosa de propósito — é limpeza, não pode atrapalhar o app.
+ */
+export async function purgeRemoteReadingSessions(userId: string) {
+  if (!nativeDb) return 0;
+  try {
+    const snapshot = await getDocs(collection(nativeDb, 'users', userId, 'sessions'));
+    if (snapshot.empty) return 0;
+    await Promise.all(snapshot.docs.map((item) => deleteDoc(item.ref)));
+    return snapshot.size;
+  } catch {
+    return 0;
+  }
 }

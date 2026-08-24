@@ -6,7 +6,6 @@ import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
 import { useQuotes } from '@/contexts/QuoteContext';
-import { useReadingSessions } from '@/contexts/ReadingSessionContext';
 import { useShelves } from '@/contexts/ShelfContext';
 import { isNativeFirebaseConfigured, pullReadoraBundle, pushReadoraBundle } from '@/services/firebaseNative';
 import { cancelReadingReminders, scheduleReadingReminder } from '@/services/notificationScheduler';
@@ -30,7 +29,6 @@ export default function SettingsScreen() {
   const { books, replaceBooks } = useBooks();
   const { quotes, setQuoteList } = useQuotes();
   const { shelves, setShelfList } = useShelves();
-  const { sessions, setSessionList } = useReadingSessions();
   const { preferences, updatePreferences } = usePreferences();
   const { width } = useWindowDimensions();
   const mobile = width < 760;
@@ -97,7 +95,7 @@ export default function SettingsScreen() {
   async function pushAll() {
     const nextPreferences = { ...preferences, readerName, favoriteFormat, reminderText, reminderEnabled, reminderFrequency, layoutMode, syncUserId, yearlyGoal: Number(yearlyGoal) || 0, dailyPageGoal: Number(dailyPageGoal) || 0 };
     await updatePreferences(nextPreferences);
-    const result = await pushReadoraBundle(syncUserId || 'local-reader', { books, quotes, shelves, sessions, preferences: nextPreferences });
+    const result = await pushReadoraBundle(syncUserId || 'local-reader', { books, quotes, shelves, preferences: nextPreferences });
     setSyncMessage(result.ok ? result.count + ' item(ns) enviados ao Firestore.' : 'Firebase ainda não configurado.');
   }
 
@@ -111,7 +109,6 @@ export default function SettingsScreen() {
     if (bundle.books?.length) await replaceBooks(bundle.books);
     if (bundle.quotes?.length) await setQuoteList(bundle.quotes);
     if (bundle.shelves?.length) await setShelfList(bundle.shelves);
-    if (bundle.sessions?.length) await setSessionList(bundle.sessions);
     if (bundle.preferences) {
       await updatePreferences({ ...preferences, ...bundle.preferences, syncUserId });
       setReaderName(bundle.preferences.readerName || readerName);
@@ -121,7 +118,7 @@ export default function SettingsScreen() {
       setReminderFrequency(bundle.preferences.reminderFrequency || reminderFrequency);
       setReminderEnabled(bundle.preferences.reminderEnabled ?? reminderEnabled);
     }
-    const total = (bundle.books?.length || 0) + (bundle.quotes?.length || 0) + (bundle.shelves?.length || 0) + (bundle.sessions?.length || 0);
+    const total = (bundle.books?.length || 0) + (bundle.quotes?.length || 0) + (bundle.shelves?.length || 0);
     setSyncMessage(total > 0 ? total + ' item(ns) recebidos do Firestore.' : 'Nenhum dado remoto encontrado.');
   }
 
