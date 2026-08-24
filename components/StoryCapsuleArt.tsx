@@ -67,7 +67,11 @@ export const StoryCapsuleArt = forwardRef<View, FeedCapsuleArtProps>(function St
   ref
 ) {
   const u = (n: number) => n * scale;
-  const featured = books.slice(0, 10);
+  // Três, como no original da web. A tela tem altura fixa (1080×1920): com 10
+  // linhas não sobrava espaço e o conteúdo de cada uma era cortado. O resto vira
+  // a faixa "+ N leituras no mês" logo abaixo.
+  const featured = books.slice(0, 3);
+  const remaining = books.length - featured.length;
   const fav = bestBook || featured[0] || null;
   const cap = (v: string) => v.slice(0, 1).toUpperCase() + v.slice(1);
 
@@ -114,23 +118,32 @@ export const StoryCapsuleArt = forwardRef<View, FeedCapsuleArtProps>(function St
           <Text style={{ color: C.n500, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(25), textTransform: 'uppercase', letterSpacing: u(8) }}>Top do mês</Text>
           <View style={{ height: u(2), backgroundColor: C.amberLine, flex: 1 }} />
         </View>
-        <View style={{ flex: 1, gap: u(12) }}>
+        <View style={{ gap: u(20) }}>
           {featured.map((book, idx) => (
-            <View key={book.id} style={{ flex: 1, maxHeight: u(128), backgroundColor: C.cardSoft, borderColor: C.border, borderWidth: 1, borderRadius: u(26), paddingHorizontal: u(18), paddingVertical: u(12), flexDirection: 'row', alignItems: 'center', gap: u(20) }}>
-              <View style={{ width: u(40), height: u(40), borderRadius: u(14), backgroundColor: C.amberSoft, borderColor: C.amberBorder, borderWidth: 1, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: C.amber, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(22) }}>{idx + 1}</Text>
+            // Altura fixa: a linha não pode encolher abaixo do que a capa ocupa.
+            <View key={book.id} style={{ height: u(158), backgroundColor: C.cardSoft, borderColor: C.border, borderWidth: 1, borderRadius: u(30), paddingHorizontal: u(20), paddingVertical: u(20), flexDirection: 'row', alignItems: 'center', gap: u(24) }}>
+              <View style={{ width: u(44), height: u(44), borderRadius: u(16), backgroundColor: C.amberSoft, borderColor: C.amberBorder, borderWidth: 1, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: C.amber, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(24) }}>{idx + 1}</Text>
               </View>
-              <Cover book={book} w={u(46)} h={u(66)} u={u} />
+              <Cover book={book} w={u(74)} h={u(112)} u={u} />
               <View style={{ flex: 1 }}>
-                <Text numberOfLines={1} style={{ color: C.n100, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(26), letterSpacing: u(-1) }}>{book.title}</Text>
-                <Text numberOfLines={1} style={{ color: C.n500, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: u(17), marginTop: u(2), marginBottom: u(8) }}>{book.author}</Text>
+                <Text numberOfLines={1} style={{ color: C.n100, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(32), letterSpacing: u(-1) }}>{book.title}</Text>
+                <Text numberOfLines={1} style={{ color: C.n500, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: u(21), marginTop: u(2), marginBottom: u(12) }}>{book.author}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: u(16) }}>
-                  <Text style={{ color: C.n500, fontFamily: appFonts.mono, fontSize: u(16) }}>{book.pageCount || 0} pág.</Text>
+                  <Text style={{ color: C.n500, fontFamily: appFonts.mono, fontSize: u(18) }}>{book.pageCount || 0} pág.</Text>
                   <Stars rating={book.rating} u={u} />
                 </View>
               </View>
             </View>
           ))}
+
+          {remaining > 0 ? (
+            <View style={{ height: u(86), borderRadius: u(26), borderColor: C.amberBorder, borderWidth: 1, borderStyle: 'dashed', backgroundColor: 'rgba(245,158,11,0.04)', alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ color: C.amber, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(22), textTransform: 'uppercase', letterSpacing: u(5) }}>
+                + {remaining} {remaining === 1 ? 'leitura' : 'leituras'} no mês
+              </Text>
+            </View>
+          ) : null}
         </View>
       </View>
 

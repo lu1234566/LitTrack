@@ -55,8 +55,22 @@ export default function MonthlyCapsuleScreen() {
 
   const monthFinished = monthBooks.filter((book) => book.status === 'finished').length;
   const monthMinutes = monthSessions.reduce((sum, session) => sum + session.minutesRead, 0);
-  const monthPages = monthSessions.reduce((sum, session) => sum + session.pagesRead, 0)
-    || monthBooks.reduce((sum, book) => sum + (book.totalPages || 0), 0);
+  // Páginas percorridas no período. O `||` de antes só caía no total dos livros
+  // quando as sessões somavam exatamente zero — bastava UMA sessão de 20 páginas
+  // para ela vencer 11 livros concluídos e o card mostrar "20 páginas".
+  //
+  // Livro concluído conta o livro inteiro; sessão só conta para livro que NÃO
+  // foi concluído no período, senão as páginas seriam contadas duas vezes.
+  const monthPages = useMemo(() => {
+    const finishedIds = new Set(monthBooks.filter((book) => book.status === 'finished').map((book) => book.id));
+    const fromFinished = monthBooks
+      .filter((book) => finishedIds.has(book.id))
+      .reduce((sum, book) => sum + (book.totalPages || 0), 0);
+    const fromSessions = monthSessions
+      .filter((session) => !finishedIds.has(session.bookId))
+      .reduce((sum, session) => sum + session.pagesRead, 0);
+    return fromFinished + fromSessions;
+  }, [monthBooks, monthSessions]);
   const ratedBooks = monthBooks.filter((book) => (book.rating || 0) > 0);
   const monthAverage = ratedBooks.length ? ratedBooks.reduce((sum, book) => sum + (book.rating || 0), 0) / ratedBooks.length : 0;
   const ratingOutOf10 = monthAverage * 2;
