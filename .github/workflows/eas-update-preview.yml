@@ -1,0 +1,54 @@
+name: EAS Update (preview)
+
+# Publica automaticamente no canal `preview` a cada push na branch de trabalho —
+# o mesmo comportamento que a Vercel tem para o site.
+#
+# O canal `production` continua MANUAL de proposito: ele vai direto para o
+# aparelho dos testadores da Play Store, e essa decisao e sua. Para publicar la:
+#
+#   npx eas-cli update --channel production --environment production -m "..."
+#
+# Requer o secret EXPO_TOKEN no repositorio (Settings > Secrets and variables >
+# Actions). As variaveis EXPO_PUBLIC_* vem do ambiente do EAS via --environment,
+# entao nao precisam ser repetidas aqui.
+
+on:
+  push:
+    branches:
+      - claude/eas-build-dependency-sync-gylm3i
+  workflow_dispatch:
+
+jobs:
+  update:
+    name: Publicar no canal preview
+    runs-on: ubuntu-latest
+    # Sem o token o job falharia no meio, depois de instalar tudo. Melhor nem
+    # comecar — e o aviso fica visivel na aba Actions.
+    if: ${{ github.repository == 'lu1234566/LitTrack' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Verificar tipos
+        run: npx tsc --noEmit
+
+      - name: Testes
+        run: npx jest --ci
+
+      - name: Configurar EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Publicar update
+        run: eas update --channel preview --environment preview --message "${{ github.event.head_commit.message || 'atualizacao manual' }}" --non-interactive
