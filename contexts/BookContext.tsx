@@ -12,8 +12,8 @@ import { looksLikeHtml, stripHtml } from '@/services/plainText';
  * `reasonToRead` (é esse que aparece no cartão da lista), e a `review` pode ter
  * vindo de um backup antigo pelo mesmo caminho.
  *
- * `updatedAt` fica intacto de propósito: isto é correção de formatação, não
- * edição do usuário, e não deve ganhar a disputa contra uma alteração real
+ * `updatedAt` fica intacto de propósito: isto é correção de formatação/dados,
+ * não edição do usuário, e não deve ganhar a disputa contra uma alteração real
  * feita no outro aparelho.
  */
 const TEXT_FIELDS = ['description', 'reasonToRead', 'review'] as const;
@@ -27,14 +27,58 @@ function needsHttps(url: string | undefined) {
   return Boolean(url && /^http:\/\//i.test(url));
 }
 
+function normalizedIsbn(isbn: string | undefined) {
+  const clean = String(isbn || '').replace(/[^0-9Xx]/g, '').toUpperCase();
+  return clean.length === 10 || clean.length === 13 ? clean : '';
+}
+
+/**
+ * O ImagePicker grava a imagem escolhida primeiro no cache privado do Android.
+ * Backups antigos acabaram persistindo esse caminho `file://.../cache/...` como
+ * se fosse uma URL permanente. Depois de limpar cache, reinstalar ou migrar a
+ * base, o arquivo deixa de existir. Quando há ISBN podemos trocar esse caminho
+ * descartável por uma capa remota estável sem perder a capa do livro.
+ */
+function repairedCover(book: Book) {
+  const url = book.coverUrl;
+  if (!url) return url;
+  if (needsHttps(url)) return url.replace(/^http:\/\//i, 'https://');
+
+  const staleImagePickerCache = /^file:\/\/\/data\/user\/0\/[^/]+\/cache\/ImagePicker\//i.test(url);
+  if (!staleImagePickerCache) return url;
+
+  const isbn = normalizedIsbn(book.isbn);
+  return isbn ? `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg` : url;
+}
+
+/**
+ * Algumas importações antigas copiaram a categoria do catálogo/NYT para o
+ * campo de "vibe". O caso mais visível é `nyt:combined-print...`, mas a mesma
+ * contaminação aparece como `Fiction / Medical`, `Husbands`, etc. Nessas
+ * entradas o `mood` é literalmente igual ao `genre`, portanto é seguro limpar
+ * somente esse metadado importado e preservar vibes realmente escolhidas pelo
+ * usuário (ex.: "Mágico, Sombrio").
+ */
+function hasCatalogMoodNoise(book: Book) {
+  const mood = String(book.mood || '').trim();
+  if (!mood) return false;
+  if (/^nyt:/i.test(mood) || /^series:/i.test(mood) || /^a definir$/i.test(mood)) return true;
+  const genre = String(book.genre || '').trim();
+  return Boolean(genre && mood.localeCompare(genre, undefined, { sensitivity: 'accent' }) === 0);
+}
+
 function withCleanText(books: Book[]) {
   return books.map((book) => {
     const dirty = TEXT_FIELDS.filter((field) => looksLikeHtml(book[field]));
-    const fixCover = needsHttps(book.coverUrl);
-    if (!dirty.length && !fixCover) return book;
+    const nextCover = repairedCover(book);
+    const fixCover = nextCover !== book.coverUrl;
+    const fixMood = hasCatalogMoodNoise(book);
+    if (!dirty.length && !fixCover && !fixMood) return book;
+
     const patch: Partial<Book> = {};
     dirty.forEach((field) => { patch[field] = stripHtml(book[field]); });
-    if (fixCover) patch.coverUrl = (book.coverUrl as string).replace(/^http:\/\//i, 'https://');
+    if (fixCover) patch.coverUrl = nextCover;
+    if (fixMood) patch.mood = '';
     return { ...book, ...patch };
   });
 }
@@ -108,7 +152,7 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
       booksRef.current = cleaned;
       setBooks(cleaned);
       // Só regrava se algo realmente mudou — o mapa devolve o mesmo objeto
-      // quando a sinopse já está limpa.
+      // quando os dados já estão limpos.
       if (cleaned.some((book, index) => book !== loaded[index])) await saveBooks(cleaned);
     }).finally(() => setLoading(false));
   }, []);
@@ -120,17 +164,18 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function replaceBooks(nextBooks: Book[]) {
-    // Caminho da sincronização: a nuvem pode trazer sinopses ainda com HTML,
-    // gravadas por um aparelho que não recebeu esta versão.
+    // Caminho da sincronização: a nuvem pode trazer HTML, URL de cache antiga
+    // ou metadado de catálogo salvo por um aparelho que não recebeu a correção.
     await persist(withCleanText(nextBooks));
   }
 
   async function reload() {
     setLoading(true);
     try {
-      const next = await loadBooks();
+      const next = withCleanText(await loadBooks());
       booksRef.current = next;
       setBooks(next);
+      await saveBooks(next);
     } finally {
       setLoading(false);
     }
