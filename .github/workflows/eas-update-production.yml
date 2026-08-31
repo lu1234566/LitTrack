@@ -1,13 +1,12 @@
 name: EAS Update (production)
 
-# Publicacao para os testadores da Play Store. So roda quando alguem manda —
-# nunca sozinha, ao contrario do canal preview. Dispare pela aba Actions do
-# GitHub (botao "Run workflow") ou peca ao Claude, que consegue dispara-la.
-#
-# Requer o secret EXPO_TOKEN no repositorio:
-#   Settings > Secrets and variables > Actions > New repository secret
+# Publicacao para os testadores da Play Store. Normalmente roda apenas manualmente.
+# O push abaixo e temporario para publicar esta correcao no canal production.
 
 on:
+  push:
+    branches:
+      - claude/eas-build-dependency-sync-gylm3i
   workflow_dispatch:
     inputs:
       message:
@@ -32,8 +31,6 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
-      # Nada quebrado chega ao aparelho dos testadores: se qualquer um destes
-      # falhar, o job para antes de publicar.
       - name: Verificar tipos
         run: npx tsc --noEmit
 
@@ -47,4 +44,6 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Publicar update
-        run: eas update --channel production --environment production --message "${{ inputs.message }}" --non-interactive
+        env:
+          UPDATE_MESSAGE: ${{ inputs.message || github.event.head_commit.message || 'correcao de capas e vibe' }}
+        run: eas update --channel production --environment production --message "$UPDATE_MESSAGE" --non-interactive
