@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, useState } from 'react';
 import { Image, Text, View } from 'react-native';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { FeedCapsuleArtProps, FeedCapsuleBook } from '@/components/FeedCapsuleArt';
@@ -26,6 +26,16 @@ const C = {
   n800: '#262626'
 };
 
+
+/**
+ * URL de capa segura para exibir. Livros salvos antes de normalizeCover ainda
+ * guardam `http://`, e o Android bloqueia HTTP puro em build de producao — a
+ * imagem falhava em silencio e sobrava uma caixa preta.
+ */
+function httpsCover(url?: string) {
+  return url ? url.replace(/^http:\/\//i, 'https://') : url;
+}
+
 function Stars({ rating, u }: { rating: number; u: (n: number) => number }) {
   const filled = Math.max(0, Math.min(5, Math.round(rating)));
   return (
@@ -38,10 +48,13 @@ function Stars({ rating, u }: { rating: number; u: (n: number) => number }) {
 }
 
 function Cover({ book, w, h, u, big }: { book: FeedCapsuleBook; w: number; h: number; u: (n: number) => number; big?: boolean }) {
+  // Sem isto, uma capa que falha ao carregar deixa um retangulo preto vazio.
+  const [failed, setFailed] = useState(false);
+  const uri = httpsCover(book.coverUrl);
   return (
     <View style={{ width: w, height: h, borderRadius: u(big ? 24 : 12), overflow: 'hidden', backgroundColor: C.bg, borderColor: C.border, borderWidth: 1, alignItems: 'center', justifyContent: 'center' }}>
-      {book.coverUrl ? (
-        <Image source={{ uri: book.coverUrl }} style={{ width: w, height: h }} resizeMode="cover" />
+      {uri && !failed ? (
+        <Image source={{ uri }} style={{ width: w, height: h }} resizeMode="cover" onError={() => setFailed(true)} />
       ) : (
         <>
           <ReadoraIcon name="library" size={u(big ? 42 : 26)} color={C.n800} />
@@ -71,7 +84,9 @@ export const StoryCapsuleArt = forwardRef<View, FeedCapsuleArtProps>(function St
   // linhas não sobrava espaço e o conteúdo de cada uma era cortado. O resto vira
   // a faixa "+ N leituras no mês" logo abaixo.
   const featured = books.slice(0, 3);
-  const remaining = books.length - featured.length;
+  // `books` chega cortado no top 10, então contar a partir dele erraria a faixa
+  // sempre que o mês tivesse mais de 10 livros. `totalBooks` é o número real.
+  const remaining = Math.max(0, totalBooks - featured.length);
   const fav = bestBook || featured[0] || null;
   const cap = (v: string) => v.slice(0, 1).toUpperCase() + v.slice(1);
 
@@ -112,20 +127,20 @@ export const StoryCapsuleArt = forwardRef<View, FeedCapsuleArtProps>(function St
       ) : null}
 
       {/* Top do mês */}
-      <View style={{ flex: 1, marginTop: u(32) }}>
+      <View style={{ marginTop: u(32), overflow: 'hidden' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: u(20), marginBottom: u(20) }}>
           <View style={{ height: u(2), backgroundColor: C.amberLine, flex: 1 }} />
           <Text style={{ color: C.n500, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(25), textTransform: 'uppercase', letterSpacing: u(8) }}>Top do mês</Text>
           <View style={{ height: u(2), backgroundColor: C.amberLine, flex: 1 }} />
         </View>
-        <View style={{ gap: u(20) }}>
+        <View style={{ gap: u(16) }}>
           {featured.map((book, idx) => (
             // Altura fixa: a linha não pode encolher abaixo do que a capa ocupa.
-            <View key={book.id} style={{ height: u(158), backgroundColor: C.cardSoft, borderColor: C.border, borderWidth: 1, borderRadius: u(30), paddingHorizontal: u(20), paddingVertical: u(20), flexDirection: 'row', alignItems: 'center', gap: u(24) }}>
+            <View key={book.id} style={{ height: u(140), backgroundColor: C.cardSoft, borderColor: C.border, borderWidth: 1, borderRadius: u(30), paddingHorizontal: u(20), paddingVertical: u(20), flexDirection: 'row', alignItems: 'center', gap: u(24) }}>
               <View style={{ width: u(44), height: u(44), borderRadius: u(16), backgroundColor: C.amberSoft, borderColor: C.amberBorder, borderWidth: 1, alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={{ color: C.amber, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(24) }}>{idx + 1}</Text>
               </View>
-              <Cover book={book} w={u(74)} h={u(112)} u={u} />
+              <Cover book={book} w={u(66)} h={u(100)} u={u} />
               <View style={{ flex: 1 }}>
                 <Text numberOfLines={1} style={{ color: C.n100, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(32), letterSpacing: u(-1) }}>{book.title}</Text>
                 <Text numberOfLines={1} style={{ color: C.n500, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: u(21), marginTop: u(2), marginBottom: u(12) }}>{book.author}</Text>
@@ -138,7 +153,7 @@ export const StoryCapsuleArt = forwardRef<View, FeedCapsuleArtProps>(function St
           ))}
 
           {remaining > 0 ? (
-            <View style={{ height: u(86), borderRadius: u(26), borderColor: C.amberBorder, borderWidth: 1, borderStyle: 'dashed', backgroundColor: 'rgba(245,158,11,0.04)', alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ height: u(76), borderRadius: u(26), borderColor: C.amberBorder, borderWidth: 1, borderStyle: 'dashed', backgroundColor: 'rgba(245,158,11,0.04)', alignItems: 'center', justifyContent: 'center' }}>
               <Text style={{ color: C.amber, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(22), textTransform: 'uppercase', letterSpacing: u(5) }}>
                 + {remaining} {remaining === 1 ? 'leitura' : 'leituras'} no mês
               </Text>
@@ -148,7 +163,7 @@ export const StoryCapsuleArt = forwardRef<View, FeedCapsuleArtProps>(function St
       </View>
 
       {/* Footer */}
-      <View style={{ alignItems: 'center', paddingTop: u(26) }}>
+      <View style={{ alignItems: 'center', paddingTop: u(26), marginTop: 'auto' }}>
         <Text numberOfLines={2} style={{ color: C.n400, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: u(25), lineHeight: u(32), textAlign: 'center', paddingHorizontal: u(32) }}>&ldquo;{literaryCopy}&rdquo;</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: u(16), marginTop: u(16), opacity: 0.35 }}>
           <View style={{ width: u(48), height: 1, backgroundColor: '#fff' }} />

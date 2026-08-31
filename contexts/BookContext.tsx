@@ -18,12 +18,23 @@ import { looksLikeHtml, stripHtml } from '@/services/plainText';
  */
 const TEXT_FIELDS = ['description', 'reasonToRead', 'review'] as const;
 
+/**
+ * Capas salvas antes da normalização guardam `http://`. O Android bloqueia HTTP
+ * puro em build de produção, então a imagem falhava em silêncio e sobrava uma
+ * caixa preta no lugar do livro.
+ */
+function needsHttps(url: string | undefined) {
+  return Boolean(url && /^http:\/\//i.test(url));
+}
+
 function withCleanText(books: Book[]) {
   return books.map((book) => {
     const dirty = TEXT_FIELDS.filter((field) => looksLikeHtml(book[field]));
-    if (!dirty.length) return book;
+    const fixCover = needsHttps(book.coverUrl);
+    if (!dirty.length && !fixCover) return book;
     const patch: Partial<Book> = {};
     dirty.forEach((field) => { patch[field] = stripHtml(book[field]); });
+    if (fixCover) patch.coverUrl = (book.coverUrl as string).replace(/^http:\/\//i, 'https://');
     return { ...book, ...patch };
   });
 }

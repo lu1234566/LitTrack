@@ -28,11 +28,13 @@ export function BookCover({
   // URL de capa quebrada ou expirada deixava um retângulo preto vazio no lugar
   // do livro. Cair no cartão editorial é sempre melhor do que não mostrar nada.
   const [failed, setFailed] = useState(false);
-  const showImage = Boolean(book.coverUrl) && !failed;
+  // http:// e bloqueado no Android em producao; sobe para https.
+  const uri = book.coverUrl?.replace(/^http:\/\//i, 'https://');
+  const showImage = Boolean(uri) && !failed;
   return (
     <View style={[styles.cover, { height, borderRadius: radius }]}>
       {showImage ? (
-        <Image source={{ uri: book.coverUrl }} style={styles.image} resizeMode="cover" onError={() => setFailed(true)} />
+        <Image source={{ uri }} style={styles.image} resizeMode="cover" onError={() => setFailed(true)} />
       ) : (
         <FallbackCover book={book} height={height} reserveBottom={reserveBottom} />
       )}

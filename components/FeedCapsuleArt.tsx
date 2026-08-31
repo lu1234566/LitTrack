@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { useState, forwardRef } from 'react';
 import { Image, Text, View } from 'react-native';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appFonts } from '@/theme/tokens';
@@ -66,11 +66,24 @@ function Stars({ rating, u }: { rating: number; u: (n: number) => number }) {
   );
 }
 
+
+/**
+ * URL de capa segura para exibir. Livros salvos antes de normalizeCover ainda
+ * guardam `http://`, e o Android bloqueia HTTP puro em build de producao — a
+ * imagem falhava em silencio e sobrava uma caixa preta.
+ */
+function httpsCover(url?: string) {
+  return url ? url.replace(/^http:\/\//i, 'https://') : url;
+}
+
 function Cover({ book, w, h, u }: { book: FeedCapsuleBook; w: number; h: number; u: (n: number) => number }) {
+  // Sem isto, uma capa que falha ao carregar deixa um retangulo preto vazio.
+  const [failed, setFailed] = useState(false);
+  const uri = httpsCover(book.coverUrl);
   return (
     <View style={{ width: w, height: h, borderRadius: u(12), overflow: 'hidden', backgroundColor: C.n800, borderColor: C.border, borderWidth: 1, alignItems: 'center', justifyContent: 'center' }}>
-      {book.coverUrl ? (
-        <Image source={{ uri: book.coverUrl }} style={{ width: w, height: h }} resizeMode="cover" />
+      {uri && !failed ? (
+        <Image source={{ uri }} style={{ width: w, height: h }} resizeMode="cover" onError={() => setFailed(true)} />
       ) : (
         <>
           <ReadoraIcon name="library" size={u(24)} color={C.n700} />
