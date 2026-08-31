@@ -51,4 +51,6 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Publicar update
-        run: eas update --channel preview --environment preview --message "${{ github.event.head_commit.message || 'atualizacao manual' }}" --non-interactive
+        env:
+          UPDATE_MESSAGE: ${{ github.event.head_commit.message || 'atualizacao manual' }}
+        run: eas update --channel preview --environment preview --message "$UPDATE_MESSAGE" --non-interactive
