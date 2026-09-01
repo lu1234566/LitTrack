@@ -2,6 +2,9 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initializeApp, getApp, getApps, type FirebaseApp } from 'firebase/app';
 import { collection, deleteDoc, doc, getDoc, getDocs, getFirestore, setDoc } from 'firebase/firestore';
+// Firebase 12 exposes getReactNativePersistence from its React Native bundle at runtime,
+// but its generic TypeScript declarations used by Expo can omit that conditional export.
+// @ts-ignore -- valid RN conditional export; see Firebase RN auth persistence docs.
 import {
   getAuth,
   getReactNativePersistence,
