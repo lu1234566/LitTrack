@@ -75,14 +75,14 @@ function Cover({ book, w, h, u }: { book: FeedCapsuleBook; w: number; h: number;
 
   return (
     <View style={{ width: w, height: h, borderRadius: u(12), overflow: 'hidden', backgroundColor: C.n800, borderColor: C.border, borderWidth: 1 }}>
-      <View style={{ position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center', padding: u(6) }}>
+      <View style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, alignItems: 'center', justifyContent: 'center', padding: u(6) }}>
         <ReadoraIcon name="library" size={u(24)} color={C.n700} />
         <Text numberOfLines={2} style={{ color: C.n600, fontFamily: appFonts.body, fontSize: u(9), fontWeight: '700', marginTop: u(4), textAlign: 'center' }}>{book.title}</Text>
       </View>
       {uri && !failed ? (
         <Image
           source={{ uri }}
-          style={{ position: 'absolute', inset: 0, width: w, height: h, opacity: loaded ? 1 : 0 }}
+          style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, width: w, height: h, opacity: loaded ? 1 : 0 }}
           resizeMode="cover"
           onLoad={() => setLoaded(true)}
           onError={() => setFailed(true)}
