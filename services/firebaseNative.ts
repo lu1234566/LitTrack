@@ -2,21 +2,8 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initializeApp, getApp, getApps, type FirebaseApp } from 'firebase/app';
 import { collection, deleteDoc, doc, getDoc, getDocs, getFirestore, setDoc } from 'firebase/firestore';
-// Firebase 12 exposes getReactNativePersistence from its React Native bundle at runtime,
-// but its generic TypeScript declarations used by Expo can omit that conditional export.
-// @ts-ignore -- valid RN conditional export; see Firebase RN auth persistence docs.
-import {
-  getAuth,
-  getReactNativePersistence,
-  initializeAuth,
-  GoogleAuthProvider,
-  onAuthStateChanged,
-  signInWithCredential,
-  signInWithPopup,
-  signOut as firebaseSignOut,
-  type Auth,
-  type User
-} from 'firebase/auth';
+import { getAuth, initializeAuth, GoogleAuthProvider, onAuthStateChanged, signInWithCredential, signInWithPopup, signOut as firebaseSignOut, type Auth, type Persistence, type User } from 'firebase/auth';
+import * as FirebaseAuthModule from 'firebase/auth';
 import { Book } from '@/types/book';
 import { Quote } from '@/types/quote';
 import { Shelf } from '@/types/shelf';
@@ -37,24 +24,37 @@ export const isNativeFirebaseConfigured = Boolean(firebaseConfig.apiKey && fireb
 export const nativeFirebaseApp = isNativeFirebaseConfigured ? getApps().length > 0 ? getApp() : initializeApp(firebaseConfig) : null;
 export const nativeDb = nativeFirebaseApp ? getFirestore(nativeFirebaseApp) : null;
 
-// React Native does not have browser localStorage. Firebase must be initialized
-// explicitly with the RN persistence adapter or the authenticated user can live
-// only in memory and disappear after the process is killed. Importing
-// getReactNativePersistence directly is intentional: Metro can omit the
-// RN-specific export from a namespace/dynamic lookup, which previously made the
-// code silently fall back to non-persistent auth.
+function isAlreadyInitializedAuthError(error: unknown) {
+  if (!error || typeof error !== 'object' || !('code' in error)) return false;
+  return (error as { code?: string }).code === 'auth/already-initialized';
+}
+
+// React Native has no browser localStorage. Firebase Auth must be initialized
+// with the RN persistence adapter so the signed-in user survives a cold start.
+// Firebase's generic TS declarations can omit getReactNativePersistence even
+// though the RN bundle exposes it, so read it from the runtime namespace.
 function resolveNativeAuth(app: FirebaseApp): Auth {
   if (Platform.OS === 'web') return getAuth(app);
 
+  const rnPersistence = (FirebaseAuthModule as unknown as {
+    getReactNativePersistence?: (storage: unknown) => Persistence;
+  }).getReactNativePersistence;
+
+  if (!rnPersistence) {
+    throw new Error('Firebase Auth: persistência React Native indisponível.');
+  }
+
   try {
     return initializeAuth(app, {
-      persistence: getReactNativePersistence(AsyncStorage)
+      persistence: rnPersistence(AsyncStorage)
     });
   } catch (error) {
-    // During Fast Refresh / module reload the Auth instance may already exist.
-    // Reuse it in that case. On a normal cold start initializeAuth above is the
-    // path taken, so the instance is backed by AsyncStorage.
-    return getAuth(app);
+    // Fast Refresh / duplicate module initialization can legitimately mean the
+    // Auth instance already exists. Reuse it only in that specific case.
+    // Any other failure must not silently fall back to in-memory auth, because
+    // that makes the account disappear every time the app process restarts.
+    if (isAlreadyInitializedAuthError(error)) return getAuth(app);
+    throw error;
   }
 }
 
