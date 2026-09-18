@@ -58,5 +58,9 @@ jobs:
 
       # --no-wait: o job termina apos enfileirar. O build em si roda nos
       # servidores da Expo e o link sai no log e no painel expo.dev.
+      # Disparo por push nao carrega inputs — cai em preview, que e o perfil
+      # seguro (APK de teste, nao vai para a loja).
       - name: Enfileirar build
-        run: eas build --platform android --profile ${{ inputs.profile }} --non-interactive --no-wait
+        env:
+          PROFILE: ${{ inputs.profile || 'preview' }}
+        run: eas build --platform android --profile "$PROFILE" --non-interactive --no-wait
