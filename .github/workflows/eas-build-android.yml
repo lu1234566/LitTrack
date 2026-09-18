@@ -8,6 +8,12 @@ name: EAS Build (Android)
 # entao nunca automatico.
 
 on:
+  # TEMPORARIO: workflow_dispatch exige o arquivo na branch padrao, que ainda e
+  # a `main` (site antigo). Enquanto isso, disparamos por push e desligamos
+  # logo depois.
+  push:
+    branches:
+      - claude/eas-build-dependency-sync-gylm3i
   workflow_dispatch:
     inputs:
       profile:
