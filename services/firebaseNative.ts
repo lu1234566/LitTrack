@@ -177,3 +177,36 @@ export async function purgeRemoteReadingSessions(userId: string) {
     return 0;
   }
 }
+
+/**
+ * Apaga TUDO o que este usuário tem na nuvem: as coleções, as preferências e o
+ * metadado de sincronização sob `users/{uid}`.
+ *
+ * Precisa rodar com a sessão ainda ativa — as regras do Firestore exigem
+ * `request.auth.uid == userId`, então deslogar antes faria a exclusão falhar.
+ *
+ * `sessions` entra na lista mesmo tendo sido removida do app: contas antigas
+ * ainda podem ter documentos lá, e "excluir meus dados" precisa significar
+ * todos eles.
+ */
+const USER_COLLECTIONS = ['books', 'quotes', 'shelves', 'sessions', 'settings', 'sync'];
+
+export async function deleteAllRemoteUserData(userId: string) {
+  if (!nativeDb) return { ok: false, deleted: 0 };
+  const db = nativeDb;
+  let deleted = 0;
+  for (const name of USER_COLLECTIONS) {
+    const snapshot = await getDocs(collection(db, 'users', userId, name));
+    if (snapshot.empty) continue;
+    await Promise.all(snapshot.docs.map((item) => deleteDoc(item.ref)));
+    deleted += snapshot.size;
+  }
+  // O documento do próprio usuário pode nem existir (no Firestore um documento
+  // pai de subcoleções é opcional), então a remoção é tolerante a ausência.
+  try {
+    await deleteDoc(doc(db, 'users', userId));
+  } catch {
+    // sem documento pai para apagar — as subcoleções acima já foram
+  }
+  return { ok: true, deleted };
+}
