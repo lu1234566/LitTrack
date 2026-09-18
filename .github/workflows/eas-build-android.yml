@@ -8,12 +8,9 @@ name: EAS Build (Android)
 # entao nunca automatico.
 
 on:
-  # TEMPORARIO: workflow_dispatch exige o arquivo na branch padrao, que ainda e
-  # a `main` (site antigo). Enquanto isso, disparamos por push e desligamos
-  # logo depois.
-  push:
-    branches:
-      - claude/eas-build-dependency-sync-gylm3i
+  # Apenas disparo explicito. Enquanto a branch padrao do repositorio for a
+  # `main` (site antigo), o botao "Run workflow" e a API nao enxergam este
+  # arquivo — nesse caso, religue o gatilho de push por um commit.
   workflow_dispatch:
     inputs:
       profile:
