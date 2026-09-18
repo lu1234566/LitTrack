@@ -1,0 +1,56 @@
+name: EAS Build (Android)
+
+# Gera o binario (.apk no perfil preview, .aab no production). Diferente dos
+# workflows de update: aquele troca so o JavaScript, este reconstroi o app
+# nativo — necessario quando mudam permissoes, nivel de API ou versao do SDK.
+#
+# So roda por disparo explicito. Um build consome cota da conta Expo e demora,
+# entao nunca automatico.
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'Perfil do eas.json'
+        required: true
+        default: 'preview'
+        type: choice
+        options:
+          - preview
+          - production
+
+jobs:
+  build:
+    name: Build Android
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      # Se algo aqui falhar, o build nao comeca — economiza cota e evita subir
+      # binario quebrado.
+      - name: Verificar tipos
+        run: npx tsc --noEmit
+
+      - name: Testes
+        run: npx jest --ci
+
+      - name: Configurar EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      # --no-wait: o job termina apos enfileirar. O build em si roda nos
+      # servidores da Expo e o link sai no log e no painel expo.dev.
+      - name: Enfileirar build
+        run: eas build --platform android --profile ${{ inputs.profile }} --non-interactive --no-wait
