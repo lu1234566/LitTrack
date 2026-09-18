@@ -1,7 +1,11 @@
 import { Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
+// O expo-file-system ganhou uma API nova no SDK 54 (classes File/Directory). A
+// API clássica continua disponível e mantida em `/legacy`, e é a que este
+// arquivo usa — três chamadas simples de ler/escrever texto, sem ganho em
+// migrar agora.
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as Print from 'expo-print';
 

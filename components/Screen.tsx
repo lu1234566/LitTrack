@@ -186,7 +186,7 @@ function Sidebar({ accent, textScale, user, onSignOut }: { accent: string; textS
           const active = isActivePath(pathname, item.href);
           return (
             <Link key={item.href} href={item.href as never} asChild>
-              <Pressable style={({ pressed }) => [styles.sideItem, active && styles.sideItemActive, pressed && styles.sideItemPressed]}>
+              <Pressable style={StyleSheet.flatten([styles.sideItem, active && styles.sideItemActive])}>
                 <View style={styles.sideIcon}><ReadoraIcon name={item.icon} size={20} color={active ? accent : appColors.textMuted} /></View>
                 <Text style={[styles.sideText, { fontSize: scaledFont(15, textScale) }, active && { color: accent }]}>{item.label}</Text>
               </Pressable>
@@ -205,7 +205,7 @@ function Sidebar({ accent, textScale, user, onSignOut }: { accent: string; textS
           </Pressable>
         </Link>
         <Link href="/settings" asChild>
-          <Pressable style={[styles.sideItem, isActivePath(pathname, '/settings') && styles.sideItemActive]}>
+          <Pressable style={StyleSheet.flatten([styles.sideItem, isActivePath(pathname, '/settings') && styles.sideItemActive])}>
             <View style={styles.sideIcon}><ReadoraIcon name="settings" size={20} color={isActivePath(pathname, '/settings') ? accent : appColors.textMuted} /></View>
             <Text style={[styles.sideText, isActivePath(pathname, '/settings') && { color: accent }]}>Configurações</Text>
           </Pressable>
@@ -267,7 +267,7 @@ function MobileDrawer({
             const active = isActivePath(pathname, item.href);
             return (
               <Link key={item.href} href={item.href as never} asChild>
-                <Pressable style={[styles.drawerItem, active && styles.drawerItemActive]} onPress={onClose}>
+                <Pressable style={StyleSheet.flatten([styles.drawerItem, active && styles.drawerItemActive])} onPress={onClose}>
                   <View style={styles.drawerIcon}><ReadoraIcon name={item.icon} size={22} color={active ? accent : appColors.textMuted} /></View>
                   <Text numberOfLines={1} style={[styles.drawerText, { fontSize: scaledFont(18, textScale) }, active && { color: accent }]}>{item.label}</Text>
                 </Pressable>
@@ -277,7 +277,7 @@ function MobileDrawer({
         </ScrollView>
         <View style={[styles.drawerFooter, { paddingBottom: 14 + insetBottom }]}>
           <Link href="/account" asChild>
-            <Pressable style={[styles.userRow, styles.drawerUserRow]} onPress={onClose}>
+            <Pressable style={StyleSheet.flatten([styles.userRow, styles.drawerUserRow])} onPress={onClose}>
               <UserAvatar uri={user?.photoURL} style={styles.avatarLarge} iconSize={22} />
               <View style={styles.userTextBox}>
                 <Text numberOfLines={1} style={styles.userName}>{user?.displayName || 'Convidado'}</Text>
@@ -286,7 +286,7 @@ function MobileDrawer({
             </Pressable>
           </Link>
           <Link href="/settings" asChild>
-            <Pressable style={[styles.drawerItem, isActivePath(pathname, '/settings') && styles.drawerItemActive]} onPress={onClose}>
+            <Pressable style={StyleSheet.flatten([styles.drawerItem, isActivePath(pathname, '/settings') && styles.drawerItemActive])} onPress={onClose}>
               <View style={styles.drawerIcon}><ReadoraIcon name="settings" size={22} color={isActivePath(pathname, '/settings') ? accent : appColors.textMuted} /></View>
               <Text style={[styles.drawerText, isActivePath(pathname, '/settings') && { color: accent }]}>Configurações</Text>
             </Pressable>

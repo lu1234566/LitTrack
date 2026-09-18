@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Readora Native",
+    "name": "Readora",
     "slug": "readora-native",
     "version": "1.0.0",
     "runtimeVersion": {
@@ -10,23 +10,29 @@
       "url": "https://u.expo.dev/3a93b87d-49a4-44f7-9a48-514f78101579"
     },
     "orientation": "portrait",
-    "scheme": ["readora", "com.readora.app"],
+    "scheme": [
+      "readora",
+      "com.readora.app"
+    ],
     "userInterfaceStyle": "dark",
     "icon": "./assets/icon.png",
     "newArchEnabled": true,
     "android": {
       "package": "com.readora.app",
-      "versionCode": 3,
+      "versionCode": 4,
       "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#05080f"
       },
       "permissions": [
-        "android.permission.RECORD_AUDIO",
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.CAMERA"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
       ]
     },
     "ios": {
@@ -70,20 +76,49 @@
             {
               "fontFamily": "Playfair Display",
               "fontDefinitions": [
-                { "path": "./node_modules/@expo-google-fonts/playfair-display/400Regular/PlayfairDisplay_400Regular.ttf", "weight": 400 },
-                { "path": "./node_modules/@expo-google-fonts/playfair-display/400Regular_Italic/PlayfairDisplay_400Regular_Italic.ttf", "weight": 400, "style": "italic" },
-                { "path": "./node_modules/@expo-google-fonts/playfair-display/600SemiBold/PlayfairDisplay_600SemiBold.ttf", "weight": 600 },
-                { "path": "./node_modules/@expo-google-fonts/playfair-display/700Bold/PlayfairDisplay_700Bold.ttf", "weight": 700 },
-                { "path": "./node_modules/@expo-google-fonts/playfair-display/700Bold_Italic/PlayfairDisplay_700Bold_Italic.ttf", "weight": 700, "style": "italic" }
+                {
+                  "path": "./node_modules/@expo-google-fonts/playfair-display/400Regular/PlayfairDisplay_400Regular.ttf",
+                  "weight": 400
+                },
+                {
+                  "path": "./node_modules/@expo-google-fonts/playfair-display/400Regular_Italic/PlayfairDisplay_400Regular_Italic.ttf",
+                  "weight": 400,
+                  "style": "italic"
+                },
+                {
+                  "path": "./node_modules/@expo-google-fonts/playfair-display/600SemiBold/PlayfairDisplay_600SemiBold.ttf",
+                  "weight": 600
+                },
+                {
+                  "path": "./node_modules/@expo-google-fonts/playfair-display/700Bold/PlayfairDisplay_700Bold.ttf",
+                  "weight": 700
+                },
+                {
+                  "path": "./node_modules/@expo-google-fonts/playfair-display/700Bold_Italic/PlayfairDisplay_700Bold_Italic.ttf",
+                  "weight": 700,
+                  "style": "italic"
+                }
               ]
             },
             {
               "fontFamily": "Inter",
               "fontDefinitions": [
-                { "path": "./node_modules/@expo-google-fonts/inter/400Regular/Inter_400Regular.ttf", "weight": 400 },
-                { "path": "./node_modules/@expo-google-fonts/inter/500Medium/Inter_500Medium.ttf", "weight": 500 },
-                { "path": "./node_modules/@expo-google-fonts/inter/600SemiBold/Inter_600SemiBold.ttf", "weight": 600 },
-                { "path": "./node_modules/@expo-google-fonts/inter/700Bold/Inter_700Bold.ttf", "weight": 700 }
+                {
+                  "path": "./node_modules/@expo-google-fonts/inter/400Regular/Inter_400Regular.ttf",
+                  "weight": 400
+                },
+                {
+                  "path": "./node_modules/@expo-google-fonts/inter/500Medium/Inter_500Medium.ttf",
+                  "weight": 500
+                },
+                {
+                  "path": "./node_modules/@expo-google-fonts/inter/600SemiBold/Inter_600SemiBold.ttf",
+                  "weight": 600
+                },
+                {
+                  "path": "./node_modules/@expo-google-fonts/inter/700Bold/Inter_700Bold.ttf",
+                  "weight": 700
+                }
               ]
             }
           ]
@@ -96,6 +131,15 @@
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#05080f"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36
+          }
         }
       ]
     ],
