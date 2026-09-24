@@ -328,7 +328,7 @@ function normalizeTitle(value: string) {
  * complemento se o título bater, senão a sinopse de outro livro entraria na
  * ficha. Fontes casadas por ISBN não precisam disso — já são 1:1.
  */
-function looksLikeSameBook(a: string, b: string) {
+export function looksLikeSameBook(a: string, b: string) {
   const x = normalizeTitle(a);
   const y = normalizeTitle(b);
   if (!x || !y) return false;
@@ -376,6 +376,69 @@ function mergeBooks(primary: ExternalBook, extras: ExternalBook[]): ExternalBook
 // cada um. Antes a busca parava no primeiro provedor que respondesse: se o
 // Google Books achasse o livro mas sem número de páginas, a Open Library nem
 // era consultada e o livro seguia incompleto.
+
+/**
+ * Busca DIRIGIDA por campo, em vez de texto livre.
+ *
+ * `q=Divergence` devolve qualquer livro que cite a palavra; `intitle:"Divergence"
+ * inauthor:"TurtleMe"` devolve o livro certo. A diferenca e enorme para titulos
+ * curtos e genericos — comuns em volumes de serie e obras autopublicadas, que
+ * sao justamente os que o texto livre errava.
+ */
+async function fromGoogleBooksFielded(title: string, author: string): Promise<ExternalBook[]> {
+  const partes = ['intitle:"' + title.replace(/"/g, '') + '"'];
+  if (author) partes.push('inauthor:"' + author.split(',')[0].replace(/"/g, '') + '"');
+  return fromGoogleBooks(partes.join(' '));
+}
+
+/** A Open Library tem parametros proprios de titulo e autor, mais precisos que `q`. */
+async function fromOpenLibraryFielded(title: string, author: string): Promise<ExternalBook[]> {
+  try {
+    const params = ['title=' + encodeURIComponent(title)];
+    if (author) params.push('author=' + encodeURIComponent(author.split(',')[0]));
+    const url = 'https://openlibrary.org/search.json?' + params.join('&') + '&limit=12';
+    const response = await fetchWithTimeout(url, 7000);
+    if (!response.ok) return [];
+    const data = await response.json();
+    const docs = Array.isArray(data.docs) ? data.docs : [];
+    return docs.map((item: any): ExternalBook => ({
+      id: String(item.key || item.cover_edition_key || item.title),
+      title: item.title || '',
+      author: Array.isArray(item.author_name) ? item.author_name.join(', ') : '',
+      genre: Array.isArray(item.subject) ? item.subject[0] : 'A definir',
+      publisher: Array.isArray(item.publisher) ? item.publisher[0] : '',
+      publishedDate: String(item.first_publish_year || ''),
+      totalPages: Number(item.number_of_pages_median) || 0,
+      isbn: Array.isArray(item.isbn) ? item.isbn[0] : undefined,
+      coverUrl: item.cover_i ? 'https://covers.openlibrary.org/b/id/' + item.cover_i + '-L.jpg' : undefined,
+      description: '',
+      source: 'open-library'
+    })).filter((b: ExternalBook) => b.title);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Candidatos para um livro que temos titulo e autor — todas as fontes dirigidas
+ * em paralelo. Usada pelo enriquecimento ANTES do texto livre: quando ela acha,
+ * a chance de ser o livro certo e muito maior.
+ */
+export async function lookupByTitleAuthor(title: string, author = ''): Promise<ExternalBook[]> {
+  const limpo = title.trim();
+  if (!limpo) return [];
+  const [google, openLibrary, apple] = await Promise.all([
+    fromGoogleBooksFielded(limpo, author).catch(() => []),
+    fromOpenLibraryFielded(limpo, author).catch(() => []),
+    fromAppleBooks([limpo, author].filter(Boolean).join(' ')).catch(() => [])
+  ]);
+  // So o que realmente parece ser o mesmo livro: uma busca dirigida que erra o
+  // alvo e pior do que nao achar nada, porque preenche dado de outro livro.
+  const candidatos = [...google, ...openLibrary, ...apple].filter((c) => looksLikeSameBook(c.title, limpo));
+  if (!candidatos.length) return [];
+  return [mergeBooks(candidatos[0], candidatos.slice(1))];
+}
+
 export async function lookupExternalBooks(query: string): Promise<ExternalBook[]> {
   const cleaned = query.trim();
   if (!cleaned) return [];

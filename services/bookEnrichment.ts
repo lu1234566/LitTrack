@@ -1,6 +1,6 @@
 import { Book } from '@/types/book';
 import { ExternalBook } from '@/types/externalBook';
-import { lookupExternalBooks } from '@/services/externalBookSearch';
+import { looksLikeSameBook, lookupByTitleAuthor, lookupExternalBooks } from '@/services/externalBookSearch';
 import { stripHtml } from '@/services/plainText';
 
 const UNSET_GENRES = ['', 'a definir', 'diverso', 'indefinido'];
@@ -59,11 +59,20 @@ function patchFrom(match: ExternalBook, book: Book): Partial<Book> {
   return patch;
 }
 
+/**
+ * Antes isto terminava em `results[0]` — o primeiro resultado, fosse ele qual
+ * fosse. Para titulo curto e generico ("Divergence", "New Heights") a busca em
+ * texto livre traz outro livro, e aceitar o primeiro preenchia paginas e capa
+ * ERRADAS. Agora, sem semelhanca de titulo, preferimos nao preencher nada.
+ */
 function bestMatch(results: ExternalBook[], book: Book): ExternalBook | undefined {
   const title = book.title.trim().toLowerCase();
   const author = book.author.trim().toLowerCase();
-  const exact = results.find((r) => r.title.trim().toLowerCase() === title && (!author || r.author.trim().toLowerCase().includes(author.split(',')[0])));
-  return exact || results.find((r) => r.title.trim().toLowerCase() === title) || results[0];
+  const exatoComAutor = results.find((r) => r.title.trim().toLowerCase() === title && (!author || r.author.trim().toLowerCase().includes(author.split(',')[0])));
+  if (exatoComAutor) return exatoComAutor;
+  const exato = results.find((r) => r.title.trim().toLowerCase() === title);
+  if (exato) return exato;
+  return results.find((r) => looksLikeSameBook(r.title, book.title));
 }
 
 /**
@@ -82,6 +91,13 @@ export async function enrichBookPatch(book: Book): Promise<Partial<Book> | null>
   if (isbn) {
     const byIsbn = await lookupExternalBooks('isbn:' + isbn);
     match = byIsbn[0];
+  }
+  // Busca dirigida por campo (intitle/inauthor, title/author) antes do texto
+  // livre: para titulo generico ela e a unica que acerta o alvo.
+  if ((!match || !isUsefulFor(match, book)) && book.title.trim()) {
+    const dirigida = await lookupByTitleAuthor(book.title, book.author);
+    const dirigidoMatch = bestMatch(dirigida, book);
+    if (dirigidoMatch && (!match || isUsefulFor(dirigidoMatch, book))) match = dirigidoMatch;
   }
   if ((!match || !isUsefulFor(match, book)) && titleQuery) {
     const byTitle = await lookupExternalBooks(titleQuery);
