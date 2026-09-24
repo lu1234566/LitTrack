@@ -1,12 +1,13 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Image, Platform, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
 import { stripHtml } from '@/services/plainText';
 import { lookupExternalBooks } from '@/services/externalBookSearch';
-import { pickImageAsDataUrl, scanBarcodeFromImage } from '@/services/webPlatformTools';
+import { scanBarcodeFromImage } from '@/services/webPlatformTools';
+import { CoverPicker } from '@/components/CoverPicker';
 import { Book, BookStatus } from '@/types/book';
 import { ExternalBook } from '@/types/externalBook';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
@@ -89,16 +90,6 @@ export default function AddBookScreen() {
     setIsbn(book.isbn || isbn);
     setCoverUrl(book.coverUrl || coverUrl);
     setReason(stripHtml(book.description) || reason);
-  }
-
-  async function chooseLocalCover() {
-    const image = await pickImageAsDataUrl();
-    if (!image) {
-      setSearchMessage('Nenhuma imagem foi escolhida ou a permissão de galeria foi negada.');
-      return;
-    }
-    setCoverUrl(image);
-    setSearchMessage('Imagem local carregada como capa. Ela será salva junto ao livro neste dispositivo.');
   }
 
   async function scanIsbnFromImage() {
@@ -196,10 +187,7 @@ export default function AddBookScreen() {
           <Pressable style={[styles.searchButton, styles.btnRow]} onPress={() => handleSearch(title, 'title')}><ReadoraIcon name="search" size={16} color={appColors.text} />{mobile ? null : <Text style={styles.darkButtonText}>Buscar Online</Text>}</Pressable>
         </View>
         <Text style={styles.label}>Capa do Livro</Text>
-        <View style={styles.coverPlaceholder}>{coverUrl ? <Image source={{ uri: coverUrl }} style={styles.coverImage} /> : <><ReadoraIcon name="camera" size={42} color={appColors.textDim} /><Text style={styles.coverText}>Nenhuma capa{`\n`}encontrada</Text></>}</View>
-        <Pressable style={[styles.darkButtonWide, styles.btnRow]} onPress={() => handleSearch(isbn || title, isbn ? 'isbn' : 'title')}><ReadoraIcon name="search" size={16} color={appColors.text} /><Text style={styles.darkButtonText}>Tentar buscar novamente</Text></Pressable>
-        <TextInput style={styles.input} placeholder="Colar URL da capa" placeholderTextColor={appColors.textDim} value={coverUrl} onChangeText={setCoverUrl} />
-        <Pressable style={[styles.outlineButton, styles.btnRow]} onPress={chooseLocalCover}><ReadoraIcon name="gallery" size={17} color={appColors.gold} /><Text style={styles.outlineText}>Usar imagem local neste dispositivo</Text></Pressable>
+        <CoverPicker title={title} author={author} isbn={isbn} value={coverUrl} onChange={setCoverUrl} />
         <View style={[styles.row, mobile && styles.stack]}>
           <Field label="Autor" value={author} onChangeText={setAuthor} placeholder="Ex: Patrick Rothfuss" />
           <Field label="Número de Páginas" value={totalPages} onChangeText={setTotalPages} placeholder="Ex: 656" keyboardType="numeric" />
@@ -296,10 +284,7 @@ const styles = StyleSheet.create({
   darkButtonWide: { backgroundColor: appColors.surfaceMuted, borderRadius: 16, paddingVertical: 16, alignItems: 'center', marginTop: 14 },
   darkButtonText: { color: appColors.text, fontWeight: '900', fontSize: 16 },
   searchButton: { backgroundColor: appColors.surfaceMuted, borderRadius: 16, paddingVertical: 18, paddingHorizontal: 20, alignItems: 'center' },
-  coverPlaceholder: { width: 132, height: 190, alignSelf: 'center', borderColor: appColors.border, borderStyle: 'dashed', borderWidth: 1, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: appColors.surface, marginVertical: 12, overflow: 'hidden' },
-  coverImage: { width: '100%', height: '100%' },
   coverIcon: { color: appColors.textDim, fontSize: 46 },
-  coverText: { color: appColors.textDim, textAlign: 'center', marginTop: 6 },
   outlineButton: { borderColor: appColors.goldDeep, backgroundColor: 'rgba(255,153,0,0.12)', borderWidth: 1, borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginTop: 10 },
   outlineText: { color: appColors.gold, fontWeight: '900' },
   statusRow: { flexDirection: 'row', gap: 8, marginTop: 10 },

@@ -3,7 +3,13 @@ import { stripHtml } from '@/services/plainText';
 
 function normalizeCover(url?: string) {
   if (!url) return undefined;
-  return url.replace('http://', 'https://');
+  return url
+    .replace('http://', 'https://')
+    // O Google Books devolve a miniatura (~128px), que fica borrada numa capa
+    // de 250px. `zoom=2` pede a versão maior, e `edge=curl` desenha uma dobra
+    // de página falsa que só atrapalha. Ambos são no-op se não estiverem na URL.
+    .replace(/([?&])zoom=1(&|$)/, '$1zoom=2$2')
+    .replace(/&edge=curl/, '');
 }
 
 function pickIsbn(industryIdentifiers?: Array<{ type: string; identifier: string }>) {
@@ -423,4 +429,55 @@ export async function searchGoogleBooks(query: string): Promise<ExternalBook[]> 
   if (!cleaned) return [];
   const results = await lookupExternalBooks(cleaned);
   return results.length ? results : fallbackBooks(cleaned);
+}
+
+export type CoverCandidate = {
+  url: string;
+  /** Título como a fonte devolveu — ajuda a perceber que veio outra edição. */
+  title: string;
+  author: string;
+  source: string;
+};
+
+/**
+ * Capas candidatas para escolher à mão, a partir do título (o autor é
+ * opcional e só melhora a pontaria).
+ *
+ * Diferente de `lookupExternalBooks`, que identifica UM livro e o completa:
+ * aqui o objetivo é o oposto — juntar quantas capas diferentes for possível,
+ * de todas as fontes, para o usuário bater o olho e escolher. Livros
+ * brasileiros costumam ter capa nacional só no Mercado Editorial, e edições em
+ * inglês só na Apple, então nenhuma fonte sozinha resolve.
+ */
+export async function searchBookCovers(title: string, author = '', isbn = ''): Promise<CoverCandidate[]> {
+  const termo = [title, author].filter(Boolean).join(' ').trim();
+  if (!termo) return [];
+  const isbnLimpo = cleanIsbn(isbn);
+
+  const [google, openLibrary, apple, olIsbn, mercado] = await Promise.all([
+    fromGoogleBooks(termo).catch(() => []),
+    fromOpenLibrarySearch(termo).catch(() => []),
+    fromAppleBooks(termo).catch(() => []),
+    isbnLimpo ? fromOpenLibraryIsbn(isbnLimpo).catch(() => []) : Promise.resolve([]),
+    isbnLimpo ? fromMercadoEditorial(isbnLimpo).catch(() => []) : Promise.resolve([])
+  ]);
+
+  const candidatos: CoverCandidate[] = [];
+  const vistas = new Set<string>();
+  const adicionar = (livros: ExternalBook[], fonte: string) => {
+    livros.forEach((livro) => {
+      if (!livro.coverUrl || vistas.has(livro.coverUrl)) return;
+      vistas.add(livro.coverUrl);
+      candidatos.push({ url: livro.coverUrl, title: livro.title, author: livro.author, source: fonte });
+    });
+  };
+
+  // Busca por ISBN primeiro: quando existe, é a capa da edição exata.
+  adicionar(mercado, 'Mercado Editorial');
+  adicionar(olIsbn, 'Open Library');
+  adicionar(google, 'Google Books');
+  adicionar(apple, 'Apple Books');
+  adicionar(openLibrary, 'Open Library');
+
+  return candidatos.slice(0, 12);
 }
