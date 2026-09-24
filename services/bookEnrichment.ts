@@ -80,7 +80,37 @@ function bestMatch(results: ExternalBook[], book: Book): ExternalBook | undefine
  * ONLY the fields that were missing — never overwrites data the user already has.
  * Returns null when nothing useful is found (offline, no match, no new data).
  */
+/** Candidatos que apareceram mas nao passaram no criterio de semelhanca. */
+export type BookCandidate = {
+  external: ExternalBook;
+  /** O que ESTE candidato preencheria neste livro, se escolhido. */
+  wouldFill: string[];
+};
+
+export type EnrichOutcome = {
+  patch: Partial<Book> | null;
+  /** Preenchidos quando nao houve certeza — a decisao fica com o usuario. */
+  candidates: BookCandidate[];
+};
+
+/** Torna publico o calculo do patch, para aplicar um candidato escolhido a mao. */
+export function patchForCandidate(candidate: ExternalBook, book: Book): Partial<Book> {
+  return patchFrom(candidate, book);
+}
+
 export async function enrichBookPatch(book: Book): Promise<Partial<Book> | null> {
+  return (await enrichBookDetailed(book)).patch;
+}
+
+/**
+ * Como `enrichBookPatch`, mas quando NAO ha correspondencia confiavel devolve
+ * os candidatos encontrados em vez de simplesmente desistir.
+ *
+ * O guarda de semelhanca evita preencher dado de outro livro, mas sozinho ele
+ * so produz silencio: o usuario ficava sem o dado e sem saber que existiam
+ * opcoes. Devolvendo os candidatos, quem conhece o livro decide.
+ */
+export async function enrichBookDetailed(book: Book): Promise<EnrichOutcome> {
   const isbn = (book.isbn || '').replace(/[^0-9Xx]/g, '');
   const titleQuery = [book.title, book.author].filter(Boolean).join(' ').trim();
 
@@ -88,19 +118,25 @@ export async function enrichBookPatch(book: Book): Promise<Partial<Book> | null>
   // o que falta, cai para título+autor — antes o código escolhia UMA das duas e
   // desistia, então um ISBN sem correspondência deixava o livro incompleto.
   let match: ExternalBook | undefined;
+  // Tudo que apareceu em qualquer etapa — vira a lista de escolha se no fim
+  // nenhum candidato for confiavel o bastante.
+  const vistos: ExternalBook[] = [];
   if (isbn) {
     const byIsbn = await lookupExternalBooks('isbn:' + isbn);
+    vistos.push(...byIsbn);
     match = byIsbn[0];
   }
   // Busca dirigida por campo (intitle/inauthor, title/author) antes do texto
   // livre: para titulo generico ela e a unica que acerta o alvo.
   if ((!match || !isUsefulFor(match, book)) && book.title.trim()) {
     const dirigida = await lookupByTitleAuthor(book.title, book.author);
+    vistos.push(...dirigida);
     const dirigidoMatch = bestMatch(dirigida, book);
     if (dirigidoMatch && (!match || isUsefulFor(dirigidoMatch, book))) match = dirigidoMatch;
   }
   if ((!match || !isUsefulFor(match, book)) && titleQuery) {
     const byTitle = await lookupExternalBooks(titleQuery);
+    vistos.push(...byTitle);
     const titleMatch = bestMatch(byTitle, book);
     if (titleMatch && (!match || isUsefulFor(titleMatch, book))) match = titleMatch;
   }
@@ -121,16 +157,32 @@ export async function enrichBookPatch(book: Book): Promise<Partial<Book> | null>
       if (gaps.includes('páginas') && facts.totalPages) aiPatch.totalPages = facts.totalPages;
       if (gaps.includes('gênero') && facts.genre) aiPatch.genre = facts.genre;
       if (Object.keys(aiPatch).length) {
-        return { ...(match ? patchFrom(match, book) : {}), ...aiPatch };
+        return { patch: { ...(match ? patchFrom(match, book) : {}), ...aiPatch }, candidates: [] };
       }
     }
   }
 
-  if (!match) return null;
+  if (!match) return { patch: null, candidates: duvidas(vistos, book) };
 
   const patch = patchFrom(match, book);
+  if (Object.keys(patch).length) return { patch, candidates: [] };
+  return { patch: null, candidates: duvidas(vistos, book) };
+}
 
-  return Object.keys(patch).length ? patch : null;
+/**
+ * Candidatos que valem uma pergunta: os que preencheriam algo que falta, sem
+ * repetir o mesmo livro. Poucos de proposito — uma lista longa transfere o
+ * trabalho de decidir em vez de ajudar.
+ */
+function duvidas(vistos: ExternalBook[], book: Book): BookCandidate[] {
+  const porId = new Map<string, BookCandidate>();
+  vistos.forEach((external) => {
+    if (!isUsefulFor(external, book)) return;
+    const chave = (external.title + '|' + external.author).toLowerCase();
+    if (porId.has(chave)) return;
+    porId.set(chave, { external, wouldFill: filledLabels(patchFrom(external, book)) });
+  });
+  return Array.from(porId.values()).filter((c) => c.wouldFill.length).slice(0, 5);
 }
 
 export type EnrichProgress = { done: number; total: number; updated: number; currentTitle: string };
@@ -141,19 +193,23 @@ export type EnrichProgress = { done: number; total: number; updated: number; cur
  */
 export type EnrichedBookReport = { title: string; filled: string[]; stillMissing: string[] };
 
+/** Um livro que ficou sem resposta confiavel, com as opcoes encontradas. */
+export type PendingChoice = { book: Book; candidates: BookCandidate[] };
+
 export async function enrichLibrary(
   books: Book[],
   applyPatch: (bookId: string, patch: Partial<Book>) => Promise<void>,
   onProgress?: (p: EnrichProgress) => void
-): Promise<{ updated: number; checked: number; reports: EnrichedBookReport[] }> {
+): Promise<{ updated: number; checked: number; reports: EnrichedBookReport[]; pending: PendingChoice[] }> {
   const targets = books.filter(bookNeedsEnrichment);
   const reports: EnrichedBookReport[] = [];
+  const pending: PendingChoice[] = [];
   let updated = 0;
   for (let i = 0; i < targets.length; i++) {
     const book = targets[i];
     onProgress?.({ done: i, total: targets.length, updated, currentTitle: book.title });
     try {
-      const patch = await enrichBookPatch(book);
+      const { patch, candidates } = await enrichBookDetailed(book);
       if (patch) {
         await applyPatch(book.id, patch);
         updated += 1;
@@ -166,11 +222,13 @@ export async function enrichLibrary(
         });
       } else {
         reports.push({ title: book.title, filled: [], stillMissing: missingFields(book) });
+        // Sem certeza, mas com opcoes: quem conhece o livro decide.
+        if (candidates.length) pending.push({ book, candidates });
       }
     } catch {
       reports.push({ title: book.title, filled: [], stillMissing: missingFields(book) });
     }
   }
   onProgress?.({ done: targets.length, total: targets.length, updated, currentTitle: '' });
-  return { updated, checked: targets.length, reports };
+  return { updated, checked: targets.length, reports, pending };
 }

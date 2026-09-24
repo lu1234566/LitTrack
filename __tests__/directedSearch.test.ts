@@ -1,5 +1,5 @@
 import { lookupByTitleAuthor } from '@/services/externalBookSearch';
-import { enrichBookPatch } from '@/services/bookEnrichment';
+import { enrichBookDetailed, enrichBookPatch, patchForCandidate } from '@/services/bookEnrichment';
 import { Book } from '@/types/book';
 
 function mockFetch(routes: Record<string, unknown>) {
@@ -86,5 +86,38 @@ describe('enriquecimento nao preenche com livro errado', () => {
     const patch = await enrichBookPatch({ ...livroBase, title: 'Divergence' });
     // Antes isto retornava paginas/capa/sinopse de "Divergente".
     expect(patch).toBeNull();
+  });
+
+  it('devolve os candidatos duvidosos em vez de so desistir', async () => {
+    (global as any).fetch = mockFetch({
+      'googleapis.com/books': {
+        items: [{
+          id: 'g9',
+          volumeInfo: {
+            title: 'Divergente', authors: ['Veronica Roth'], pageCount: 487,
+            description: 'Sinopse da edicao brasileira', imageLinks: { thumbnail: 'http://x/capa.jpg' }
+          }
+        }]
+      }
+    });
+    const livro = { ...livroBase, title: 'Divergence' };
+    const { patch, candidates } = await enrichBookDetailed(livro);
+    expect(patch).toBeNull();
+    // O usuario ve a opcao e decide — antes ela era descartada em silencio.
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0].external.title).toBe('Divergente');
+    expect(candidates[0].wouldFill).toEqual(expect.arrayContaining(['páginas', 'capa', 'sinopse']));
+  });
+
+  it('aplicar um candidato escolhido preenche so o que falta', async () => {
+    const livro = { ...livroBase, title: 'Divergence', totalPages: 300 };
+    const patch = patchForCandidate(
+      { id: 'g9', title: 'Divergente', author: 'Veronica Roth', genre: 'Ficção', totalPages: 487, coverUrl: 'https://x/capa.jpg', source: 'google-books' },
+      livro
+    );
+    // Paginas ja preenchidas pelo usuario continuam valendo.
+    expect(patch.totalPages).toBeUndefined();
+    expect(patch.coverUrl).toBe('https://x/capa.jpg');
+    expect(patch.genre).toBe('Ficção');
   });
 });
