@@ -1,8 +1,10 @@
+import { useMemo } from 'react';
 import { Link } from 'expo-router';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { BookCard } from '@/components/BookCard';
+import { BookCover } from '@/components/BookCover';
 import { useBooks } from '@/contexts/BookContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
 import { useShelves } from '@/contexts/ShelfContext';
@@ -15,7 +17,23 @@ export default function DashboardScreen() {
   const { shelves } = useShelves();
   const { width } = useWindowDimensions();
   const mobile = width < 760;
-  const recentBooks = books.filter((book) => book.status === 'finished').slice(0, 3);
+  const finishedBooks = useMemo(
+    () => books
+      .filter((book) => book.status === 'finished')
+      .sort((a, b) => (b.finishedAt || b.updatedAt || 0) - (a.finishedAt || a.updatedAt || 0)),
+    [books]
+  );
+  const recentBooks = finishedBooks.slice(0, 3);
+  const finishedCount = finishedBooks.length;
+  // Poucas capas, grandes: uma parede cheia de miniatura vira ruido no topo.
+  const heroCovers = finishedBooks.slice(0, mobile ? 5 : 7);
+  // Medidas escolhidas para a pilha caber na largura do cartao: no celular
+  // 5x58 menos 4x18 de sobreposicao = 218pt, dentro dos ~304 disponiveis.
+  // Altura abaixo de 90 faz o BookCover usar o modo minimo (so a inicial),
+  // que nesse tamanho fica legivel — o titulo completo cortaria.
+  const coverW = mobile ? 58 : 62;
+  const coverH = mobile ? 84 : 88;
+  const overlap = mobile ? -18 : -20;
   const year = new Date().getFullYear();
   const finishedThisYear = books.filter((book) => book.status === 'finished' && new Date(book.finishedAt || book.updatedAt || book.createdAt).getFullYear() === year).length;
   const yearlyGoal = preferences.yearlyGoal || 0;
@@ -27,10 +45,27 @@ export default function DashboardScreen() {
         <Text style={styles.heroKicker}>READORA — LITERARY JOURNAL</Text>
         <Text style={[styles.heroTitle, mobile && styles.heroTitleMobile]}>Readora</Text>
         <Text style={styles.heroQuote}>“Os livros são uma forma única de magia portátil.” — Stephen King</Text>
-        <View style={[styles.heroActions, mobile && styles.stack]}>
-          <Link href="/add" asChild><Pressable style={styles.primaryPill}><ReadoraIcon name="addBook" size={16} color={appColors.background} /><Text style={styles.primaryText}>NOVA JORNADA</Text></Pressable></Link>
-          <Link href="/library" asChild><Pressable style={styles.darkPill}><ReadoraIcon name="library" size={16} color={appColors.text} /><Text style={styles.darkPillText}>BIBLIOTECA</Text></Pressable></Link>
-        </View>
+        {/* As capas do que voce ja leu, no lugar dos dois botoes que antes
+            ocupavam este espaco — a mesma navegacao existe na barra inferior e
+            no menu, e a estante conta melhor a historia do que dois pills. */}
+        {heroCovers.length ? (
+          <Link href="/library" asChild>
+            <Pressable style={styles.heroShelf}>
+              <View style={styles.heroStack}>
+                {heroCovers.map((book, index) => (
+                  <View key={book.id} style={StyleSheet.flatten([styles.heroCover, { width: coverW }, index > 0 && { marginLeft: overlap }])}>
+                    <BookCover book={book} height={coverH} radius={8} />
+                  </View>
+                ))}
+              </View>
+              <Text style={styles.heroShelfLabel}>
+                {finishedCount === 1 ? '1 obra concluída' : finishedCount + ' obras concluídas'}
+              </Text>
+            </Pressable>
+          </Link>
+        ) : (
+          <Text style={styles.heroEmpty}>Sua estante de concluídos começa no primeiro livro terminado.</Text>
+        )}
         <Text style={styles.heroWatermark}>R</Text>
       </View>
 
@@ -143,11 +178,12 @@ const styles = StyleSheet.create({
   heroTitleMobile: { fontSize: 44, lineHeight: 50 },
   heroQuote: { color: appColors.text, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 18, textAlign: 'center', maxWidth: 520 },
   heroWatermark: { position: 'absolute', right: 26, top: 8, color: 'rgba(255,255,255,0.025)', fontFamily: appFonts.display, fontSize: 350, fontWeight: '900' },
-  heroActions: { flexDirection: 'row', gap: 16, marginTop: 22 },
-  primaryPill: { backgroundColor: appColors.text, borderRadius: 999, paddingVertical: 16, paddingHorizontal: 34, minWidth: 170, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 },
-  primaryText: { color: appColors.background, fontSize: 12, fontWeight: '900', letterSpacing: 1 },
-  darkPill: { backgroundColor: appColors.background, borderColor: appColors.border, borderWidth: 1, borderRadius: 999, paddingVertical: 16, paddingHorizontal: 34, minWidth: 170, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 },
-  darkPillText: { color: appColors.text, fontSize: 12, fontWeight: '900', letterSpacing: 1 },
+  heroShelf: { alignItems: 'center', gap: 14, marginTop: 20 },
+  heroStack: { flexDirection: 'row', alignItems: 'flex-end' },
+  // Borda na cor do cartão separa uma capa da outra na sobreposição.
+  heroCover: { borderRadius: 10, borderWidth: 2, borderColor: appColors.backgroundSoft, overflow: 'hidden' },
+  heroShelfLabel: { color: appColors.textDim, fontSize: 11, fontWeight: '900', letterSpacing: 3, textTransform: 'uppercase' },
+  heroEmpty: { color: appColors.textDim, fontSize: 13, textAlign: 'center', maxWidth: 380, marginTop: 18, lineHeight: 20 },
   stack: { flexDirection: 'column', alignItems: 'stretch' },
   statsGrid: { flexDirection: 'row', gap: 18 },
   mobileGrid: { flexDirection: 'row', flexWrap: 'wrap' },

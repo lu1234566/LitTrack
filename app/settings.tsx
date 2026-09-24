@@ -3,6 +3,7 @@ import { Alert, Platform, Pressable, StyleSheet, Text, TextInput, useWindowDimen
 import * as Updates from 'expo-updates';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
+import { EnrichLibraryCard } from '@/components/EnrichLibraryCard';
 import { useBooks } from '@/contexts/BookContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
 import { useQuotes } from '@/contexts/QuoteContext';
@@ -151,6 +152,8 @@ export default function SettingsScreen() {
         <View style={styles.titleRow}><ReadoraIcon name="settings" size={32} color={appColors.gold} /><Text style={styles.title}>Configurações</Text></View>
         <Text style={styles.subtitle}>Personalize sua experiência no Readora.</Text>
       </View>
+
+      <EnrichLibraryCard />
 
       <Card>
         <View style={styles.titleRow}><ReadoraIcon name="goals" size={20} color={appColors.gold} /><Text style={styles.cardTitle}>Metas de Leitura {new Date().getFullYear()}</Text></View>
