@@ -8,11 +8,6 @@ name: EAS Update (production)
 #   Settings > Secrets and variables > Actions > New repository secret
 
 on:
-  # TEMPORARIO: workflow_dispatch exige o arquivo na branch padrao, que ainda e
-  # a `main`. Revertido no commit seguinte.
-  push:
-    branches:
-      - claude/eas-build-dependency-sync-gylm3i
   workflow_dispatch:
     inputs:
       message:
