@@ -90,12 +90,15 @@ export type BookCandidate = {
 /** Por que a IA nao completou o que os catalogos deixaram faltando. */
 export type AiOutcome = 'nao-precisou' | 'preencheu' | 'desligada' | 'falhou' | 'nao-conhece';
 
+/** O motivo, mais a mensagem do provedor quando existe. */
+export type AiReport = { outcome: AiOutcome; detail?: string };
+
 export type EnrichOutcome = {
   patch: Partial<Book> | null;
   /** Preenchidos quando nao houve certeza — a decisao fica com o usuario. */
   candidates: BookCandidate[];
   /** Diagnostico: sem isto, "sem chave" e "modelo nao conhece" sao iguais. */
-  ai: AiOutcome;
+  ai: AiReport;
 };
 
 /** Torna publico o calculo do patch, para aplicar um candidato escolhido a mao. */
@@ -153,17 +156,20 @@ export async function enrichBookDetailed(book: Book): Promise<EnrichOutcome> {
   // Só entra no que continuar faltando — nunca sobrescreve catálogo.
   const afterCatalogs: Book = match ? { ...book, ...patchFrom(match, book) } : book;
   const gaps = missingFields(afterCatalogs);
-  let ai: AiOutcome = 'nao-precisou';
+  let ai: AiReport = { outcome: 'nao-precisou' };
   if (gaps.length) {
     // Import sob demanda: o aiClient puxa o Firebase, que não deve entrar na
     // árvore de módulos (nem no bundle inicial) de quem só quer os catálogos.
     const resultado = await import('@/services/aiClient')
       .then((mod) => mod.fetchBookFactsDetailed(book.title, book.author))
-      .catch(() => ({ facts: null, status: 'error' as const }));
-    ai = resultado.status === 'ok' ? 'preencheu'
-      : resultado.status === 'off' ? 'desligada'
-      : resultado.status === 'unknown-book' ? 'nao-conhece'
-      : 'falhou';
+      .catch((erro) => ({ facts: null, status: 'error' as const, detail: String(erro?.message || erro) }));
+    ai = {
+      outcome: resultado.status === 'ok' ? 'preencheu'
+        : resultado.status === 'off' ? 'desligada'
+        : resultado.status === 'unknown-book' ? 'nao-conhece'
+        : 'falhou',
+      detail: resultado.detail
+    };
     const facts = resultado.facts;
     if (facts) {
       const aiPatch: Partial<Book> = {};
@@ -174,7 +180,7 @@ export async function enrichBookDetailed(book: Book): Promise<EnrichOutcome> {
         return { patch: { ...(match ? patchFrom(match, book) : {}), ...aiPatch }, candidates: [], ai };
       }
       // Veio fato, mas nada que servisse para ESTE livro.
-      ai = 'nao-precisou';
+      ai = { outcome: 'nao-precisou' };
     }
   }
 
@@ -238,11 +244,11 @@ export async function enrichLibrary(
   books: Book[],
   applyPatch: (bookId: string, patch: Partial<Book>) => Promise<void>,
   onProgress?: (p: EnrichProgress) => void
-): Promise<{ updated: number; checked: number; reports: EnrichedBookReport[]; pending: PendingChoice[]; ai: AiOutcome[] }> {
+): Promise<{ updated: number; checked: number; reports: EnrichedBookReport[]; pending: PendingChoice[]; ai: AiReport[] }> {
   const targets = books.filter(bookNeedsEnrichment);
   const reports: EnrichedBookReport[] = [];
   const pending: PendingChoice[] = [];
-  const ai: AiOutcome[] = [];
+  const ai: AiReport[] = [];
   let updated = 0;
   for (let i = 0; i < targets.length; i++) {
     const book = targets[i];
@@ -278,14 +284,18 @@ export async function enrichLibrary(
  * A ordem importa: problema de configuração vence "não conhece o livro",
  * porque é o único que o usuário pode consertar.
  */
-export function aiDiagnostico(resultados: AiOutcome[]): string {
-  if (resultados.includes('desligada')) {
+export function aiDiagnostico(resultados: AiReport[]): string {
+  const tem = (o: AiOutcome) => resultados.find((r) => r.outcome === o);
+  if (tem('desligada')) {
     return 'A IA está desligada nesta versão do app — falta a chave do Gemini nas variáveis de ambiente.';
   }
-  if (resultados.includes('falhou')) {
-    return 'A IA não respondeu. Pode ser chave inválida, cota esgotada ou falha de conexão.';
+  const falha = tem('falhou');
+  if (falha) {
+    // A mensagem do provedor e o que separa "chave errada" de "cota estourada"
+    // de "modelo inexistente". Sem ela, resta adivinhar.
+    return 'A IA não respondeu.' + (falha.detail ? ' Resposta do servidor: ' + falha.detail : ' Pode ser chave inválida, cota esgotada ou falha de conexão.');
   }
-  if (resultados.includes('nao-conhece')) {
+  if (tem('nao-conhece')) {
     return 'A IA respondeu, mas não conhece esses livros o suficiente para preencher sem inventar.';
   }
   return '';

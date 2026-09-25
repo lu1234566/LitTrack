@@ -6,26 +6,33 @@ import { coverLooksReal, resetCoverProbeCache } from '@/services/coverProbe';
  * invalida e "o modelo nao conhece o livro". Da tela, e impossivel saber qual
  * foi — e so a primeira o usuario consegue consertar.
  */
+const r = (outcome: any, detail?: string) => ({ outcome, detail });
+
 describe('diagnostico da IA', () => {
   it('avisa quando a chave nao esta configurada', () => {
-    expect(aiDiagnostico(['desligada', 'nao-conhece'])).toContain('desligada');
+    expect(aiDiagnostico([r('desligada'), r('nao-conhece')])).toContain('desligada');
   });
 
   it('problema de configuracao vence "nao conhece o livro"', () => {
     // O usuario so pode agir sobre o primeiro; mostrar o outro esconderia a
     // unica informacao acionavel.
-    const texto = aiDiagnostico(['nao-conhece', 'desligada', 'falhou']);
+    const texto = aiDiagnostico([r('nao-conhece'), r('desligada'), r('falhou')]);
     expect(texto).toContain('desligada');
     expect(texto).not.toContain('não conhece');
   });
 
   it('distingue falha de resposta de desconhecimento', () => {
-    expect(aiDiagnostico(['falhou'])).toContain('não respondeu');
-    expect(aiDiagnostico(['nao-conhece'])).toContain('não conhece');
+    expect(aiDiagnostico([r('falhou')])).toContain('não respondeu');
+    expect(aiDiagnostico([r('nao-conhece')])).toContain('não conhece');
+  });
+
+  it('mostra a mensagem do provedor, que e o que diz o que consertar', () => {
+    const texto = aiDiagnostico([r('falhou', 'IA 400: API key not valid')]);
+    expect(texto).toContain('API key not valid');
   });
 
   it('nao diz nada quando a IA nao precisou entrar', () => {
-    expect(aiDiagnostico(['nao-precisou', 'preencheu'])).toBe('');
+    expect(aiDiagnostico([r('nao-precisou'), r('preencheu')])).toBe('');
   });
 });
 

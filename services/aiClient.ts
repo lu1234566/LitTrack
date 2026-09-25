@@ -111,7 +111,17 @@ export type AiBookFacts = { description?: string; totalPages?: number; genre?: s
  * para quem está olhando a tela, e impossíveis de depurar à distância.
  */
 export type AiFactsStatus = 'ok' | 'off' | 'error' | 'unknown-book';
-export type AiFactsResult = { facts: AiBookFacts | null; status: AiFactsStatus };
+export type AiFactsResult = {
+  facts: AiBookFacts | null;
+  status: AiFactsStatus;
+  /** A mensagem do Google, quando houve erro — é ela que diz o que consertar. */
+  detail?: string;
+};
+
+/** A chave nunca vai para a tela, mesmo que apareça numa mensagem de erro. */
+function semChave(texto: string) {
+  return texto.replace(/AIza[0-9A-Za-z_-]{10,}/g, '***').slice(0, 220);
+}
 
 export async function fetchBookFactsFromAi(title: string, author: string): Promise<AiBookFacts | null> {
   return (await fetchBookFactsDetailed(title, author)).facts;
@@ -159,7 +169,9 @@ export async function fetchBookFactsDetailed(title: string, author: string): Pro
     return facts.description || facts.totalPages || facts.genre
       ? { facts, status: 'ok' }
       : { facts: null, status: 'unknown-book' };
-  } catch {
-    return { facts: null, status: 'error' };
+  } catch (erro) {
+    // `callGemini` já monta "IA 400: <resposta do Google>". Descartar isso era
+    // transformar um diagnóstico pronto em "não deu certo".
+    return { facts: null, status: 'error', detail: semChave(String((erro as Error)?.message || erro)) };
   }
 }
