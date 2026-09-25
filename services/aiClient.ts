@@ -1,5 +1,6 @@
 import { Book } from '@/types/book';
 import { nativeAuth } from '@/services/firebaseNative';
+import { stripHtml } from '@/services/plainText';
 
 // AI features (OCR + "chat with the book") via Google's Gemini API.
 //
@@ -59,7 +60,12 @@ async function callGemini(body: GeminiBody): Promise<string> {
   });
   if (!res.ok) {
     const detail = await res.text().catch(() => '');
-    throw new Error('IA ' + res.status + (detail ? ': ' + detail.slice(0, 180) : ''));
+    // Diz QUEM falhou: com o proxy ligado, o erro é do nosso servidor, não do
+    // Gemini — e o conserto é em outro lugar. A página de erro do Google Cloud
+    // vem em HTML; sem tirar as tags, ela chegava inteira na tela.
+    const origem = PROXY_URL ? 'Servidor proxy (Cloud Function)' : 'Gemini';
+    const texto = stripHtml(detail).replace(/\s+/g, ' ').trim();
+    throw new Error(origem + ' ' + res.status + (texto ? ': ' + texto.slice(0, 180) : ''));
   }
   const data = await res.json();
   const blocked = data?.candidates?.[0]?.finishReason && data.candidates[0].finishReason !== 'STOP';

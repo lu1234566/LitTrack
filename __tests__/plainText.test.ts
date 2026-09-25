@@ -91,3 +91,14 @@ describe('looksLikeHtml', () => {
     expect(looksLikeHtml(undefined)).toBe(false);
   });
 });
+
+describe('pagina de erro do Google Cloud', () => {
+  it('vira uma frase legivel em vez de HTML cru na tela', () => {
+    // Corpo literal que o proxy devolveu e apareceu inteiro no app.
+    const pagina = '<html><head>\n<meta http-equiv="content-type" content="text/html;charset=utf-8">\n<title>500 Server Error</title>\n</head>\n<body text=#000000 bgcolor=#ffffff>\n<h1>Error: Server Error</h1>\n<h2>The server encountered an error and could not complete your request.<p>Please try again in 30 seconds.</h2>\n<h2></h2>\n</body></html>';
+    const texto = stripHtml(pagina).replace(/\s+/g, ' ').trim();
+    expect(texto).not.toMatch(/[<>]/);
+    expect(texto).toContain('Server Error');
+    expect(texto).toContain('try again in 30 seconds');
+  });
+});
