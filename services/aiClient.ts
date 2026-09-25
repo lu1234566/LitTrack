@@ -105,8 +105,21 @@ export type AiBookFacts = { description?: string; totalPages?: number; genre?: s
  * modelo não tem certeza — melhor um campo vazio do que um número inventado —
  * e quem chama deve deixar claro na interface que o dado veio da IA.
  */
+/**
+ * Por que a IA não preencheu nada. Sem isto, "chave ausente", "chave inválida"
+ * e "o modelo não conhece o livro" devolvem todos `null` — indistinguíveis
+ * para quem está olhando a tela, e impossíveis de depurar à distância.
+ */
+export type AiFactsStatus = 'ok' | 'off' | 'error' | 'unknown-book';
+export type AiFactsResult = { facts: AiBookFacts | null; status: AiFactsStatus };
+
 export async function fetchBookFactsFromAi(title: string, author: string): Promise<AiBookFacts | null> {
-  if (!isAiConfigured || !title.trim()) return null;
+  return (await fetchBookFactsDetailed(title, author)).facts;
+}
+
+export async function fetchBookFactsDetailed(title: string, author: string): Promise<AiFactsResult> {
+  if (!isAiConfigured) return { facts: null, status: 'off' };
+  if (!title.trim()) return { facts: null, status: 'unknown-book' };
   const prompt = [
     'Livro: "' + title + '"' + (author ? ' de ' + author : ''),
     '',
@@ -130,7 +143,7 @@ export async function fetchBookFactsFromAi(title: string, author: string): Promi
     const json = raw.replace(/```json|```/g, '').trim();
     const start = json.indexOf('{');
     const end = json.lastIndexOf('}');
-    if (start < 0 || end < 0) return null;
+    if (start < 0 || end < 0) return { facts: null, status: 'error' };
     const parsed = JSON.parse(json.slice(start, end + 1));
 
     const pages = Number(parsed?.totalPages);
@@ -140,8 +153,13 @@ export async function fetchBookFactsFromAi(title: string, author: string): Promi
       totalPages: Number.isFinite(pages) && pages > 20 && pages < 5000 ? Math.round(pages) : undefined,
       genre: typeof parsed?.genre === 'string' && parsed.genre.trim() ? parsed.genre.trim() : undefined
     };
-    return facts.description || facts.totalPages || facts.genre ? facts : null;
+    // Tudo nulo quer dizer que o modelo OBEDECEU o prompt: ele não conhece o
+    // livro. É um resultado legítimo, não uma falha — e precisa aparecer
+    // diferente de "a chave não funcionou".
+    return facts.description || facts.totalPages || facts.genre
+      ? { facts, status: 'ok' }
+      : { facts: null, status: 'unknown-book' };
   } catch {
-    return null;
+    return { facts: null, status: 'error' };
   }
 }

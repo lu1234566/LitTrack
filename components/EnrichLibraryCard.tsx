@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card } from '@/components/Card';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { useBooks } from '@/contexts/BookContext';
 import {
+  aiDiagnostico,
   bookNeedsEnrichment,
   enrichLibrary,
   missingFields,
@@ -12,6 +13,7 @@ import {
   type EnrichedBookReport,
   type PendingChoice
 } from '@/services/bookEnrichment';
+import { coverLooksReal } from '@/services/coverProbe';
 import { coverFallbackChain } from '@/services/externalBookSearch';
 import { haptic } from '@/services/feedback';
 import { appColors, appFonts } from '@/theme/tokens';
@@ -39,6 +41,7 @@ export function EnrichLibraryCard({ compact = false }: { compact?: boolean }) {
   // Livros em que a busca achou opções mas nenhuma era confiável o bastante
   // para aplicar sozinha. Em vez de devolver nada, perguntamos.
   const [pendentes, setPendentes] = useState<PendingChoice[]>([]);
+  const [diagnostico, setDiagnostico] = useState('');
 
   const incompletos = useMemo(() => books.filter(bookNeedsEnrichment), [books]);
   // Mostrar os títulos e o que falta em cada um é bem mais útil do que um
@@ -53,6 +56,7 @@ export function EnrichLibraryCard({ compact = false }: { compact?: boolean }) {
     setRodando(true);
     setRelatorio([]);
     setPendentes([]);
+    setDiagnostico('');
     setProgresso('Procurando... 0 de ' + incompletos.length);
     try {
       const resultado = await enrichLibrary(books, updateBook, (p) =>
@@ -60,6 +64,7 @@ export function EnrichLibraryCard({ compact = false }: { compact?: boolean }) {
       );
       setRelatorio(resultado.reports);
       setPendentes(resultado.pending);
+      setDiagnostico(aiDiagnostico(resultado.ai));
       haptic(resultado.updated > 0 ? 'success' : 'warning');
       const aplicados =
         resultado.updated > 0
@@ -81,6 +86,9 @@ export function EnrichLibraryCard({ compact = false }: { compact?: boolean }) {
   /** O usuário reconheceu o livro: aplica esse candidato e tira da lista. */
   async function escolher(escolha: PendingChoice, candidato: BookCandidate) {
     const patch = patchForCandidate(candidato.external, escolha.book);
+    // Nunca salvar como capa a imagem de "image not available": ela é um
+    // arquivo válido, então sem esta checagem ela virava a capa do livro.
+    if (patch.coverUrl && !(await coverLooksReal(patch.coverUrl))) delete patch.coverUrl;
     setPendentes((atuais) => atuais.filter((p) => p.book.id !== escolha.book.id));
     try {
       await updateBook(escolha.book.id, patch);
@@ -142,6 +150,13 @@ export function EnrichLibraryCard({ compact = false }: { compact?: boolean }) {
       </Pressable>
 
       {progresso ? <Text style={styles.progresso}>{progresso}</Text> : null}
+
+      {diagnostico ? (
+        <View style={styles.diagnostico}>
+          <ReadoraIcon name="sparkle" size={14} color={appColors.textDim} />
+          <Text style={styles.diagnosticoTexto}>{diagnostico}</Text>
+        </View>
+      ) : null}
 
       {pendentes.length ? (
         <View style={styles.duvidas}>
@@ -218,7 +233,24 @@ export function EnrichLibraryCard({ compact = false }: { compact?: boolean }) {
 function MiniCapa({ livro, titulo }: { livro: ExternalBook; titulo: string }) {
   const tentativas = useMemo(() => coverFallbackChain(livro), [livro]);
   const [indice, setIndice] = useState(0);
-  const uri = tentativas[indice];
+  const [aprovada, setAprovada] = useState('');
+  const candidata = tentativas[indice];
+
+  // Verifica ANTES de desenhar: o placeholder do Google carrega com sucesso,
+  // então esperar pelo onError não adianta — ele nunca vem.
+  useEffect(() => {
+    let vivo = true;
+    setAprovada('');
+    if (!candidata) return;
+    coverLooksReal(candidata).then((vale) => {
+      if (!vivo) return;
+      if (vale) setAprovada(candidata);
+      else setIndice((i) => i + 1);
+    });
+    return () => { vivo = false; };
+  }, [candidata]);
+
+  const uri = aprovada;
   if (!uri) {
     return (
       <View style={StyleSheet.flatten([styles.mini, styles.miniVazia])}>
@@ -252,6 +284,8 @@ const styles = StyleSheet.create({
   botaoInativo: { opacity: 0.45 },
   botaoTexto: { color: appColors.background, fontWeight: '900' },
   progresso: { color: appColors.gold, fontWeight: '800', lineHeight: 20 },
+  diagnostico: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: appColors.surfaceSoft, borderColor: appColors.borderSoft, borderWidth: 1, borderRadius: 12, padding: 11 },
+  diagnosticoTexto: { flex: 1, color: appColors.textMuted, fontSize: 12, lineHeight: 18 },
   duvidas: { backgroundColor: appColors.surfaceSoft, borderColor: appColors.gold, borderWidth: 1, borderRadius: 16, padding: 13, gap: 10 },
   duvidasTitulo: { color: appColors.gold, fontFamily: appFonts.display, fontSize: 17, fontWeight: '900' },
   duvidasTexto: { color: appColors.textMuted, fontSize: 12, lineHeight: 18 },

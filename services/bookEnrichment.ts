@@ -87,10 +87,15 @@ export type BookCandidate = {
   wouldFill: string[];
 };
 
+/** Por que a IA nao completou o que os catalogos deixaram faltando. */
+export type AiOutcome = 'nao-precisou' | 'preencheu' | 'desligada' | 'falhou' | 'nao-conhece';
+
 export type EnrichOutcome = {
   patch: Partial<Book> | null;
   /** Preenchidos quando nao houve certeza — a decisao fica com o usuario. */
   candidates: BookCandidate[];
+  /** Diagnostico: sem isto, "sem chave" e "modelo nao conhece" sao iguais. */
+  ai: AiOutcome;
 };
 
 /** Torna publico o calculo do patch, para aplicar um candidato escolhido a mao. */
@@ -148,28 +153,36 @@ export async function enrichBookDetailed(book: Book): Promise<EnrichOutcome> {
   // Só entra no que continuar faltando — nunca sobrescreve catálogo.
   const afterCatalogs: Book = match ? { ...book, ...patchFrom(match, book) } : book;
   const gaps = missingFields(afterCatalogs);
+  let ai: AiOutcome = 'nao-precisou';
   if (gaps.length) {
     // Import sob demanda: o aiClient puxa o Firebase, que não deve entrar na
     // árvore de módulos (nem no bundle inicial) de quem só quer os catálogos.
-    const facts = await import('@/services/aiClient')
-      .then((ai) => (ai.isAiConfigured ? ai.fetchBookFactsFromAi(book.title, book.author) : null))
-      .catch(() => null);
+    const resultado = await import('@/services/aiClient')
+      .then((mod) => mod.fetchBookFactsDetailed(book.title, book.author))
+      .catch(() => ({ facts: null, status: 'error' as const }));
+    ai = resultado.status === 'ok' ? 'preencheu'
+      : resultado.status === 'off' ? 'desligada'
+      : resultado.status === 'unknown-book' ? 'nao-conhece'
+      : 'falhou';
+    const facts = resultado.facts;
     if (facts) {
       const aiPatch: Partial<Book> = {};
       if (gaps.includes('sinopse') && facts.description) aiPatch.description = stripHtml(facts.description);
       if (gaps.includes('páginas') && facts.totalPages) aiPatch.totalPages = facts.totalPages;
       if (gaps.includes('gênero') && facts.genre) aiPatch.genre = facts.genre;
       if (Object.keys(aiPatch).length) {
-        return { patch: { ...(match ? patchFrom(match, book) : {}), ...aiPatch }, candidates: [] };
+        return { patch: { ...(match ? patchFrom(match, book) : {}), ...aiPatch }, candidates: [], ai };
       }
+      // Veio fato, mas nada que servisse para ESTE livro.
+      ai = 'nao-precisou';
     }
   }
 
-  if (!match) return { patch: null, candidates: duvidas(vistos, book) };
+  if (!match) return { patch: null, candidates: duvidas(vistos, book), ai };
 
   const patch = patchFrom(match, book);
-  if (Object.keys(patch).length) return { patch, candidates: [] };
-  return { patch: null, candidates: duvidas(vistos, book) };
+  if (Object.keys(patch).length) return { patch, candidates: [], ai };
+  return { patch: null, candidates: duvidas(vistos, book), ai };
 }
 
 /**
@@ -225,16 +238,18 @@ export async function enrichLibrary(
   books: Book[],
   applyPatch: (bookId: string, patch: Partial<Book>) => Promise<void>,
   onProgress?: (p: EnrichProgress) => void
-): Promise<{ updated: number; checked: number; reports: EnrichedBookReport[]; pending: PendingChoice[] }> {
+): Promise<{ updated: number; checked: number; reports: EnrichedBookReport[]; pending: PendingChoice[]; ai: AiOutcome[] }> {
   const targets = books.filter(bookNeedsEnrichment);
   const reports: EnrichedBookReport[] = [];
   const pending: PendingChoice[] = [];
+  const ai: AiOutcome[] = [];
   let updated = 0;
   for (let i = 0; i < targets.length; i++) {
     const book = targets[i];
     onProgress?.({ done: i, total: targets.length, updated, currentTitle: book.title });
     try {
-      const { patch, candidates } = await enrichBookDetailed(book);
+      const { patch, candidates, ai: aiDoLivro } = await enrichBookDetailed(book);
+      ai.push(aiDoLivro);
       if (patch) {
         await applyPatch(book.id, patch);
         updated += 1;
@@ -255,5 +270,23 @@ export async function enrichLibrary(
     }
   }
   onProgress?.({ done: targets.length, total: targets.length, updated, currentTitle: '' });
-  return { updated, checked: targets.length, reports, pending };
+  return { updated, checked: targets.length, reports, pending, ai };
+}
+
+/**
+ * Uma frase explicando por que a IA não cobriu o que os catálogos deixaram.
+ * A ordem importa: problema de configuração vence "não conhece o livro",
+ * porque é o único que o usuário pode consertar.
+ */
+export function aiDiagnostico(resultados: AiOutcome[]): string {
+  if (resultados.includes('desligada')) {
+    return 'A IA está desligada nesta versão do app — falta a chave do Gemini nas variáveis de ambiente.';
+  }
+  if (resultados.includes('falhou')) {
+    return 'A IA não respondeu. Pode ser chave inválida, cota esgotada ou falha de conexão.';
+  }
+  if (resultados.includes('nao-conhece')) {
+    return 'A IA respondeu, mas não conhece esses livros o suficiente para preencher sem inventar.';
+  }
+  return '';
 }
