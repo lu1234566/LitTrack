@@ -1,6 +1,6 @@
 import { Book } from '@/types/book';
 import { ExternalBook } from '@/types/externalBook';
-import { looksLikeSameBook, lookupByTitleAuthor, lookupExternalBooks } from '@/services/externalBookSearch';
+import { candidateScore, looksLikeSameBook, lookupByTitleAuthorDetailed, lookupExternalBooks } from '@/services/externalBookSearch';
 import { stripHtml } from '@/services/plainText';
 
 const UNSET_GENRES = ['', 'a definir', 'diverso', 'indefinido'];
@@ -129,9 +129,12 @@ export async function enrichBookDetailed(book: Book): Promise<EnrichOutcome> {
   // Busca dirigida por campo (intitle/inauthor, title/author) antes do texto
   // livre: para titulo generico ela e a unica que acerta o alvo.
   if ((!match || !isUsefulFor(match, book)) && book.title.trim()) {
-    const dirigida = await lookupByTitleAuthor(book.title, book.author);
-    vistos.push(...dirigida);
-    const dirigidoMatch = bestMatch(dirigida, book);
+    const dirigida = await lookupByTitleAuthorDetailed(book.title, book.author);
+    // `seen` inclui o que o filtro de semelhanca descartou: como opcao para o
+    // usuario escolher, um quase-acerto da Open Library vale muito mais do que
+    // o primeiro palpite do texto livre.
+    vistos.push(...dirigida.seen);
+    const dirigidoMatch = dirigida.match && bestMatch([dirigida.match], book);
     if (dirigidoMatch && (!match || isUsefulFor(dirigidoMatch, book))) match = dirigidoMatch;
   }
   if ((!match || !isUsefulFor(match, book)) && titleQuery) {
@@ -170,19 +173,41 @@ export async function enrichBookDetailed(book: Book): Promise<EnrichOutcome> {
 }
 
 /**
+ * Nota minima para um resultado virar opcao na tela. Abaixo disto o candidato
+ * nao compartilha nenhuma palavra significativa com o titulo procurado — e
+ * foi exatamente isso que encheu a lista de "Pep Comics Vol 1 (1940)" quando
+ * o usuario procurava "New Heights".
+ */
+const NOTA_MINIMA = 0.2;
+
+/**
  * Candidatos que valem uma pergunta: os que preencheriam algo que falta, sem
- * repetir o mesmo livro. Poucos de proposito — uma lista longa transfere o
- * trabalho de decidir em vez de ajudar.
+ * repetir o mesmo livro e ORDENADOS por semelhanca com o que o usuario tem.
+ *
+ * Mostrar a ordem crua do provedor era pior do que nao mostrar nada: a busca
+ * em texto livre devolve qualquer livro que cite a palavra, entao o topo da
+ * lista vinha com obras sem relacao nenhuma. Agora entram so os que dividem
+ * alguma palavra do titulo, e quem tambem bate o autor sobe.
  */
 function duvidas(vistos: ExternalBook[], book: Book): BookCandidate[] {
-  const porId = new Map<string, BookCandidate>();
+  const porId = new Map<string, { candidate: BookCandidate; score: number }>();
   vistos.forEach((external) => {
     if (!isUsefulFor(external, book)) return;
+    const score = candidateScore(external, book.title, book.author);
+    if (score < NOTA_MINIMA) return;
     const chave = (external.title + '|' + external.author).toLowerCase();
-    if (porId.has(chave)) return;
-    porId.set(chave, { external, wouldFill: filledLabels(patchFrom(external, book)) });
+    const anterior = porId.get(chave);
+    if (anterior && anterior.score >= score) return;
+    porId.set(chave, {
+      score,
+      candidate: { external, wouldFill: filledLabels(patchFrom(external, book)) }
+    });
   });
-  return Array.from(porId.values()).filter((c) => c.wouldFill.length).slice(0, 5);
+  return Array.from(porId.values())
+    .filter((c) => c.candidate.wouldFill.length)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 8)
+    .map((c) => c.candidate);
 }
 
 export type EnrichProgress = { done: number; total: number; updated: number; currentTitle: string };

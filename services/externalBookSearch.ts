@@ -335,6 +335,83 @@ export function looksLikeSameBook(a: string, b: string) {
   return x === y || x.startsWith(y) || y.startsWith(x);
 }
 
+/** Palavras que aparecem em quase todo titulo e nao distinguem nada. */
+const VAZIAS = new Set([
+  'the', 'a', 'an', 'of', 'and', 'or', 'to', 'in', 'on', 'for', 'vol', 'volume', 'book', 'part',
+  'o', 'os', 'as', 'um', 'uma', 'de', 'do', 'da', 'dos', 'das', 'e', 'em', 'no', 'na', 'livro'
+]);
+
+function tokens(value: string): string[] {
+  return normalizeTitle(value).split(' ').filter(Boolean);
+}
+
+/** Tokens que carregam significado — cai para todos quando o titulo so tem vazias. */
+function tokensUteis(value: string): string[] {
+  const todos = tokens(value);
+  const uteis = todos.filter((t) => !VAZIAS.has(t) && t.length > 1);
+  return uteis.length ? uteis : todos;
+}
+
+/** Distancia de edicao, limitada: so precisamos saber se e "quase igual". */
+function distancia(a: string, b: string): number {
+  if (a === b) return 0;
+  const linha = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    let anterior = linha[0];
+    linha[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const guardado = linha[j];
+      linha[j] = Math.min(
+        linha[j] + 1,
+        linha[j - 1] + 1,
+        anterior + (a[i - 1] === b[j - 1] ? 0 : 1)
+      );
+      anterior = guardado;
+    }
+  }
+  return linha[b.length];
+}
+
+/**
+ * Duas palavras são a mesma a menos de um erro de digitação? O acervo do
+ * usuário está cheio deles ("beggining", "Divergence") e a comparação exata
+ * jogava fora justamente o livro certo.
+ */
+function mesmaPalavra(a: string, b: string): boolean {
+  if (a === b) return true;
+  const menor = Math.min(a.length, b.length);
+  if (menor < 5) return false;
+  return distancia(a, b) <= (menor >= 8 ? 2 : 1);
+}
+
+/** 0 a 1: quanto do titulo procurado aparece no titulo do candidato. */
+export function titleRelevance(candidato: string, procurado: string): number {
+  const alvo = tokensUteis(procurado);
+  const tem = tokensUteis(candidato);
+  if (!alvo.length || !tem.length) return 0;
+  const achados = alvo.filter((palavra) => tem.some((t) => mesmaPalavra(palavra, t)));
+  return achados.length / alvo.length;
+}
+
+/**
+ * Nota do candidato para virar OPÇÃO na tela (não para ser aplicado sozinho).
+ *
+ * O título pesa mais, mas o autor desempata: "The beginning after the end,
+ * vol. 1" de TurtleMe tem que aparecer antes de uma tese acadêmica que só
+ * repete a palavra "divergence".
+ */
+export function candidateScore(candidato: ExternalBook, titulo: string, autor: string): number {
+  const nota = titleRelevance(candidato.title, titulo);
+  if (nota <= 0) return 0;
+  const querido = tokensUteis(autor || '');
+  const dele = tokensUteis(candidato.author || '');
+  // Sem autor conhecido dos dois lados, não dá para desempatar: fica neutro.
+  const notaAutor = !querido.length || !dele.length
+    ? 0.4
+    : querido.filter((p) => dele.some((d) => mesmaPalavra(p, d))).length / querido.length;
+  return nota * 0.68 + notaAutor * 0.32;
+}
+
 /** Escolhe o valor "mais completo" entre o atual e o candidato. */
 function betterText(current: string | undefined, candidate: string | undefined) {
   const a = (current || '').trim();
@@ -424,19 +501,43 @@ async function fromOpenLibraryFielded(title: string, author: string): Promise<Ex
  * em paralelo. Usada pelo enriquecimento ANTES do texto livre: quando ela acha,
  * a chance de ser o livro certo e muito maior.
  */
-export async function lookupByTitleAuthor(title: string, author = ''): Promise<ExternalBook[]> {
+export type DirectedLookup = {
+  /** O livro, quando as fontes concordam que e ele. */
+  match?: ExternalBook;
+  /** TUDO que as fontes devolveram, inclusive o que nao passou no filtro. */
+  seen: ExternalBook[];
+};
+
+/**
+ * Como `lookupByTitleAuthor`, mas devolve tambem o que foi descartado.
+ *
+ * O filtro de semelhanca continua valendo para o preenchimento automatico —
+ * mas o descarte ia direto para o lixo, e com ele sumiam as opcoes da Open
+ * Library e da Apple. Quem precisa PERGUNTAR ao usuario usa `seen`.
+ */
+export async function lookupByTitleAuthorDetailed(title: string, author = ''): Promise<DirectedLookup> {
   const limpo = title.trim();
-  if (!limpo) return [];
-  const [google, openLibrary, apple] = await Promise.all([
+  if (!limpo) return { seen: [] };
+  const livre = [limpo, author].filter(Boolean).join(' ');
+  const [google, openLibrary, apple, olLivre] = await Promise.all([
     fromGoogleBooksFielded(limpo, author).catch(() => []),
     fromOpenLibraryFielded(limpo, author).catch(() => []),
-    fromAppleBooks([limpo, author].filter(Boolean).join(' ')).catch(() => [])
+    fromAppleBooks(livre).catch(() => []),
+    // Titulo com erro de digitacao nao casa nos campos `title=`/`author=`, mas
+    // o `q=` da Open Library perdoa — e traz capa onde o Google nao tem.
+    fromOpenLibrarySearch(livre).catch(() => [])
   ]);
+  const seen = [...google, ...openLibrary, ...apple, ...olLivre];
   // So o que realmente parece ser o mesmo livro: uma busca dirigida que erra o
   // alvo e pior do que nao achar nada, porque preenche dado de outro livro.
-  const candidatos = [...google, ...openLibrary, ...apple].filter((c) => looksLikeSameBook(c.title, limpo));
-  if (!candidatos.length) return [];
-  return [mergeBooks(candidatos[0], candidatos.slice(1))];
+  const candidatos = seen.filter((c) => looksLikeSameBook(c.title, limpo));
+  if (!candidatos.length) return { seen };
+  return { match: mergeBooks(candidatos[0], candidatos.slice(1)), seen };
+}
+
+export async function lookupByTitleAuthor(title: string, author = ''): Promise<ExternalBook[]> {
+  const { match } = await lookupByTitleAuthorDetailed(title, author);
+  return match ? [match] : [];
 }
 
 export async function lookupExternalBooks(query: string): Promise<ExternalBook[]> {
