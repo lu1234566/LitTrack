@@ -12,8 +12,10 @@ import {
   type EnrichedBookReport,
   type PendingChoice
 } from '@/services/bookEnrichment';
+import { coverFallbackChain } from '@/services/externalBookSearch';
 import { haptic } from '@/services/feedback';
 import { appColors, appFonts } from '@/theme/tokens';
+import { ExternalBook } from '@/types/externalBook';
 
 const FONTES: Record<string, string> = {
   'google-books': 'Google Books',
@@ -163,7 +165,7 @@ export function EnrichLibraryCard({ compact = false }: { compact?: boolean }) {
                   style={styles.candidato}
                   onPress={() => escolher(escolha, candidato)}
                 >
-                  <MiniCapa url={candidato.external.coverUrl} titulo={candidato.external.title} />
+                  <MiniCapa livro={candidato.external} titulo={candidato.external.title} />
                   <View style={styles.candidatoInfo}>
                     <Text style={styles.candidatoTitulo} numberOfLines={2}>{candidato.external.title}</Text>
                     <Text style={styles.candidatoAutor} numberOfLines={1}>
@@ -208,18 +210,31 @@ export function EnrichLibraryCard({ compact = false }: { compact?: boolean }) {
 /**
  * Miniatura da capa do candidato. Ver a capa é metade da decisão: dá para
  * reconhecer a edição de bate-pronto, muito antes de ler o título.
+ *
+ * Tenta os endereços em ordem: o `zoom=2` que pedimos pode não existir para
+ * aquele volume, e o Google pode não ter capa nenhuma — aí vale a da Open
+ * Library pelo ISBN. Só depois de todos falharem é que vem a inicial.
  */
-function MiniCapa({ url, titulo }: { url?: string; titulo: string }) {
-  const [falhou, setFalhou] = useState(false);
-  const uri = url?.replace(/^http:\/\//i, 'https://');
-  if (!uri || falhou) {
+function MiniCapa({ livro, titulo }: { livro: ExternalBook; titulo: string }) {
+  const tentativas = useMemo(() => coverFallbackChain(livro), [livro]);
+  const [indice, setIndice] = useState(0);
+  const uri = tentativas[indice];
+  if (!uri) {
     return (
       <View style={StyleSheet.flatten([styles.mini, styles.miniVazia])}>
         <Text style={styles.miniInicial}>{titulo.slice(0, 1).toUpperCase()}</Text>
       </View>
     );
   }
-  return <Image source={{ uri }} style={styles.mini} resizeMode="cover" onError={() => setFalhou(true)} />;
+  return (
+    <Image
+      key={uri}
+      source={{ uri }}
+      style={styles.mini}
+      resizeMode="cover"
+      onError={() => setIndice((i) => i + 1)}
+    />
+  );
 }
 
 const styles = StyleSheet.create({

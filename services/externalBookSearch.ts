@@ -1,8 +1,16 @@
 import { ExternalBook } from '@/types/externalBook';
 import { stripHtml } from '@/services/plainText';
 
+/**
+ * O Google serve uma imagem de "image not available" no lugar da capa quando
+ * não tem nenhuma. Ela CARREGA com sucesso, então não dispara `onError` — sem
+ * isto, a caixinha branca com o aviso entra na tela como se fosse a capa.
+ */
+const CAPA_FALSA = /no_cover_thumb|no_image|nocover|googlebooks\/images\//i;
+
 function normalizeCover(url?: string) {
   if (!url) return undefined;
+  if (CAPA_FALSA.test(url)) return undefined;
   return url
     .replace('http://', 'https://')
     // O Google Books devolve a miniatura (~128px), que fica borrada numa capa
@@ -10,6 +18,36 @@ function normalizeCover(url?: string) {
     // de página falsa que só atrapalha. Ambos são no-op se não estiverem na URL.
     .replace(/([?&])zoom=1(&|$)/, '$1zoom=2$2')
     .replace(/&edge=curl/, '');
+}
+
+/**
+ * Capa da Open Library. Sem `default=false` ela responde 200 com um PNG
+ * transparente de 1x1 quando não tem a capa — o app desenhava esse nada por
+ * cima do cartão com a inicial e ficava um retângulo vazio. Com o parâmetro,
+ * ela devolve 404 e o `onError` cai no cartão, que é o comportamento certo.
+ */
+function openLibraryCover(tipo: 'isbn' | 'id', chave: string | number, tamanho: 'M' | 'L' = 'L') {
+  return 'https://covers.openlibrary.org/b/' + tipo + '/' + chave + '-' + tamanho + '.jpg?default=false';
+}
+
+/**
+ * Endereços de capa para tentar, em ordem, até um funcionar.
+ *
+ * Uma capa só falha de três jeitos e cada um pede uma saída diferente: o
+ * `zoom=2` que pedimos pode não existir para aquele volume (volta a miniatura
+ * original), o Google pode não ter capa nenhuma (tenta a Open Library pelo
+ * ISBN) e aí sim não há capa (o cartão com a inicial).
+ */
+export function coverFallbackChain(book: { coverUrl?: string; isbn?: string }): string[] {
+  const urls: string[] = [];
+  const principal = normalizeCover(book.coverUrl);
+  if (principal) {
+    urls.push(principal);
+    if (/[?&]zoom=2/.test(principal)) urls.push(principal.replace(/([?&])zoom=2/, '$1zoom=1'));
+  }
+  const isbn = cleanIsbn(book.isbn);
+  if (isbn) urls.push(openLibraryCover('isbn', isbn, 'M'));
+  return Array.from(new Set(urls));
 }
 
 function pickIsbn(industryIdentifiers?: Array<{ type: string; identifier: string }>) {
@@ -173,7 +211,7 @@ async function fromOpenLibrarySearch(query: string): Promise<ExternalBook[]> {
         publishedDate: item.first_publish_year ? String(item.first_publish_year) : '',
         totalPages: Number(item.number_of_pages_median) || 0,
         isbn,
-        coverUrl: isbn ? 'https://covers.openlibrary.org/b/isbn/' + isbn + '-L.jpg' : undefined,
+        coverUrl: isbn ? openLibraryCover('isbn', isbn) : undefined,
         description: '',
         source: 'open-library'
       };
@@ -487,7 +525,7 @@ async function fromOpenLibraryFielded(title: string, author: string): Promise<Ex
       publishedDate: String(item.first_publish_year || ''),
       totalPages: Number(item.number_of_pages_median) || 0,
       isbn: Array.isArray(item.isbn) ? item.isbn[0] : undefined,
-      coverUrl: item.cover_i ? 'https://covers.openlibrary.org/b/id/' + item.cover_i + '-L.jpg' : undefined,
+      coverUrl: item.cover_i ? openLibraryCover('id', item.cover_i) : undefined,
       description: '',
       source: 'open-library'
     })).filter((b: ExternalBook) => b.title);
