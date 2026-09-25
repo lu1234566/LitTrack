@@ -62,39 +62,84 @@ const PASSAGEIRO = new Set([429, 500, 503]);
 const esperar = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
- * Modelos a tentar, em ordem. A versão "-lite" é mais leve, costuma ter mais
- * folga nos picos e basta para sinopse e gênero. Se o nome não existir, a
- * tentativa devolve 404 e a cadeia simplesmente para — não quebra nada.
+ * Modelos de reserva, perguntados ao próprio Google (ListModels) em vez de
+ * adivinhados — o nome "-lite" que eu supus não existia e virou 404.
+ *
+ * Fica com os "flash" que geram texto, os leves primeiro (mais folga nos
+ * picos). Consulta uma vez por sessão; se a lista falhar, não há reserva.
  */
-export function modelChain(model: string): string[] {
-  return /-lite$/.test(model) ? [model] : [model, model + '-lite'];
+let reservasEmCache: Promise<string[]> | null = null;
+
+export function pickFallbackModels(nomes: string[], principal: string): string[] {
+  return nomes
+    .map((n) => n.replace(/^models\//, ''))
+    .filter((n) => n !== principal && /flash/.test(n) && !/(image|tts|audio|live|embedding|preview|exp)/.test(n))
+    .sort((x, y) => Number(/lite/.test(y)) - Number(/lite/.test(x)))
+    .slice(0, 2);
+}
+
+function modelosReserva(): Promise<string[]> {
+  if (PROXY_URL) return Promise.resolve([]);
+  if (!reservasEmCache) {
+    reservasEmCache = fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key=' + API_KEY)
+      .then((r) => (r.ok ? r.json() : { models: [] }))
+      .then((data) => {
+        const modelos: Array<{ name?: string; supportedGenerationMethods?: string[] }> = data?.models || [];
+        const nomes = modelos
+          .filter((m) => (m.supportedGenerationMethods || []).includes('generateContent'))
+          .map((m) => m.name || '');
+        return pickFallbackModels(nomes, MODEL);
+      })
+      .catch(() => []);
+  }
+  return reservasEmCache;
+}
+
+const statusDe = (erro: unknown) => (erro as { status?: number })?.status;
+
+async function tentarModelo(body: GeminiBody, modelo: string): Promise<string> {
+  let ultimo: unknown;
+  // Pico de demanda no Gemini é comum no plano gratuito e dura segundos:
+  // três tentativas espaçadas resolvem a maioria sem o usuário perceber.
+  for (let tentativa = 0; tentativa < 3; tentativa++) {
+    if (tentativa > 0) await esperar(tentativa === 1 ? 1500 : 4000);
+    try {
+      return await chamarModelo(body, modelo);
+    } catch (erro) {
+      ultimo = erro;
+      const status = statusDe(erro);
+      if (!status || !PASSAGEIRO.has(status)) break;
+    }
+  }
+  throw ultimo;
 }
 
 async function callGemini(body: GeminiBody): Promise<string> {
   if (!isAiConfigured) throw new Error('IA não configurada.');
   // Com proxy, quem escolhe o modelo é o servidor.
-  const modelos = PROXY_URL ? [''] : modelChain(MODEL);
-  let ultimoErro: Error = new Error('IA indisponível.');
+  if (PROXY_URL) return tentarModelo(body, '');
 
-  for (const modelo of modelos) {
-    // Pico de demanda no Gemini é comum no plano gratuito e dura segundos:
-    // três tentativas espaçadas resolvem a maioria sem o usuário perceber.
-    for (let tentativa = 0; tentativa < 3; tentativa++) {
-      if (tentativa > 0) await esperar(tentativa === 1 ? 1500 : 4000);
-      try {
-        return await chamarModelo(body, modelo);
-      } catch (erro) {
-        ultimoErro = erro as Error;
-        const status = (erro as { status?: number }).status;
-        if (!status || !PASSAGEIRO.has(status)) break;
-      }
-    }
-    const status = (ultimoErro as { status?: number }).status;
-    // Só troca de modelo quando o problema é do modelo (sobrecarga ou
-    // inexistente). Chave inválida falharia igual em qualquer um.
-    if (!status || (!PASSAGEIRO.has(status) && status !== 404)) break;
+  let erroPrincipal: unknown;
+  try {
+    return await tentarModelo(body, MODEL);
+  } catch (erro) {
+    erroPrincipal = erro;
   }
-  throw ultimoErro;
+  // Só troca de modelo quando o problema é do modelo (sobrecarga ou nome
+  // aposentado). Chave inválida falharia igual em qualquer um.
+  const status = statusDe(erroPrincipal);
+  if (!status || (!PASSAGEIRO.has(status) && status !== 404)) throw erroPrincipal;
+
+  for (const reserva of await modelosReserva()) {
+    try {
+      return await tentarModelo(body, reserva);
+    } catch {
+      // segue para o próximo
+    }
+  }
+  // O erro que importa é o do modelo principal: o 404 de uma reserva
+  // escondia o motivo real (a sobrecarga) na tela.
+  throw erroPrincipal;
 }
 
 async function chamarModelo(body: GeminiBody, modelo: string): Promise<string> {

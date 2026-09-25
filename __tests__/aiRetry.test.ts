@@ -54,11 +54,39 @@ describe('IA tenta de novo e troca de modelo', () => {
     expect(urls).toHaveLength(3);
   });
 
-  it('se o modelo principal nao sai do 503, usa o -lite', async () => {
-    const { mod, urls } = carregar([{ status: 503 }, { status: 503 }, { status: 503 }, ok]);
+  const lista = {
+    status: 200,
+    body: {
+      models: [
+        { name: 'models/gemini-3.8-flash', supportedGenerationMethods: ['generateContent'] },
+        { name: 'models/gemini-3.5-flash-lite', supportedGenerationMethods: ['generateContent'] },
+        { name: 'models/text-embedding-9', supportedGenerationMethods: ['embedContent'] }
+      ]
+    }
+  };
+
+  it('se o principal nao sai do 503, usa um reserva que o Google diz existir', async () => {
+    const { mod, urls } = carregar([{ status: 503 }, { status: 503 }, { status: 503 }, lista, ok]);
     const r = await rodar(mod.fetchBookFactsDetailed('Livro', 'Autor'));
     expect(r.status).toBe('ok');
-    expect(urls[3]).toContain('-lite:generateContent');
+    expect(urls[3]).toContain('/v1beta/models?');
+    // O nome veio da lista, nao de um palpite.
+    expect(urls[4]).toContain('gemini-3.5-flash-lite:generateContent');
+  });
+
+  it('se o reserva falhar, a tela mostra o erro do principal', async () => {
+    // Antes o 404 do reserva escondia o motivo real (a sobrecarga).
+    const { mod } = carregar([{ status: 503 }, { status: 503 }, { status: 503 }, lista, { status: 404 }]);
+    const r = await rodar(mod.fetchBookFactsDetailed('Livro', 'Autor'));
+    expect(r.status).toBe('error');
+    expect(r.detail).toContain('503');
+  });
+
+  it('escolhe reservas flash de texto, as leves primeiro', () => {
+    const { mod } = carregar([]);
+    const nomes = ['models/gemini-3.8-flash', 'models/gemini-3.8-flash-image', 'models/gemini-3.5-flash',
+      'models/gemini-3.5-flash-lite', 'models/gemini-3.8-pro', 'models/gemini-3.9-flash-preview'];
+    expect(mod.pickFallbackModels(nomes, 'gemini-3.8-flash')).toEqual(['gemini-3.5-flash-lite', 'gemini-3.5-flash']);
   });
 
   it('chave invalida nao fica insistindo', async () => {
