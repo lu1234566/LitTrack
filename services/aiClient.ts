@@ -34,9 +34,15 @@ type GeminiBody = {
 // Modelos 2.5 "pensam" antes de responder por padrão, e os tokens de
 // raciocínio saem do free tier e do maxOutputTokens (podendo truncar a
 // resposta). OCR e papo sobre livro não precisam disso — orçamento zero.
-// `thinkingBudget` é um ajuste da família 2.5; modelos mais novos podem
-// recusá-lo. Só vai na requisição quando o modelo é 2.5.
-const NO_THINKING = /gemini-2\.5/.test(MODEL) ? { thinkingBudget: 0 } : undefined;
+// Desliga o "pensar" nos modelos 2.5, que gastam a cota nisso. Para outros
+// modelos o campo é retirado na hora da chamada (ver `semThinking`).
+const NO_THINKING = { thinkingBudget: 0 };
+
+function semThinking(body: GeminiBody): GeminiBody {
+  if (!body.generationConfig?.thinkingConfig) return body;
+  const { thinkingConfig, ...resto } = body.generationConfig;
+  return { ...body, generationConfig: resto };
+}
 
 // In proxy mode, attach the signed-in user's Firebase ID token so the backend
 // can verify the caller and reject strangers. No-op in direct mode.
@@ -51,16 +57,57 @@ async function proxyAuthHeader(): Promise<Record<string, string>> {
   }
 }
 
+/** Sobrecarga (503) e limite de ritmo (429) passam sozinhos: vale insistir. */
+const PASSAGEIRO = new Set([429, 500, 503]);
+const esperar = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Modelos a tentar, em ordem. A versão "-lite" é mais leve, costuma ter mais
+ * folga nos picos e basta para sinopse e gênero. Se o nome não existir, a
+ * tentativa devolve 404 e a cadeia simplesmente para — não quebra nada.
+ */
+export function modelChain(model: string): string[] {
+  return /-lite$/.test(model) ? [model] : [model, model + '-lite'];
+}
+
 async function callGemini(body: GeminiBody): Promise<string> {
   if (!isAiConfigured) throw new Error('IA não configurada.');
+  // Com proxy, quem escolhe o modelo é o servidor.
+  const modelos = PROXY_URL ? [''] : modelChain(MODEL);
+  let ultimoErro: Error = new Error('IA indisponível.');
+
+  for (const modelo of modelos) {
+    // Pico de demanda no Gemini é comum no plano gratuito e dura segundos:
+    // três tentativas espaçadas resolvem a maioria sem o usuário perceber.
+    for (let tentativa = 0; tentativa < 3; tentativa++) {
+      if (tentativa > 0) await esperar(tentativa === 1 ? 1500 : 4000);
+      try {
+        return await chamarModelo(body, modelo);
+      } catch (erro) {
+        ultimoErro = erro as Error;
+        const status = (erro as { status?: number }).status;
+        if (!status || !PASSAGEIRO.has(status)) break;
+      }
+    }
+    const status = (ultimoErro as { status?: number }).status;
+    // Só troca de modelo quando o problema é do modelo (sobrecarga ou
+    // inexistente). Chave inválida falharia igual em qualquer um.
+    if (!status || (!PASSAGEIRO.has(status) && status !== 404)) break;
+  }
+  throw ultimoErro;
+}
+
+async function chamarModelo(body: GeminiBody, modelo: string): Promise<string> {
   const url = PROXY_URL
     ? PROXY_URL
-    : 'https://generativelanguage.googleapis.com/v1beta/models/' + MODEL + ':generateContent?key=' + API_KEY;
+    : 'https://generativelanguage.googleapis.com/v1beta/models/' + modelo + ':generateContent?key=' + API_KEY;
+  // thinkingBudget é da família 2.5; no modelo de reserva pode não valer.
+  const corpo = /gemini-2\.5/.test(modelo) || PROXY_URL ? body : semThinking(body);
 
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...(await proxyAuthHeader()) },
-    body: JSON.stringify(body)
+    body: JSON.stringify(corpo)
   });
   if (!res.ok) {
     const detail = await res.text().catch(() => '');
@@ -69,7 +116,9 @@ async function callGemini(body: GeminiBody): Promise<string> {
     // vem em HTML; sem tirar as tags, ela chegava inteira na tela.
     const origem = PROXY_URL ? 'Servidor proxy (Cloud Function)' : 'Gemini';
     const texto = stripHtml(detail).replace(/\s+/g, ' ').trim();
-    throw new Error(origem + ' ' + res.status + (texto ? ': ' + texto.slice(0, 180) : ''));
+    const erro = new Error(origem + ' ' + res.status + (texto ? ': ' + texto.slice(0, 180) : '')) as Error & { status?: number };
+    erro.status = res.status;
+    throw erro;
   }
   const data = await res.json();
   const blocked = data?.candidates?.[0]?.finishReason && data.candidates[0].finishReason !== 'STOP';
