@@ -15,7 +15,9 @@ import { stripHtml } from '@/services/plainText';
 
 const PROXY_URL = process.env.EXPO_PUBLIC_AI_PROXY_URL;
 const API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
-const MODEL = process.env.EXPO_PUBLIC_GEMINI_MODEL || 'gemini-2.5-flash';
+// O Google aposentou o gemini-2.5-flash para contas novas (erro 404 pedindo o
+// 3.8). A variável EXPO_PUBLIC_GEMINI_MODEL, se existir, vence este padrão.
+const MODEL = process.env.EXPO_PUBLIC_GEMINI_MODEL || 'gemini-3.8-flash';
 
 export const isAiConfigured = Boolean(PROXY_URL || API_KEY);
 
@@ -32,7 +34,9 @@ type GeminiBody = {
 // Modelos 2.5 "pensam" antes de responder por padrão, e os tokens de
 // raciocínio saem do free tier e do maxOutputTokens (podendo truncar a
 // resposta). OCR e papo sobre livro não precisam disso — orçamento zero.
-const NO_THINKING = { thinkingBudget: 0 };
+// `thinkingBudget` é um ajuste da família 2.5; modelos mais novos podem
+// recusá-lo. Só vai na requisição quando o modelo é 2.5.
+const NO_THINKING = /gemini-2\.5/.test(MODEL) ? { thinkingBudget: 0 } : undefined;
 
 // In proxy mode, attach the signed-in user's Firebase ID token so the backend
 // can verify the caller and reject strangers. No-op in direct mode.
@@ -153,7 +157,7 @@ export async function fetchBookFactsDetailed(title: string, author: string): Pro
   try {
     const raw = await callGemini({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: 700, thinkingConfig: NO_THINKING }
+      generationConfig: { maxOutputTokens: 2048, thinkingConfig: NO_THINKING }
     });
     // O modelo às vezes embrulha o JSON em ```json ... ```
     const json = raw.replace(/```json|```/g, '').trim();
