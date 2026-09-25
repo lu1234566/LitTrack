@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { CoverCandidate, searchBookCovers } from '@/services/externalBookSearch';
-import { pickImageAsDataUrl } from '@/services/webPlatformTools';
+import { CoverTooLargeError, pickCoverImage } from '@/services/webPlatformTools';
 import { appColors } from '@/theme/tokens';
 
 /**
@@ -54,11 +54,15 @@ export function CoverPicker({
   }
 
   async function daGaleria() {
-    const imagem = await pickImageAsDataUrl();
-    if (!imagem) return;
-    onChange(imagem);
-    setCandidatos([]);
-    setAviso('Imagem da galeria aplicada.');
+    try {
+      const imagem = await pickCoverImage();
+      if (!imagem) return;
+      onChange(imagem);
+      setCandidatos([]);
+      setAviso('Imagem salva no app — pode apagar da galeria, a capa continua.');
+    } catch (erro) {
+      setAviso(erro instanceof CoverTooLargeError ? erro.message : 'Não foi possível usar essa imagem. Tente outra.');
+    }
   }
 
   function remover() {

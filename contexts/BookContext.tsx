@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useRef, useState 
 import { Book, BookStatus, ReadingStats } from '@/types/book';
 import { calculateProgress, loadBooks, saveBooks } from '@/services/bookStorage';
 import { looksLikeHtml, stripHtml } from '@/services/plainText';
+import { persistLocalCover } from '@/services/webPlatformTools';
 
 /**
  * Livros salvos antes da limpeza de HTML guardam a marcação crua do Google
@@ -48,7 +49,7 @@ function repairedCover(book: Book) {
   if (!staleImagePickerCache) return url;
 
   const isbn = normalizedIsbn(book.isbn);
-  return isbn ? `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg` : url;
+  return isbn ? `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false` : url;
 }
 
 /**
@@ -81,6 +82,23 @@ function withCleanText(books: Book[]) {
     if (fixMood) patch.mood = '';
     return { ...book, ...patch };
   });
+}
+
+/**
+ * Capas da galeria salvas antes desta versão guardavam só o `file://` do cache
+ * do seletor, que o Android apaga quando quer. Enquanto o arquivo existir,
+ * embute a imagem no livro. `updatedAt` avança para a sincronização levar a
+ * capa para a nuvem — até aqui ela só existia neste aparelho.
+ */
+async function comCapasResgatadas(books: Book[]): Promise<Book[]> {
+  if (!books.some((book) => book.coverUrl?.startsWith('file://'))) return books;
+  const agora = Date.now();
+  const resultado: Book[] = [];
+  for (const book of books) {
+    const imagem = book.coverUrl?.startsWith('file://') ? await persistLocalCover(book.coverUrl) : null;
+    resultado.push(imagem ? { ...book, coverUrl: imagem, updatedAt: agora } : book);
+  }
+  return resultado;
 }
 
 type BookInput = Omit<Book, 'id' | 'createdAt' | 'updatedAt'>;
@@ -148,7 +166,10 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     loadBooks().then(async (loaded) => {
-      const cleaned = withCleanText(loaded);
+      // O resgate vem ANTES da limpeza: a limpeza troca `file://` do cache por
+      // uma capa da Open Library, e faria isso mesmo com a imagem do usuário
+      // ainda disponível para ser salva.
+      const cleaned = withCleanText(await comCapasResgatadas(loaded));
       booksRef.current = cleaned;
       setBooks(cleaned);
       // Só regrava se algo realmente mudou — o mapa devolve o mesmo objeto

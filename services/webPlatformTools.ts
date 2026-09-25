@@ -51,6 +51,98 @@ export async function pickImageAsDataUrl(): Promise<string | null> {
   });
 }
 
+/**
+ * Cada livro é um documento no Firestore, e documento tem limite de 1 MB. A
+ * capa vai DENTRO do livro, então precisa caber com folga junto dos outros
+ * campos. ~700 KB de texto base64 ≈ 500 KB de imagem: sobra para uma capa
+ * nítida em tela de celular.
+ */
+export const COVER_MAX_CHARS = 700_000;
+
+export class CoverTooLargeError extends Error {}
+
+export function coverDataUrlFits(dataUrl: string): boolean {
+  return dataUrl.startsWith('data:image/') && dataUrl.length <= COVER_MAX_CHARS;
+}
+
+function garantirTamanho(dataUrl: string): string {
+  if (!coverDataUrlFits(dataUrl)) {
+    throw new CoverTooLargeError('A imagem ficou grande demais para salvar. Recorte uma área menor ou use uma imagem mais leve.');
+  }
+  return dataUrl;
+}
+
+/**
+ * Capa escolhida da galeria, já como IMAGEM, não como endereço de arquivo.
+ *
+ * Antes o app guardava o `file://` do cache do seletor: o Android apaga esse
+ * cache quando quer (a capa sumia) e o endereço só existe neste aparelho (a
+ * capa nunca aparecia no site). Guardando a imagem em si, ela vai junto com o
+ * livro na sincronização e não depende mais do arquivo original.
+ */
+export async function pickCoverImage(): Promise<string | null> {
+  if (Platform.OS !== 'web') {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [2, 3],
+      // Sem módulo de redimensionar instalado, a compressão é o que controla
+      // o tamanho. 0.45 mantém a capa nítida e costuma ficar bem abaixo do teto.
+      quality: 0.45,
+      base64: true
+    });
+    if (result.canceled) return null;
+    const asset = result.assets?.[0];
+    if (!asset) return null;
+    const base64 = asset.base64 || (asset.uri ? await FileSystem.readAsStringAsync(asset.uri, { encoding: 'base64' }) : '');
+    if (!base64) return null;
+    return garantirTamanho('data:' + (asset.mimeType || 'image/jpeg') + ';base64,' + base64);
+  }
+
+  const original = await pickImageAsDataUrl();
+  if (!original) return null;
+  return garantirTamanho(await reduzirNoNavegador(original));
+}
+
+/** No navegador dá para redimensionar de verdade, com canvas. */
+function reduzirNoNavegador(dataUrl: string, larguraMax = 600, alturaMax = 900): Promise<string> {
+  const documentRef = (globalThis as any).document;
+  return new Promise((resolve) => {
+    const img = documentRef.createElement('img');
+    img.onload = () => {
+      const escala = Math.min(1, larguraMax / img.width, alturaMax / img.height);
+      const canvas = documentRef.createElement('canvas');
+      canvas.width = Math.round(img.width * escala);
+      canvas.height = Math.round(img.height * escala);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return resolve(dataUrl);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
+/**
+ * Capas antigas guardadas como `file://`: enquanto o arquivo ainda existir no
+ * cache, converte para imagem embutida. Depois que o Android limpar o cache,
+ * não há mais o que salvar — por isso vale fazer assim que possível.
+ */
+export async function persistLocalCover(uri: string): Promise<string | null> {
+  if (Platform.OS === 'web' || !uri.startsWith('file://')) return null;
+  try {
+    const info = await FileSystem.getInfoAsync(uri);
+    if (!info.exists) return null;
+    const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
+    const tipo = /\.png$/i.test(uri) ? 'image/png' : 'image/jpeg';
+    const dataUrl = 'data:' + tipo + ';base64,' + base64;
+    return coverDataUrlFits(dataUrl) ? dataUrl : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function pickTextFile(accept = '.json,text/plain,application/json'): Promise<string | null> {
   if (Platform.OS !== 'web') {
     const result = await DocumentPicker.getDocumentAsync({
