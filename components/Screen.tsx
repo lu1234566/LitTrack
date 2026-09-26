@@ -157,11 +157,16 @@ export function Screen<T>({
   );
 }
 
+const BRAND_MARK = require('../assets/brand-mark.png');
+
 function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <View style={[styles.brandRow, compact && styles.brandRowCompact]}>
       <View style={[styles.logoMark, compact && styles.logoMarkSmall]}>
-        <ReadoraIcon name="brand" size={compact ? 21 : 24} color={appColors.gold} />
+        {/* Arquivo próprio, fora do app.json: o ícone do app e o do splash
+            entram na impressão digital do build, este não — então muda por
+            update, sem precisar publicar versão nova na loja. */}
+        <Image source={BRAND_MARK} style={styles.logoImage} />
       </View>
       <View style={{ flexShrink: 1, minWidth: 0 }}>
         <Text numberOfLines={1} style={[styles.brandName, compact && styles.brandNameSmall]}>Readora</Text>
@@ -341,7 +346,8 @@ const styles = StyleSheet.create({
   sidebarFooter: { borderTopColor: appColors.border, borderTopWidth: 1, padding: 16, gap: 10 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 24 },
   brandRowCompact: { paddingHorizontal: 0, gap: 10 },
-  logoMark: { width: 42, height: 42, borderRadius: 12, borderColor: appColors.goldDeep, borderWidth: 1, backgroundColor: appColors.surface, alignItems: 'center', justifyContent: 'center' },
+  logoMark: { width: 42, height: 42, borderRadius: 12, borderColor: 'rgba(120,140,255,0.35)', borderWidth: 1, backgroundColor: appColors.surface, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  logoImage: { width: '100%', height: '100%' },
   logoMarkSmall: { width: 36, height: 36, borderRadius: 10 },
   brandName: { color: appColors.text, fontFamily: appFonts.display, fontSize: 27, fontStyle: 'italic', fontWeight: '900', lineHeight: 28 },
   brandNameSmall: { fontSize: 23, lineHeight: 24 },
