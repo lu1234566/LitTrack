@@ -1,3 +1,4 @@
+import { pickReadingWidgetData } from '@/widget/readingWidgetData';
 import { groupSeries, parseSeries } from '@/services/series';
 import { Book } from '@/types/book';
 
@@ -64,5 +65,21 @@ describe('agrupar series', () => {
 
   it('livro isolado com volume no titulo nao vira serie', () => {
     expect(groupSeries([livro('x', 'Mistborn (Book 2)')])).toEqual([]);
+  });
+});
+
+describe('widget lendo agora', () => {
+  it('mostra o livro em andamento mexido por ultimo', () => {
+    const a = { ...livro('a', 'Antigo', 'reading'), updatedAt: 10, currentPage: 50, totalPages: 200 };
+    const b = { ...livro('b', 'Recente', 'reading'), updatedAt: 20, currentPage: 30, totalPages: 120, coverUrl: 'http://x/c.jpg' };
+    const d = pickReadingWidgetData([a, b, livro('c', 'Lido')]);
+    expect(d.book?.title).toBe('Recente');
+    expect(d.percent).toBe(25);
+    // O widget não desenha http: sobe para https.
+    expect(d.book?.coverUrl).toBe('https://x/c.jpg');
+  });
+
+  it('sem leitura em andamento, fica vazio', () => {
+    expect(pickReadingWidgetData([livro('c', 'Lido')]).book).toBeNull();
   });
 });

@@ -3,6 +3,7 @@ import { Book, BookStatus, ReadingStats } from '@/types/book';
 import { calculateProgress, loadBooks, saveBooks } from '@/services/bookStorage';
 import { looksLikeHtml, stripHtml } from '@/services/plainText';
 import { persistLocalCover } from '@/services/webPlatformTools';
+import { updateReadingWidget } from '@/services/readingWidget';
 
 /**
  * Livros salvos antes da limpeza de HTML guardam a marcação crua do Google
@@ -182,6 +183,8 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
     booksRef.current = nextBooks;
     setBooks(nextBooks);
     await saveBooks(nextBooks);
+    // Widget da tela inicial acompanha o progresso na hora (Android).
+    updateReadingWidget(nextBooks);
   }
 
   async function replaceBooks(nextBooks: Book[]) {
