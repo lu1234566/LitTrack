@@ -1,4 +1,3 @@
-import { reportError } from '@/services/errorReporting';
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/TranslatedText';
@@ -15,12 +14,9 @@ export class ErrorBoundary extends React.Component<Props, State> {
     return { error };
   }
 
-  componentDidCatch(error: Error, info: { componentStack?: string | null }) {
+  componentDidCatch(error: Error) {
     // eslint-disable-next-line no-console
     console.error('Readora capturou um erro de renderização:', error);
-    // Erro segurado aqui não chega ao manipulador global do Sentry: sem este
-    // envio, justamente as telas que quebram ficariam invisíveis no painel.
-    reportError(error, { componentStack: info?.componentStack || '' });
   }
 
   reset = () => this.setState({ error: null });

@@ -11,7 +11,6 @@ import { UpdateBanner } from '@/components/UpdateBanner';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { installAlertTranslation } from '@/components/TranslatedText';
 import { setImageSizer } from '@/services/coverProbe';
-import { initErrorReporting, wrapRoot } from '@/services/errorReporting';
 import { BookProvider } from '@/contexts/BookContext';
 import { PreferencesProvider } from '@/contexts/PreferencesContext';
 import { QuoteProvider } from '@/contexts/QuoteContext';
@@ -32,10 +31,6 @@ const textDefaults = { allowFontScaling: false, style: { fontFamily: appFonts.bo
   ...textDefaults
 };
 
-// Relatório de erros primeiro: um erro durante o resto da inicialização
-// também precisa ser registrado. Sem DSN configurado, não faz nada.
-initErrorReporting();
-
 // Alertas do sistema no idioma do aparelho (os <Text> já traduzem sozinhos).
 installAlertTranslation();
 
@@ -47,7 +42,7 @@ setImageSizer((url) => new Promise((resolve, reject) => Image.getSize(url, (widt
 // os traga de volta sem dono.
 const LEGACY_SESSIONS_KEY = '@readora_native_reading_sessions';
 
-function RootLayout() {
+export default function RootLayout() {
   useEffect(() => {
     AsyncStorage.removeItem(LEGACY_SESSIONS_KEY).catch(() => {});
   }, []);
@@ -105,5 +100,3 @@ function RootLayout() {
   );
 }
 
-
-export default wrapRoot(RootLayout);

@@ -19,7 +19,7 @@
     "newArchEnabled": true,
     "android": {
       "package": "com.readora.app",
-      "versionCode": 6,
+      "versionCode": 7,
       "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
