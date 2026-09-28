@@ -1,6 +1,7 @@
 import { Link } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Text, TextInput } from '@/components/TranslatedText';
 import { Screen } from '@/components/Screen';
 import { BookCard } from '@/components/BookCard';
 import { Card } from '@/components/Card';

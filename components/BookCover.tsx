@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/TranslatedText';
 import { Book } from '@/types/book';
 import { appColors, appFonts } from '@/theme/tokens';
 

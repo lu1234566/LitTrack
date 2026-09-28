@@ -1,6 +1,7 @@
 import { ReactElement, ReactNode, useState } from 'react';
 import { Link, usePathname } from 'expo-router';
-import { FlatList, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { FlatList, Image, Pressable, RefreshControl, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Text } from '@/components/TranslatedText';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { usePreferences } from '@/contexts/PreferencesContext';

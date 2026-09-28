@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/TranslatedText';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { usePreferences } from '@/contexts/PreferencesContext';

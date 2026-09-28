@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Text, TextInput } from '@/components/TranslatedText';
 import * as ImagePicker from 'expo-image-picker';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';

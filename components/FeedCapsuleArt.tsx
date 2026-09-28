@@ -1,7 +1,9 @@
 import { useState, forwardRef } from 'react';
-import { Image, Text, View } from 'react-native';
+import { Image, View } from 'react-native';
+import { Text } from '@/components/TranslatedText';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appFonts } from '@/theme/tokens';
+import { appLocale } from '@/services/i18n';
 
 // Native 1080x1350 (4:5) editorial capsule. Every dimension derives from
 // `scale`, so the same component renders both the on-screen preview and the
@@ -150,7 +152,7 @@ export const FeedCapsuleArt = forwardRef<View, FeedCapsuleArtProps>(function Fee
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', borderTopColor: C.border, borderTopWidth: 1, paddingTop: u(22) }}>
                 {[
                   { label: 'Livros', value: String(totalBooks) },
-                  { label: 'Páginas', value: totalPages.toLocaleString('pt-BR') },
+                  { label: 'Páginas', value: totalPages.toLocaleString(appLocale) },
                   { label: 'Rating', value: ratingOutOf10.toFixed(1), mono: true },
                   { label: 'Vibe', value: dominantMood, small: true }
                 ].map((item) => (

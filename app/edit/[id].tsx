@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Text, TextInput } from '@/components/TranslatedText';
 import { Screen } from '@/components/Screen';
 import { useBooks } from '@/contexts/BookContext';
 import { BookStatus } from '@/types/book';

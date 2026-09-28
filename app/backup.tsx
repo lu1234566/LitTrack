@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Alert, Platform, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Text, TextInput } from '@/components/TranslatedText';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
@@ -14,6 +15,7 @@ import { bookNeedsEnrichment, enrichLibrary, missingFields, type EnrichedBookRep
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors, appFonts } from '@/theme/tokens';
 import type { Book, BookStatus } from '@/types/book';
+import { appLocale } from '@/services/i18n';
 
 const scopes: Array<'all' | BookStatus> = ['all', 'finished', 'reading', 'wishlist', 'dnf'];
 const ratings = [0, 1, 2, 3, 4, 5];
@@ -119,7 +121,7 @@ export default function BackupScreen() {
     return [
       'READORA — RELATÓRIO DA BIBLIOTECA',
       'Leitor: ' + preferences.readerName,
-      'Gerado em: ' + new Date().toLocaleString('pt-BR'),
+      'Gerado em: ' + new Date().toLocaleString(appLocale),
       'Filtro de status: ' + labelForScope(scope),
       'Filtro de gênero: ' + (genre === 'all' ? 'Todos os gêneros' : genre),
       'Nota mínima: ' + minRating + '/5',

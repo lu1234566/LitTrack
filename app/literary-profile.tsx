@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Text } from '@/components/TranslatedText';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
@@ -7,6 +8,7 @@ import { ShareableProfileCards } from '@/components/ShareableProfileCards';
 import { useBooks } from '@/contexts/BookContext';
 import { useQuotes } from '@/contexts/QuoteContext';
 import { appColors, appFonts } from '@/theme/tokens';
+import { appLocale } from '@/services/i18n';
 
 export default function LiteraryProfileScreen() {
   const { books, stats } = useBooks();
@@ -40,7 +42,7 @@ export default function LiteraryProfileScreen() {
         <Metric label="GÊNERO DOMINANTE" value={stats.favoriteGenre || '—'} />
         <Metric label="MÉDIA CRÍTICA" value={stats.averageRating.toFixed(1)} accent />
         <Metric label="CITAÇÕES" value={String(quotes.length)} />
-        <Metric label="PÁGINAS" value={stats.pagesRead.toLocaleString('pt-BR')} />
+        <Metric label="PÁGINAS" value={stats.pagesRead.toLocaleString(appLocale)} />
       </View>
 
       <View style={[styles.mainGrid, mobile && styles.stack]}>
@@ -59,7 +61,7 @@ export default function LiteraryProfileScreen() {
           <Text style={styles.cardTitle}>Ritmo de leitura</Text>
           <Text style={styles.body}>Você tem {stats.readingBooks} leitura(s) ativa(s), {stats.finishedBooks} concluída(s) e {stats.wishlistBooks} desejada(s).</Text>
           <View style={styles.profileGrid}>
-            <Mini label="PÁGINAS" value={stats.pagesRead.toLocaleString('pt-BR')} />
+            <Mini label="PÁGINAS" value={stats.pagesRead.toLocaleString(appLocale)} />
             <Mini label="CITAÇÕES" value={String(quotes.length)} />
             <Mini label="FAVORITAS" value={String(favoriteQuotes)} />
             <Mini label="LIVROS" value={String(stats.totalBooks)} />

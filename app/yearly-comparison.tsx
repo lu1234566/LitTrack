@@ -1,8 +1,10 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '@/components/TranslatedText';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
 import { appColors } from '@/theme/tokens';
+import { appLocale } from '@/services/i18n';
 
 export default function YearlyComparisonScreen() {
   const { books } = useBooks();
@@ -32,7 +34,7 @@ export default function YearlyComparisonScreen() {
           <View style={styles.grid}>
             <View style={styles.item}><Text style={styles.big}>{row.books}</Text><Text style={styles.label}>livros</Text></View>
             <View style={styles.item}><Text style={styles.big}>{row.finished}</Text><Text style={styles.label}>lidos</Text></View>
-            <View style={styles.item}><Text style={styles.big}>{row.pages.toLocaleString('pt-BR')}</Text><Text style={styles.label}>paginas</Text></View>
+            <View style={styles.item}><Text style={styles.big}>{row.pages.toLocaleString(appLocale)}</Text><Text style={styles.label}>paginas</Text></View>
             <View style={styles.item}><Text style={styles.big}>{row.rated}</Text><Text style={styles.label}>avaliados</Text></View>
           </View>
         </Card>

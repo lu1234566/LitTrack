@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '@/components/TranslatedText';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
@@ -8,6 +9,7 @@ import { useShelves } from '@/contexts/ShelfContext';
 import { buildAchievements } from '@/services/readingAchievements';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors } from '@/theme/tokens';
+import { appLocale } from '@/services/i18n';
 
 export default function ProgressScreen() {
   const { books, stats } = useBooks();
@@ -33,7 +35,7 @@ export default function ProgressScreen() {
       <View style={styles.grid}>
         <Card><Text style={styles.big}>{unlocked}/{achievements.length}</Text><Text style={styles.label}>conquistas</Text></Card>
         <Card><Text style={styles.big}>{stats.finishedBooks}</Text><Text style={styles.label}>livros concluidos</Text></Card>
-        <Card><Text style={styles.big}>{stats.pagesRead.toLocaleString('pt-BR')}</Text><Text style={styles.label}>paginas lidas</Text></Card>
+        <Card><Text style={styles.big}>{stats.pagesRead.toLocaleString(appLocale)}</Text><Text style={styles.label}>paginas lidas</Text></Card>
       </View>
 
       <Text style={styles.section}>Conquistas</Text>

@@ -1,6 +1,11 @@
 import { Book } from '@/types/book';
 import { nativeAuth } from '@/services/firebaseNative';
 import { stripHtml } from '@/services/plainText';
+import { appLanguage } from '@/services/i18n';
+
+// Sinopse, gênero e conversa saem no idioma do aparelho: um leitor em inglês
+// não deveria receber a ficha do livro em português.
+const IDIOMA_IA = appLanguage === 'pt' ? 'português do Brasil' : 'inglês (English)';
 
 // AI features (OCR + "chat with the book") via Google's Gemini API.
 //
@@ -190,7 +195,7 @@ export async function askAboutBook(book: Book, question: string, history: ChatTu
     book.publishedDate ? 'Ano: ' + book.publishedDate : '',
     book.description ? 'Sinopse: ' + book.description : ''
   ].filter(Boolean).join('\n');
-  const system = 'Você é uma companhia de leitura no app Readora. Converse em português brasileiro sobre o livro abaixo, ajudando o leitor a refletir, esclarecer dúvidas e aprofundar. Evite spoilers de pontos da trama que o usuário ainda não mencionou, a menos que ele peça explicitamente. Seja conciso e caloroso.\n\nLIVRO:\n' + facts;
+  const system = 'Você é uma companhia de leitura no app Readora. Converse em ' + IDIOMA_IA + ' sobre o livro abaixo, ajudando o leitor a refletir, esclarecer dúvidas e aprofundar. Evite spoilers de pontos da trama que o usuário ainda não mencionou, a menos que ele peça explicitamente. Seja conciso e caloroso.\n\nLIVRO:\n' + facts;
   const contents: GeminiContent[] = [
     ...history.map((t) => ({ role: (t.role === 'assistant' ? 'model' : 'user') as 'user' | 'model', parts: [{ text: t.content }] })),
     { role: 'user', parts: [{ text: question }] }
@@ -240,9 +245,9 @@ export async function fetchBookFactsDetailed(title: string, author: string): Pro
     'Responda APENAS com um JSON válido, sem markdown, no formato:',
     '{"description": string|null, "totalPages": number|null, "genre": string|null}',
     '',
-    '- description: sinopse em português do Brasil, 2 a 4 frases, sem spoilers do final.',
+    '- description: sinopse em ' + IDIOMA_IA + ', 2 a 4 frases, sem spoilers do final.',
     '- totalPages: número aproximado de páginas da edição mais comum.',
-    '- genre: um único gênero, em português.',
+    '- genre: um único gênero, em ' + IDIOMA_IA + '.',
     '',
     'Use null em QUALQUER campo sobre o qual você não tenha certeza. Nunca invente.',
     'Se não conhecer o livro, responda {"description":null,"totalPages":null,"genre":null}.'

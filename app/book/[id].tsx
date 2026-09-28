@@ -1,6 +1,7 @@
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, View } from 'react-native';
+import { Text, TextInput } from '@/components/TranslatedText';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { calculateProgress, useBooks } from '@/contexts/BookContext';
@@ -10,6 +11,7 @@ import { BookShareCard } from '@/components/BookShareCard';
 import { BookChat } from '@/components/BookChat';
 import { isAiConfigured } from '@/services/aiClient';
 import { appColors } from '@/theme/tokens';
+import { appLocale } from '@/services/i18n';
 
 export default function BookDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -83,7 +85,7 @@ export default function BookDetailsScreen() {
         <Card><Text style={styles.smallValue}>{currentBook.publishedDate || '-'}</Text><Text style={styles.smallLabel}>ano</Text></Card>
         <Card><Text style={styles.smallValue}>{currentBook.genre || '-'}</Text><Text style={styles.smallLabel}>genero</Text></Card>
         <Card>
-          <Text style={styles.smallValue}>{currentBook.finishedAt ? capitalize(new Date(currentBook.finishedAt).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })) : '-'}</Text>
+          <Text style={styles.smallValue}>{currentBook.finishedAt ? capitalize(new Date(currentBook.finishedAt).toLocaleDateString(appLocale, { month: 'short', year: 'numeric' })) : '-'}</Text>
           <Text style={styles.smallLabel}>mes de leitura</Text>
         </Card>
       </View>

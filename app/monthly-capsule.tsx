@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
-import { Image, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Image, Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Text } from '@/components/TranslatedText';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { Screen } from '@/components/Screen';
@@ -12,6 +13,7 @@ import { downloadCapsulePng } from '@/services/webPlatformTools';
 import { copyText, haptic } from '@/services/feedback';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors, appFonts } from '@/theme/tokens';
+import { appLocale } from '@/services/i18n';
 
 export default function MonthlyCapsuleScreen() {
   const { books, stats } = useBooks();
@@ -57,8 +59,8 @@ export default function MonthlyCapsuleScreen() {
   const ratedBooks = monthBooks.filter((book) => (book.rating || 0) > 0);
   const monthAverage = ratedBooks.length ? ratedBooks.reduce((sum, book) => sum + (book.rating || 0), 0) / ratedBooks.length : 0;
   const ratingOutOf10 = monthAverage * 2;
-  const month = selected.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-  const monthName = selected.toLocaleDateString('pt-BR', { month: 'long' });
+  const month = selected.toLocaleDateString(appLocale, { month: 'long', year: 'numeric' });
+  const monthName = selected.toLocaleDateString(appLocale, { month: 'long' });
   const periodLabel = isYear ? String(periodYear) : capitalize(month);
   const periodName = isYear ? 'em ' + periodYear : 'em ' + monthName;
   const vibe = monthBooks.find((book) => book.mood)?.mood || 'Sereno';

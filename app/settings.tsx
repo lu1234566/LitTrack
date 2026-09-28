@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Alert, Platform, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Text, TextInput } from '@/components/TranslatedText';
 import * as Updates from 'expo-updates';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
@@ -13,6 +14,7 @@ import { cancelReadingReminders, scheduleReadingReminder } from '@/services/noti
 import { ReadoraIcon, ReadoraIconName } from '@/components/ReadoraIcon';
 import { appColors, appFonts } from '@/theme/tokens';
 import type { LayoutMode, ReminderFrequency } from '@/types/preferences';
+import { appLocale } from '@/services/i18n';
 
 const layoutOptions: Array<{ value: LayoutMode; title: string; text: string; icon: ReadoraIconName }> = [
   { value: 'auto', title: 'Automático', text: 'Adapta-se ao tamanho da tela', icon: 'layoutAuto' },
@@ -216,7 +218,7 @@ export default function SettingsScreen() {
             <Text style={styles.body}>
               Canal: {Updates.channel || 'desconhecido'}
               {'\n'}
-              {Updates.isEmbeddedLaunch ? 'Nenhuma atualização OTA foi baixada ainda.' : 'Publicada em: ' + (Updates.createdAt ? Updates.createdAt.toLocaleString('pt-BR') : 'desconhecido')}
+              {Updates.isEmbeddedLaunch ? 'Nenhuma atualização OTA foi baixada ainda.' : 'Publicada em: ' + (Updates.createdAt ? Updates.createdAt.toLocaleString(appLocale) : 'desconhecido')}
               {'\n'}
               ID: {Updates.updateId ? Updates.updateId.slice(0, 8) : '—'}
             </Text>

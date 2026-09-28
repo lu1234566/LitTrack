@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Image, Modal, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Animated, Image, Modal, Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Text } from '@/components/TranslatedText';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { Book } from '@/types/book';
@@ -9,6 +10,7 @@ import { FeedCapsuleArt, FeedCapsuleBook } from '@/components/FeedCapsuleArt';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { haptic } from '@/services/feedback';
 import { appFonts } from '@/theme/tokens';
+import { appLocale } from '@/services/i18n';
 
 const DURATION = 5200;
 
@@ -53,7 +55,7 @@ function CountUp({ value, active, style }: { value: number; active: boolean; sty
   }, [active, value]);
   // Números grandes (ex: 8.300 páginas) encolhem para caber numa linha em vez
   // de quebrar no meio do algarismo.
-  return <Text style={style} numberOfLines={1} adjustsFontSizeToFit>{n.toLocaleString('pt-BR')}</Text>;
+  return <Text style={style} numberOfLines={1} adjustsFontSizeToFit>{n.toLocaleString(appLocale)}</Text>;
 }
 
 function Stars({ rating, size = 16 }: { rating: number; size?: number }) {
@@ -221,7 +223,7 @@ export function WrappedStory({ books, year, onClose }: { books: Book[]; year: nu
                   : <ReadoraIcon name="library" size={54} color="rgba(255,255,255,0.5)" />}
               </View>
               <Text style={styles.bestTitle} numberOfLines={2}>{data.longestBook.title}</Text>
-              <Text style={styles.lead}>{data.longestBook.pageCount.toLocaleString('pt-BR')} páginas · {data.longestBook.author}</Text>
+              <Text style={styles.lead}>{data.longestBook.pageCount.toLocaleString(appLocale)} páginas · {data.longestBook.author}</Text>
               <Text style={styles.synopsis} numberOfLines={6}>{data.longestBook.description ? '“' + data.longestBook.description + '”' : 'Sem sinopse cadastrada — use “Completar dados” para buscá-la automaticamente.'}</Text>
             </>
           ) : <Text style={styles.lead}>Sem livros com páginas registradas em {year}.</Text>}
@@ -236,7 +238,7 @@ export function WrappedStory({ books, year, onClose }: { books: Book[]; year: nu
           <Text style={styles.bigYear}>{year}</Text>
           <View style={styles.recapGrid}>
             <Recap label="LIVROS" value={String(data.totalBooks)} />
-            <Recap label="PÁGINAS" value={data.totalPages.toLocaleString('pt-BR')} />
+            <Recap label="PÁGINAS" value={data.totalPages.toLocaleString(appLocale)} />
             <Recap label="NOTA MÉDIA" value={data.ratingOutOf10.toFixed(1)} />
             <Recap label="VIBE" value={data.vibe} />
           </View>

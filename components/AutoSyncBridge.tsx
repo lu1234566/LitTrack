@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
+import { Text } from '@/components/TranslatedText';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useBooks } from '@/contexts/BookContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
@@ -9,11 +10,12 @@ import { useShelves } from '@/contexts/ShelfContext';
 import { isNativeFirebaseConfigured, pullReadoraBundle, purgeRemoteReadingSessions, pushReadoraBundle } from '@/services/firebaseNative';
 import { addTombstones, clearTombstones, dropTombstoned, loadTombstones, SyncCollectionName, tombstoneIds } from '@/services/syncTombstones';
 import { appColors } from '@/theme/tokens';
+import { appLocale } from '@/services/i18n';
 
 const SYNC_KEY = '@readora_last_sync';
 
 function formatSyncTime(ts: number) {
-  return new Date(ts).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  return new Date(ts).toLocaleString(appLocale, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
 export function AutoSyncBridge() {

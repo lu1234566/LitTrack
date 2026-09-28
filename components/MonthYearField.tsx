@@ -1,6 +1,8 @@
-import { StyleSheet, Text, View, Pressable } from 'react-native';
+import { StyleSheet, View, Pressable } from 'react-native';
+import { Text } from '@/components/TranslatedText';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors } from '@/theme/tokens';
+import { appLocale } from '@/services/i18n';
 
 const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
@@ -73,7 +75,7 @@ export function MonthYearField({
 
       <Text style={styles.status}>
         {value
-          ? 'Registrado em ' + new Date(value).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+          ? 'Registrado em ' + new Date(value).toLocaleDateString(appLocale, { month: 'long', year: 'numeric' })
           : 'Sem mês definido — o livro usará a data de cadastro.'}
       </Text>
     </View>

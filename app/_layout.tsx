@@ -9,6 +9,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { AutoSyncBridge } from '@/components/AutoSyncBridge';
 import { UpdateBanner } from '@/components/UpdateBanner';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { installAlertTranslation } from '@/components/TranslatedText';
 import { BookProvider } from '@/contexts/BookContext';
 import { PreferencesProvider } from '@/contexts/PreferencesContext';
 import { QuoteProvider } from '@/contexts/QuoteContext';
@@ -28,6 +29,9 @@ const textDefaults = { allowFontScaling: false, style: { fontFamily: appFonts.bo
   ...((RNTextInput as unknown as { defaultProps?: object }).defaultProps || {}),
   ...textDefaults
 };
+
+// Alertas do sistema no idioma do aparelho (os <Text> já traduzem sozinhos).
+installAlertTranslation();
 
 // Chave do armazenamento local das sessões de leitura, recurso removido do app.
 // Nada mais lê esses dados; apagar libera espaço e evita que um backup antigo

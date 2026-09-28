@@ -1,8 +1,10 @@
 import { forwardRef, useState } from 'react';
-import { Image, Text, View } from 'react-native';
+import { Image, View } from 'react-native';
+import { Text } from '@/components/TranslatedText';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { FeedCapsuleArtProps, FeedCapsuleBook } from '@/components/FeedCapsuleArt';
 import { appFonts } from '@/theme/tokens';
+import { appLocale } from '@/services/i18n';
 
 // Native port of the web Instagram story capsule (src/components/monthly/
 // InstagramStoryCapsule.tsx): a 1080×1920 (9:16) vertical card. Same scale
@@ -106,7 +108,7 @@ export const StoryCapsuleArt = forwardRef<View, FeedCapsuleArtProps>(function St
       {/* Metrics grid */}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: u(24), marginTop: u(44) }}>
         <HeroStat label="Livros" value={String(totalBooks)} subtext="concluídos" u={u} />
-        <HeroStat label="Páginas" value={totalPages.toLocaleString('pt-BR')} subtext="percorridas" u={u} />
+        <HeroStat label="Páginas" value={totalPages.toLocaleString(appLocale)} subtext="percorridas" u={u} />
         <HeroStat label="Média" value={ratingOutOf10.toFixed(1)} subtext="nota mensal" u={u} />
         <HeroStat label="Vibe" value={dominantMood} subtext="atmosfera" u={u} />
       </View>

@@ -1,4 +1,5 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/TranslatedText';
 import { Link } from 'expo-router';
 import { Book } from '@/types/book';
 import { calculateProgress, statusLabel } from '@/services/bookStorage';

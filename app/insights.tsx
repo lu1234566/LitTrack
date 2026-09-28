@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '@/components/TranslatedText';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
@@ -7,6 +8,7 @@ import { useShelves } from '@/contexts/ShelfContext';
 import { buildReadingInsights } from '@/services/readingInsights';
 import { buildDiversity } from '@/services/diversity';
 import { appColors } from '@/theme/tokens';
+import { appLocale } from '@/services/i18n';
 
 export default function InsightsScreen() {
   const { books } = useBooks();
@@ -22,7 +24,7 @@ export default function InsightsScreen() {
       <Text style={styles.subtitle}>Leitura analitica dos seus autores, generos, citacoes, humores e ritmo.</Text>
 
       <View style={styles.grid}>
-        <Card><Text style={styles.big}>{insights.totalPages.toLocaleString('pt-BR')}</Text><Text style={styles.label}>paginas lidas</Text></Card>
+        <Card><Text style={styles.big}>{insights.totalPages.toLocaleString(appLocale)}</Text><Text style={styles.label}>paginas lidas</Text></Card>
         <Card><Text style={styles.big}>{insights.averagePagesPerBook}</Text><Text style={styles.label}>paginas por livro</Text></Card>
       </View>
 

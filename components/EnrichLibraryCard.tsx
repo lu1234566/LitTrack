@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/TranslatedText';
 import { Card } from '@/components/Card';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { useBooks } from '@/contexts/BookContext';

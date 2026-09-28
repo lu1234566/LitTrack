@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Text } from '@/components/TranslatedText';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { WrappedStory } from '@/components/WrappedStory';
 import { appColors, appFonts } from '@/theme/tokens';
+import { appLocale } from '@/services/i18n';
 
 export default function RetrospectiveScreen() {
   const { books, stats } = useBooks();
@@ -42,7 +44,7 @@ export default function RetrospectiveScreen() {
 
       <View style={[styles.grid, mobile && styles.stack]}>
         <Metric label="LIVROS CONCLUÍDOS" value={String(stats.finishedBooks)} />
-        <Metric label="PÁGINAS LIDAS" value={stats.pagesRead.toLocaleString('pt-BR')} />
+        <Metric label="PÁGINAS LIDAS" value={stats.pagesRead.toLocaleString(appLocale)} />
         <Metric label="NOTA MÉDIA" value={stats.averageRating.toFixed(1) + '/5'} />
       </View>
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Text, TextInput } from '@/components/TranslatedText';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { CoverCandidate, searchBookCovers } from '@/services/externalBookSearch';
 import { CoverTooLargeError, pickCoverImage } from '@/services/webPlatformTools';

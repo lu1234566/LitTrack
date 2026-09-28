@@ -1,6 +1,7 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Text, TextInput } from '@/components/TranslatedText';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { BookCover } from '@/components/BookCover';
@@ -8,6 +9,7 @@ import { useBooks } from '@/contexts/BookContext';
 import { useShelves } from '@/contexts/ShelfContext';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors, appFonts } from '@/theme/tokens';
+import { appLocale } from '@/services/i18n';
 
 /** Quantas capas cabem na pilha antes de virar "+N". */
 const STACK_LIMIT = 8;
@@ -106,7 +108,7 @@ export default function ShelvesScreen() {
               <Text style={styles.emptyShelf}>Estante vazia — abra para escolher os livros.</Text>
             )}
 
-            {pages > 0 ? <Text style={styles.meta}>{pages.toLocaleString('pt-BR')} paginas no total</Text> : null}
+            {pages > 0 ? <Text style={styles.meta}>{pages.toLocaleString(appLocale)} paginas no total</Text> : null}
 
             <View style={[styles.actions, mobile && styles.actionsStacked]}>
               <Link href={{ pathname: '/shelf/[id]', params: { id: shelf.id } }} asChild>

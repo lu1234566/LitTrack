@@ -1,5 +1,6 @@
 import { forwardRef, useMemo, useRef, useState } from 'react';
-import { Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/TranslatedText';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { Book } from '@/types/book';
@@ -7,6 +8,7 @@ import { analyzeLiteraryProfile, NativeLiteraryProfile } from '@/services/litera
 import { ReadoraIcon, ReadoraIconName } from '@/components/ReadoraIcon';
 import { haptic } from '@/services/feedback';
 import { appColors, appFonts } from '@/theme/tokens';
+import { appLocale } from '@/services/i18n';
 
 type CardType = 'archetype' | 'full_profile' | 'genres' | 'mood' | 'stats' | 'book_of_year';
 type Aspect = 'square' | 'story';
@@ -187,7 +189,7 @@ const ProfileCardArt = forwardRef<View, ArtProps>(function ProfileCardArt({ card
             <Text style={label('')}>Livros</Text>
           </View>
           <View style={{ flex: 1, alignItems: 'center', gap: u(6) }}>
-            <Text style={{ color: C.n100, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(72) }}>{yearPages.toLocaleString('pt-BR')}</Text>
+            <Text style={{ color: C.n100, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(72) }}>{yearPages.toLocaleString(appLocale)}</Text>
             <Text style={label('')}>Páginas</Text>
           </View>
         </View>

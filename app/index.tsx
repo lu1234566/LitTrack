@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Link } from 'expo-router';
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Text } from '@/components/TranslatedText';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { BookCard } from '@/components/BookCard';
@@ -10,6 +11,7 @@ import { usePreferences } from '@/contexts/PreferencesContext';
 import { useShelves } from '@/contexts/ShelfContext';
 import { ReadoraIcon, ReadoraIconName } from '@/components/ReadoraIcon';
 import { appColors, appFonts } from '@/theme/tokens';
+import { appLocale } from '@/services/i18n';
 
 export default function DashboardScreen() {
   const { books, stats, loading } = useBooks();
@@ -131,7 +133,7 @@ export default function DashboardScreen() {
       <View style={[styles.bottomStats, mobile && styles.stack]}>
         <Metric label="ACERVO TOTAL" value={stats.totalBooks + ' Livros'} />
         <Metric label="HORIZONTES" value={stats.finishedBooks + ' Lidos'} />
-        <Metric label="PAGINAS LIDAS" value={stats.pagesRead.toLocaleString('pt-BR')} />
+        <Metric label="PAGINAS LIDAS" value={stats.pagesRead.toLocaleString(appLocale)} />
       </View>
     </Screen>
   );
