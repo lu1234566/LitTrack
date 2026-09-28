@@ -18,6 +18,6 @@ export function updateReadingWidget(books: Book[]) {
   const data = pickReadingWidgetData(books);
   requestWidgetUpdate({
     widgetName: READING_WIDGET,
-    renderWidget: (info) => <ReadingWidget data={data} width={info.width} />
+    renderWidget: (info) => <ReadingWidget data={data} width={info.width} height={info.height} />
   }).catch(() => {});
 }

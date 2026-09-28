@@ -18,8 +18,20 @@ const COR = {
   trilho: '#2E2E2E'
 } as const;
 
-export function ReadingWidget({ data, width }: { data: ReadingWidgetData; width: number }) {
+export function ReadingWidget({ data, width, height = 110 }: { data: ReadingWidgetData; width: number; height?: number }) {
   const { book } = data;
+
+  // Pequeno (2×2 ou menos de largura): só a capa, com a barra de progresso
+  // embaixo. O usuário escolhe o tamanho segurando o widget na tela inicial.
+  if (book && width < 200) return <CompactWidget data={data} width={width} height={height} />;
+
+  if (!book && width < 200) {
+    return (
+      <FlexWidget clickAction="OPEN_APP" style={{ height: 'match_parent', width: 'match_parent', backgroundColor: COR.fundo, borderRadius: 22, justifyContent: 'center', alignItems: 'center' }}>
+        <ImageWidget image={require('../assets/brand-mark.png')} imageWidth={56} imageHeight={56} radius={14} />
+      </FlexWidget>
+    );
+  }
 
   if (!book) {
     return (
@@ -69,6 +81,37 @@ export function ReadingWidget({ data, width }: { data: ReadingWidgetData; width:
           <FlexWidget style={{ width: cheio, height: 6, borderRadius: 3, backgroundColor: COR.ouro }} />
         </FlexWidget>
         <TextWidget text={data.percent + '% · ' + paginas} style={{ fontSize: 11, color: COR.apagado, marginTop: 6 }} maxLines={1} truncate="END" />
+      </FlexWidget>
+    </FlexWidget>
+  );
+}
+
+/** Versão só com a capa, para o widget pequeno. */
+function CompactWidget({ data, width, height }: { data: ReadingWidgetData; width: number; height: number }) {
+  const book = data.book!;
+  const pad = 8;
+  const barraAltura = 5;
+  // A capa ocupa o que sobra, mantendo a proporção de livro (2:3).
+  const altDisponivel = Math.max(40, height - pad * 2 - barraAltura - 6);
+  const capaW = Math.max(30, Math.min(width - pad * 2, Math.round(altDisponivel * 0.66)));
+  const capaH = Math.round(capaW * 1.5);
+  const cheio = Math.round((capaW * data.percent) / 100);
+  return (
+    <FlexWidget
+      clickAction="OPEN_URI"
+      clickActionData={{ uri: 'readora://book/' + book.id }}
+      accessibilityLabel={book.title}
+      style={{ height: 'match_parent', width: 'match_parent', backgroundColor: COR.fundo, borderRadius: 22, padding: pad, flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+    >
+      {book.coverUrl ? (
+        <ImageWidget image={book.coverUrl as `https:${string}`} imageWidth={capaW} imageHeight={capaH} radius={8} />
+      ) : (
+        <FlexWidget style={{ width: capaW, height: capaH, borderRadius: 8, backgroundColor: '#1B1814', justifyContent: 'center', alignItems: 'center' }}>
+          <TextWidget text={book.title.slice(0, 1).toUpperCase()} style={{ fontSize: 28, fontWeight: '700', color: COR.ouro }} />
+        </FlexWidget>
+      )}
+      <FlexWidget style={{ width: capaW, height: barraAltura, borderRadius: 3, backgroundColor: COR.trilho, marginTop: 6 }}>
+        <FlexWidget style={{ width: cheio, height: barraAltura, borderRadius: 3, backgroundColor: COR.ouro }} />
       </FlexWidget>
     </FlexWidget>
   );

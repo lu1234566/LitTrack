@@ -25,5 +25,5 @@ export async function loadWidgetBooks(): Promise<Book[]> {
 export async function widgetTaskHandler({ widgetInfo, widgetAction, renderWidget }: WidgetTaskHandlerProps) {
   if (widgetAction === 'WIDGET_DELETED') return;
   const data = pickReadingWidgetData(await loadWidgetBooks());
-  renderWidget(<ReadingWidget data={data} width={widgetInfo.width} />);
+  renderWidget(<ReadingWidget data={data} width={widgetInfo.width} height={widgetInfo.height} />);
 }
