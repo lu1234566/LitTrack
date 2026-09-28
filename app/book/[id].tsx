@@ -10,12 +10,13 @@ import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { BookShareCard } from '@/components/BookShareCard';
 import { BookChat } from '@/components/BookChat';
 import { isAiConfigured } from '@/services/aiClient';
-import { appColors } from '@/theme/tokens';
+import { appColors, appFonts } from '@/theme/tokens';
 import { appLocale } from '@/services/i18n';
+import { seriesOfBook } from '@/services/series';
 
 export default function BookDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { getBook, updateProgress, updateStatus, deleteBook } = useBooks();
+  const { books, getBook, updateProgress, updateStatus, deleteBook } = useBooks();
   const book = useMemo(() => getBook(String(id)), [getBook, id]);
   const [page, setPage] = useState(book?.currentPage ? String(book.currentPage) : '');
   const [showCard, setShowCard] = useState(false);
@@ -24,7 +25,7 @@ export default function BookDetailsScreen() {
   if (!book) {
     return (
       <Screen>
-        <Text style={styles.title}>Livro nao encontrado</Text>
+        <Text style={styles.title}>Livro não encontrado</Text>
         <Text style={styles.muted}>Volte para a biblioteca e tente novamente.</Text>
       </Screen>
     );
@@ -36,7 +37,7 @@ export default function BookDetailsScreen() {
   async function handleProgress() {
     const rawPage = Number(page);
     if (Number.isNaN(rawPage)) {
-      Alert.alert('Pagina invalida', 'Digite um numero valido.');
+      Alert.alert('Página inválida', 'Digite um número válido.');
       return;
     }
     // O clamp espelha o que updateProgress aplica internamente.
@@ -49,6 +50,22 @@ export default function BookDetailsScreen() {
     await deleteBook(currentBook.id);
     router.replace('/library');
   }
+
+  // Posição do livro na série (deduzida do título), com os vizinhos.
+  const serie = seriesOfBook(currentBook, books);
+  const aqui = serie?.volumes.findIndex((v) => v.book.id === currentBook.id) ?? -1;
+  const anterior = serie && aqui > 0 ? serie.volumes[aqui - 1] : null;
+  const seguinte = serie && aqui >= 0 && aqui < serie.volumes.length - 1 ? serie.volumes[aqui + 1] : null;
+
+  const semGenero = !currentBook.genre || ['a definir', 'diverso', 'indefinido'].includes(currentBook.genre.trim().toLowerCase());
+  const detalhes = [
+    currentBook.rating ? { label: 'nota', value: currentBook.rating + '/5 ★' } : null,
+    !semGenero ? { label: 'gênero', value: currentBook.genre } : null,
+    currentBook.publisher ? { label: 'editora', value: currentBook.publisher } : null,
+    currentBook.publishedDate ? { label: 'ano', value: currentBook.publishedDate.slice(0, 4) } : null,
+    currentBook.finishedAt ? { label: 'mês de leitura', value: capitalize(new Date(currentBook.finishedAt).toLocaleDateString(appLocale, { month: 'short', year: 'numeric' })) } : null,
+    currentBook.isbn ? { label: 'ISBN', value: currentBook.isbn } : null
+  ].filter((item): item is { label: string; value: string } => Boolean(item));
 
   return (
     <Screen>
@@ -70,34 +87,53 @@ export default function BookDetailsScreen() {
       {showCard ? <BookShareCard book={currentBook} onClose={() => setShowCard(false)} /> : null}
       {showChat ? <BookChat book={currentBook} onClose={() => setShowChat(false)} /> : null}
       {isAiConfigured ? <Pressable style={[styles.startButton, styles.btnRow]} onPress={() => setShowChat(true)}><ReadoraIcon name="quotes" size={17} color={appColors.background} /><Text style={styles.startText}>Converse com o livro</Text></Pressable> : null}
-      {currentBook.status === 'wishlist' ? <Pressable style={[styles.startButton, styles.btnRow]} onPress={() => updateStatus(currentBook.id, 'reading')}><ReadoraIcon name="bookDetails" size={17} color={appColors.background} /><Text style={styles.startText}>Comecar leitura</Text></Pressable> : null}
+      {currentBook.status === 'wishlist' ? <Pressable style={[styles.startButton, styles.btnRow]} onPress={() => updateStatus(currentBook.id, 'reading')}><ReadoraIcon name="bookDetails" size={17} color={appColors.background} /><Text style={styles.startText}>Começar leitura</Text></Pressable> : null}
 
       <Card>
         <Text style={styles.cardTitle}>Progresso</Text>
-        <Text style={styles.progressText}>{progress}% concluido</Text>
+        <Text style={styles.progressText}>{progress}% concluído</Text>
         <View style={styles.progressTrack}><View style={[styles.progressFill, { width: percent(progress) }]} /></View>
-        <Text style={styles.muted}>{currentBook.currentPage || 0} de {currentBook.totalPages || 0} paginas</Text>
+        <Text style={styles.muted}>{currentBook.currentPage || 0} de {currentBook.totalPages || 0} páginas</Text>
       </Card>
 
-      <View style={styles.grid}>
-        <Card><Text style={styles.smallValue}>{currentBook.rating || 0}/5</Text><Text style={styles.smallLabel}>nota</Text></Card>
-        <Card><Text style={styles.smallValue}>{currentBook.publisher || '-'}</Text><Text style={styles.smallLabel}>editora</Text></Card>
-        <Card><Text style={styles.smallValue}>{currentBook.publishedDate || '-'}</Text><Text style={styles.smallLabel}>ano</Text></Card>
-        <Card><Text style={styles.smallValue}>{currentBook.genre || '-'}</Text><Text style={styles.smallLabel}>genero</Text></Card>
+      {/* Só o que foi preenchido. Antes todo campo aparecia, e um livro recém
+          cadastrado virava uma grade de "0/5", "-" e "-". */}
+      {serie && aqui >= 0 ? (
         <Card>
-          <Text style={styles.smallValue}>{currentBook.finishedAt ? capitalize(new Date(currentBook.finishedAt).toLocaleDateString(appLocale, { month: 'short', year: 'numeric' })) : '-'}</Text>
-          <Text style={styles.smallLabel}>mes de leitura</Text>
+          <Text style={styles.cardTitle}>Série</Text>
+          <Link href="/series" asChild>
+            <Pressable><Text style={styles.seriesName}>{serie.name}</Text></Pressable>
+          </Link>
+          <Text style={styles.muted}>
+            Volume {serie.volumes[aqui].volume} de {serie.lastVolume} · {serie.finished} lido(s)
+          </Text>
+          <View style={styles.seriesNav}>
+            {anterior ? (
+              <Link href={('/book/' + anterior.book.id) as never} asChild>
+                <Pressable style={styles.seriesButton}><ReadoraIcon name="back" size={15} color={appColors.gold} /><Text style={styles.secondaryText}>Vol. {anterior.volume}</Text></Pressable>
+              </Link>
+            ) : null}
+            {seguinte ? (
+              <Link href={('/book/' + seguinte.book.id) as never} asChild>
+                <Pressable style={styles.seriesButton}><Text style={styles.secondaryText}>Vol. {seguinte.volume}</Text><ReadoraIcon name="forward" size={15} color={appColors.gold} /></Pressable>
+              </Link>
+            ) : null}
+          </View>
         </Card>
-      </View>
+      ) : null}
 
-      <Card>
-        <Text style={styles.cardTitle}>Dados de importacao</Text>
-        <Text style={styles.body}>ISBN: {currentBook.isbn || 'nao informado'}</Text>
-        <Text style={styles.body}>Origem: {currentBook.notes || 'cadastro manual'}</Text>
-        <Text style={styles.body}>Capa: {currentBook.coverUrl ? 'configurada' : 'sem capa externa'}</Text>
-      </Card>
+      {detalhes.length ? (
+        <View style={styles.grid}>
+          {detalhes.map((item) => (
+            <Card key={item.label}>
+              <Text style={styles.smallValue}>{item.value}</Text>
+              <Text style={styles.smallLabel}>{item.label}</Text>
+            </Card>
+          ))}
+        </View>
+      ) : null}
 
-      <TextInput style={styles.input} placeholder="Pagina atual" placeholderTextColor={appColors.textDim} value={page} onChangeText={setPage} keyboardType="numeric" />
+      <TextInput style={styles.input} placeholder="Página atual" placeholderTextColor={appColors.textDim} value={page} onChangeText={setPage} keyboardType="numeric" />
       <Pressable style={[styles.primaryButton, styles.btnRow]} onPress={handleProgress}><ReadoraIcon name="trendingUp" size={17} color={appColors.background} /><Text style={styles.primaryText}>Atualizar progresso</Text></Pressable>
 
       <View style={styles.statusRow}>
@@ -109,7 +145,7 @@ export default function BookDetailsScreen() {
 
       {currentBook.contentWarnings ? <Card><Text style={[styles.cardTitle, { color: appColors.red }]}>Alertas de conteúdo</Text><Text style={styles.body}>{currentBook.contentWarnings}</Text></Card> : null}
       {currentBook.reasonToRead ? <Card><Text style={styles.cardTitle}>Motivo de leitura</Text><Text style={styles.body}>{currentBook.reasonToRead}</Text></Card> : null}
-      {currentBook.favoriteQuote ? <Card><Text style={styles.cardTitle}>Citacao favorita</Text><Text style={styles.quote}>{currentBook.favoriteQuote}</Text></Card> : null}
+      {currentBook.favoriteQuote ? <Card><Text style={styles.cardTitle}>Citação favorita</Text><Text style={styles.quote}>{currentBook.favoriteQuote}</Text></Card> : null}
       {currentBook.review ? <Card><Text style={styles.cardTitle}>Resenha</Text><Text style={styles.body}>{currentBook.review}</Text></Card> : null}
       {currentBook.notes ? <Card><Text style={styles.cardTitle}>Notas</Text><Text style={styles.body}>{currentBook.notes}</Text></Card> : null}
 
@@ -127,6 +163,9 @@ function percent(value: number) {
 }
 
 const styles = StyleSheet.create({
+  seriesName: { color: appColors.text, fontFamily: appFonts.display, fontSize: 22, fontWeight: '900' },
+  seriesNav: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
+  seriesButton: { flexDirection: 'row', alignItems: 'center', gap: 6, borderColor: appColors.gold, borderWidth: 1, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 9 },
   heroRow: { flexDirection: 'row', gap: 16, alignItems: 'center' },
   coverBox: { width: 92, height: 138, borderRadius: 18, backgroundColor: appColors.surface, borderColor: appColors.gold, borderWidth: 1, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   coverImage: { width: '100%', height: '100%' },

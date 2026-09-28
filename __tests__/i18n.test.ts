@@ -48,6 +48,13 @@ describe('traducao para ingles', () => {
       .toBe('• Vidas Secas: pages, synopsis (still missing cover)');
   });
 
+  it('acha a traducao com ou sem acento', () => {
+    // Corrigir "paginas lidas" para "páginas lidas" não pode desfazer o inglês.
+    expect(em('páginas lidas')).toBe('pages read');
+    expect(em('paginas lidas')).toBe('pages read');
+    expect(em('63% concluído')).toBe('63% complete');
+  });
+
   it('texto sem letras passa direto', () => {
     expect(em('4.5')).toBe('4.5');
     expect(em(' · ')).toBe(' · ');

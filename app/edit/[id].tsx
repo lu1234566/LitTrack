@@ -36,7 +36,7 @@ export default function EditBookScreen() {
   if (!book) {
     return (
       <Screen>
-        <Text style={styles.title}>Livro nao encontrado</Text>
+        <Text style={styles.title}>Livro não encontrado</Text>
       </Screen>
     );
   }
@@ -75,9 +75,9 @@ export default function EditBookScreen() {
         <View style={styles.titleRow}><ReadoraIcon name="editBook" size={26} color={appColors.gold} /><Text style={styles.title}>Editar livro</Text></View>
         <Text style={styles.subtitle}>Ajuste dados, capa, origem e progresso sem recriar o registro.</Text>
       </View>
-      <TextInput style={styles.input} placeholder="Titulo" placeholderTextColor={appColors.textDim} value={title} onChangeText={setTitle} />
+      <TextInput style={styles.input} placeholder="Título" placeholderTextColor={appColors.textDim} value={title} onChangeText={setTitle} />
       <TextInput style={styles.input} placeholder="Autor" placeholderTextColor={appColors.textDim} value={author} onChangeText={setAuthor} />
-      <TextInput style={styles.input} placeholder="Genero" placeholderTextColor={appColors.textDim} value={genre} onChangeText={setGenre} />
+      <TextInput style={styles.input} placeholder="Gênero" placeholderTextColor={appColors.textDim} value={genre} onChangeText={setGenre} />
       <View style={styles.row}>
         <TextInput style={[styles.input, styles.half]} placeholder="Editora" placeholderTextColor={appColors.textDim} value={publisher} onChangeText={setPublisher} />
         <TextInput style={[styles.input, styles.half]} placeholder="Ano" placeholderTextColor={appColors.textDim} value={year} onChangeText={setYear} keyboardType="numeric" />
@@ -89,8 +89,8 @@ export default function EditBookScreen() {
 
       <TextInput style={styles.input} placeholder="Origem/fonte" placeholderTextColor={appColors.textDim} value={source} onChangeText={setSource} />
       <View style={styles.row}>
-        <TextInput style={[styles.input, styles.half]} placeholder="Paginas" placeholderTextColor={appColors.textDim} value={totalPages} onChangeText={setTotalPages} keyboardType="numeric" />
-        <TextInput style={[styles.input, styles.half]} placeholder="Pagina atual" placeholderTextColor={appColors.textDim} value={currentPage} onChangeText={setCurrentPage} keyboardType="numeric" />
+        <TextInput style={[styles.input, styles.half]} placeholder="Páginas" placeholderTextColor={appColors.textDim} value={totalPages} onChangeText={setTotalPages} keyboardType="numeric" />
+        <TextInput style={[styles.input, styles.half]} placeholder="Página atual" placeholderTextColor={appColors.textDim} value={currentPage} onChangeText={setCurrentPage} keyboardType="numeric" />
       </View>
       <TextInput style={styles.input} placeholder="Nota (use .5 para meia-estrela, ex: 4.5)" placeholderTextColor={appColors.textDim} value={rating} onChangeText={setRating} keyboardType="numeric" />
       <View style={styles.statusRow}>
@@ -108,10 +108,10 @@ export default function EditBookScreen() {
       />
 
       <TextInput style={styles.textArea} placeholder="Motivo de leitura" placeholderTextColor={appColors.textDim} value={reason} onChangeText={setReason} multiline />
-      <TextInput style={styles.textArea} placeholder="Citacao favorita" placeholderTextColor={appColors.textDim} value={quote} onChangeText={setQuote} multiline />
+      <TextInput style={styles.textArea} placeholder="Citação favorita" placeholderTextColor={appColors.textDim} value={quote} onChangeText={setQuote} multiline />
       <TextInput style={styles.textArea} placeholder="Resenha" placeholderTextColor={appColors.textDim} value={review} onChangeText={setReview} multiline />
       <TextInput style={styles.input} placeholder="Alertas de conteúdo (separe por vírgula)" placeholderTextColor={appColors.textDim} value={contentWarnings} onChangeText={setContentWarnings} />
-      <Pressable style={[styles.saveButton, styles.btnRow]} onPress={handleSave}><ReadoraIcon name="check" size={17} color={appColors.background} /><Text style={styles.saveText}>Salvar alteracoes</Text></Pressable>
+      <Pressable style={[styles.saveButton, styles.btnRow]} onPress={handleSave}><ReadoraIcon name="check" size={17} color={appColors.background} /><Text style={styles.saveText}>Salvar alterações</Text></Pressable>
     </Screen>
   );
 }

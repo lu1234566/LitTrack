@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router';
 import { useEffect } from 'react';
-import { Text as RNText, TextInput as RNTextInput } from 'react-native';
+import { Image, Text as RNText, TextInput as RNTextInput } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
@@ -10,6 +10,7 @@ import { AutoSyncBridge } from '@/components/AutoSyncBridge';
 import { UpdateBanner } from '@/components/UpdateBanner';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { installAlertTranslation } from '@/components/TranslatedText';
+import { setImageSizer } from '@/services/coverProbe';
 import { BookProvider } from '@/contexts/BookContext';
 import { PreferencesProvider } from '@/contexts/PreferencesContext';
 import { QuoteProvider } from '@/contexts/QuoteContext';
@@ -32,6 +33,9 @@ const textDefaults = { allowFontScaling: false, style: { fontFamily: appFonts.bo
 
 // Alertas do sistema no idioma do aparelho (os <Text> já traduzem sozinhos).
 installAlertTranslation();
+
+// A sonda de capas mede imagens para achar o "image not available" do Google.
+setImageSizer((url) => new Promise((resolve, reject) => Image.getSize(url, (width, height) => resolve({ width, height }), reject)));
 
 // Chave do armazenamento local das sessões de leitura, recurso removido do app.
 // Nada mais lê esses dados; apagar libera espaço e evita que um backup antigo
@@ -67,18 +71,18 @@ export default function RootLayout() {
                 >
                   <Stack.Screen name="index" options={{ title: 'Readora' }} />
                   <Stack.Screen name="library" options={{ title: 'Biblioteca' }} />
+                  <Stack.Screen name="series" options={{ title: 'Séries' }} />
                   <Stack.Screen name="discover" options={{ title: 'Descobrir' }} />
                   <Stack.Screen name="account" options={{ title: 'Conta' }} />
                   <Stack.Screen name="progress" options={{ title: 'Progresso' }} />
-                  <Stack.Screen name="appearance" options={{ title: 'Aparencia' }} />
-                  <Stack.Screen name="product-status" options={{ title: 'Status' }} />
+                  <Stack.Screen name="appearance" options={{ title: 'Aparência' }} />
                   <Stack.Screen name="insights" options={{ title: 'Insights' }} />
                   <Stack.Screen name="backup" options={{ title: 'Backup' }} />
                   <Stack.Screen name="add" options={{ title: 'Adicionar livro' }} />
                   <Stack.Screen name="edit/[id]" options={{ title: 'Editar livro' }} />
                   <Stack.Screen name="book/[id]" options={{ title: 'Detalhes' }} />
                   <Stack.Screen name="goals" options={{ title: 'Metas' }} />
-                  <Stack.Screen name="quotes" options={{ title: 'Citacoes' }} />
+                  <Stack.Screen name="quotes" options={{ title: 'Citações' }} />
                   <Stack.Screen name="shelves" options={{ title: 'Estantes' }} />
                   <Stack.Screen name="shelf/[id]" options={{ title: 'Estante' }} />
                   <Stack.Screen name="timeline" options={{ title: 'Timeline' }} />

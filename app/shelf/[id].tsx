@@ -29,7 +29,7 @@ export default function ShelfDetailScreen() {
   if (!shelf) {
     return (
       <Screen>
-        <Text style={styles.title}>Estante nao encontrada</Text>
+        <Text style={styles.title}>Estante não encontrada</Text>
       </Screen>
     );
   }
@@ -55,24 +55,24 @@ export default function ShelfDetailScreen() {
         <Card>
           <Text style={styles.kicker}>Editar estante</Text>
           <TextInput style={styles.input} placeholder="Nome" placeholderTextColor={appColors.textDim} value={name} onChangeText={setName} />
-          <TextInput style={styles.input} placeholder="Descricao" placeholderTextColor={appColors.textDim} value={description} onChangeText={setDescription} />
+          <TextInput style={styles.input} placeholder="Descrição" placeholderTextColor={appColors.textDim} value={description} onChangeText={setDescription} />
           <Pressable style={styles.button} onPress={saveEditing}><Text style={styles.buttonText}>Salvar estante</Text></Pressable>
         </Card>
       ) : (
         <>
           <Text style={styles.title}>{currentShelf.name}</Text>
-          <Text style={styles.subtitle}>{currentShelf.description || 'Colecao manual do Readora.'}</Text>
-          <Pressable style={styles.outlineButton} onPress={startEditing}><Text style={styles.outlineText}>Editar nome e descricao</Text></Pressable>
+          <Text style={styles.subtitle}>{currentShelf.description || 'Coleção manual do Readora.'}</Text>
+          <Pressable style={styles.outlineButton} onPress={startEditing}><Text style={styles.outlineText}>Editar nome e descrição</Text></Pressable>
         </>
       )}
 
       <View style={styles.grid}>
         <Card><Text style={styles.big}>{shelfBooks.length}</Text><Text style={styles.label}>livros</Text></Card>
-        <Card><Text style={styles.big}>{shelfBooks.reduce((sum, book) => sum + (book.totalPages || 0), 0)}</Text><Text style={styles.label}>paginas</Text></Card>
+        <Card><Text style={styles.big}>{shelfBooks.reduce((sum, book) => sum + (book.totalPages || 0), 0)}</Text><Text style={styles.label}>páginas</Text></Card>
       </View>
 
       <Text style={styles.section}>Livros da estante</Text>
-      {shelfBooks.length === 0 ? <Text style={styles.muted}>Ainda nao ha livros nesta estante.</Text> : null}
+      {shelfBooks.length === 0 ? <Text style={styles.muted}>Ainda não há livros nesta estante.</Text> : null}
       {/* Miniaturas, como arquivos numa pasta: a estante é uma coleção visual,
           e a capa identifica o livro mais rápido do que uma linha de texto.
           As outras telas seguem com a lista detalhada do BookCard. */}
@@ -90,7 +90,7 @@ export default function ShelfDetailScreen() {
 
       <Text style={styles.section}>Adicionar ou remover</Text>
       <Card>
-        <Text style={styles.kicker}>Disponiveis</Text>
+        <Text style={styles.kicker}>Disponíveis</Text>
         <View style={styles.bookList}>
           {[...shelfBooks, ...otherBooks].map((book) => {
             const active = currentShelf.bookIds.includes(book.id);

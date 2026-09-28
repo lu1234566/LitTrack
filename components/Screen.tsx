@@ -15,6 +15,7 @@ const menuItems: { icon: ReadoraIconName; label: string; href: string }[] = [
   { icon: 'dashboard', label: 'Dashboard', href: '/' },
   { icon: 'library', label: 'Meus Livros', href: '/library' },
   { icon: 'shelves', label: 'Minhas Estantes', href: '/shelves' },
+  { icon: 'series', label: 'Séries', href: '/series' },
   { icon: 'search', label: 'Pesquisar Livros', href: '/search' },
   { icon: 'quotes', label: 'Citações', href: '/quotes' },
   { icon: 'literaryProfile', label: 'Perfil Literário', href: '/literary-profile' },

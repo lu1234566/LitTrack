@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { resolveCoverUrl } from '@/services/coverProbe';
 import { Image, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/TranslatedText';
 import { Book } from '@/types/book';
@@ -30,7 +31,17 @@ export function BookCover({
   // do livro. Cair no cartão editorial é sempre melhor do que não mostrar nada.
   const [failed, setFailed] = useState(false);
   // http:// e bloqueado no Android em producao; sobe para https.
-  const uri = book.coverUrl?.replace(/^http:\/\//i, 'https://');
+  const original = book.coverUrl?.replace(/^http:\/\//i, 'https://');
+  // Capas salvas antes da correção podem ser o zoom=2 falso ("image not
+  // available"): a miniatura real do mesmo volume entra no lugar.
+  const [uri, setUri] = useState(original);
+  useEffect(() => {
+    let vivo = true;
+    setUri(original);
+    setFailed(false);
+    if (original) resolveCoverUrl(original).then((u) => { if (vivo) setUri(u); });
+    return () => { vivo = false; };
+  }, [original]);
   const showImage = Boolean(uri) && !failed;
   return (
     <View style={[styles.cover, { height, borderRadius: radius }]}>

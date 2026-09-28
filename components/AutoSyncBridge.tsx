@@ -117,7 +117,7 @@ export function AutoSyncBridge() {
           await AsyncStorage.setItem(SYNC_KEY, String(ts));
           setStatus('Sincronizado · ' + formatSyncTime(ts));
         } else {
-          setStatus('Firebase não configurado.');
+          setStatus('Sincronização indisponível.');
         }
       } catch {
         setStatus('Erro ao sincronizar com a nuvem.');

@@ -71,13 +71,13 @@ export default function AccountScreen() {
       <View style={styles.header}>
         <Text style={styles.kicker}>CONTA E NUVEM</Text>
         <Text style={styles.title}>Conta Readora</Text>
-        <Text style={styles.subtitle}>Conecte sua conta Google para ativar autenticação Firebase e sincronização automática dos seus dados.</Text>
+        <Text style={styles.subtitle}>Entre com sua conta Google para guardar seus livros na nuvem e acessá-los em qualquer aparelho e no site.</Text>
       </View>
 
       <Card>
         <Text style={styles.cardTitle}>Status da conta</Text>
         <Text style={styles.value}>{user ? 'Conectado' : 'Modo local'}</Text>
-        <Text style={styles.body}>{isGoogleLoginPrepared ? 'Firebase e Google Client IDs detectados. O login real está disponível.' : 'Configure Firebase e Google Client IDs para ativar a conta real.'}</Text>
+        <Text style={styles.body}>{user ? 'Seus dados estão sendo sincronizados com a nuvem.' : isGoogleLoginPrepared ? 'Seus dados ficam só neste aparelho até você entrar.' : 'O login não está disponível nesta versão do app.'}</Text>
       </Card>
 
       {user ? (
@@ -95,7 +95,7 @@ export default function AccountScreen() {
       ) : (
         <Card>
           <Text style={styles.cardTitle}>Entrar com Google</Text>
-          <Text style={styles.body}>Use o fluxo de login do Google para criar uma sessão Firebase real. Confira se as variáveis de ambiente foram preenchidas antes de testar.</Text>
+          <Text style={styles.body}>Com a conta, seus livros, citações e estantes ficam salvos na nuvem e aparecem também no site. Sem ela, tudo continua funcionando, só que apenas neste aparelho.</Text>
           <Pressable style={[styles.button, busy && styles.buttonDisabled]} onPress={handleConnect} disabled={busy}><Text style={styles.buttonText}>{busy ? 'Conectando...' : 'Conectar conta Google'}</Text></Pressable>
         </Card>
       )}

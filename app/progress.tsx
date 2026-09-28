@@ -29,13 +29,13 @@ export default function ProgressScreen() {
         <Text style={styles.kicker}>Meta anual</Text>
         <Text style={styles.big}>{stats.finishedBooks}/{preferences.yearlyGoal}</Text>
         <View style={styles.track}><View style={[styles.fill, { width: percent(goalProgress) }]} /></View>
-        <Text style={styles.body}>{goalProgress}% da meta anual concluida.</Text>
+        <Text style={styles.body}>{goalProgress}% da meta anual concluída.</Text>
       </Card>
 
       <View style={styles.grid}>
         <Card><Text style={styles.big}>{unlocked}/{achievements.length}</Text><Text style={styles.label}>conquistas</Text></Card>
-        <Card><Text style={styles.big}>{stats.finishedBooks}</Text><Text style={styles.label}>livros concluidos</Text></Card>
-        <Card><Text style={styles.big}>{stats.pagesRead.toLocaleString(appLocale)}</Text><Text style={styles.label}>paginas lidas</Text></Card>
+        <Card><Text style={styles.big}>{stats.finishedBooks}</Text><Text style={styles.label}>livros concluídos</Text></Card>
+        <Card><Text style={styles.big}>{stats.pagesRead.toLocaleString(appLocale)}</Text><Text style={styles.label}>páginas lidas</Text></Card>
       </View>
 
       <Text style={styles.section}>Conquistas</Text>

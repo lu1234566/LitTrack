@@ -34,7 +34,7 @@ export default function YearlyComparisonScreen() {
           <View style={styles.grid}>
             <View style={styles.item}><Text style={styles.big}>{row.books}</Text><Text style={styles.label}>livros</Text></View>
             <View style={styles.item}><Text style={styles.big}>{row.finished}</Text><Text style={styles.label}>lidos</Text></View>
-            <View style={styles.item}><Text style={styles.big}>{row.pages.toLocaleString(appLocale)}</Text><Text style={styles.label}>paginas</Text></View>
+            <View style={styles.item}><Text style={styles.big}>{row.pages.toLocaleString(appLocale)}</Text><Text style={styles.label}>páginas</Text></View>
             <View style={styles.item}><Text style={styles.big}>{row.rated}</Text><Text style={styles.label}>avaliados</Text></View>
           </View>
         </Card>

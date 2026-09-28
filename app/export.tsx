@@ -21,9 +21,9 @@ export default function ExportScreen() {
       <Text style={styles.title}>Exportar</Text>
       <Text style={styles.subtitle}>Previa do backup local com todos os dados principais.</Text>
       <Card>
-        <Text style={styles.kicker}>Conteudo pronto para backup</Text>
-        <Text style={styles.body}>{books.length} livros, {quotes.length} citacoes e {shelves.length} estantes.</Text>
-        <Text style={styles.body}>{stats.pagesRead} paginas, genero principal {stats.favoriteGenre}.</Text>
+        <Text style={styles.kicker}>Conteúdo pronto para backup</Text>
+        <Text style={styles.body}>{books.length} livros, {quotes.length} citações e {shelves.length} estantes.</Text>
+        <Text style={styles.body}>{stats.pagesRead} páginas, gênero principal {stats.favoriteGenre}.</Text>
         <Text style={styles.body}>Leitor: {preferences.readerName}. Meta anual: {preferences.yearlyGoal} livros.</Text>
       </Card>
       <Card>

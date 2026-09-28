@@ -44,7 +44,7 @@ export default function DashboardScreen() {
   return (
     <Screen>
       <View style={styles.heroCard}>
-        <Text style={styles.heroKicker}>READORA — LITERARY JOURNAL</Text>
+        <Text style={[styles.heroKicker, mobile && styles.heroKickerMobile]} numberOfLines={1} adjustsFontSizeToFit>READORA — LITERARY JOURNAL</Text>
         <Text style={[styles.heroTitle, mobile && styles.heroTitleMobile]}>Readora</Text>
         <Text style={styles.heroQuote}>“Os livros são uma forma única de magia portátil.” — Stephen King</Text>
         {/* As capas do que voce ja leu, no lugar dos dois botoes que antes
@@ -71,11 +71,14 @@ export default function DashboardScreen() {
         <Text style={styles.heroWatermark}>R</Text>
       </View>
 
+      {/* No celular: dois cartões por linha, e o livro em foco na linha toda
+          (o título é longo). Antes cada cartão tinha a largura do conteúdo e
+          sobrava um vazio do lado. O ano vem do relógio, não mais fixo. */}
       <View style={[styles.statsGrid, mobile && styles.mobileGrid]}>
-        <Metric label="OBRAS EM 2026" value={String(stats.finishedBooks)} />
-        <Metric label="PÁGINAS DO CICLO" value={stats.pagesRead + ' pág.'} />
-        <Metric label="MÉDIA CRÍTICA" value={stats.averageRating.toFixed(1)} accent />
-        <Metric label="EM FOCO" value={books.find((book) => book.status === 'reading')?.title || '—'} />
+        <Metric grow={!mobile} label={'OBRAS EM ' + year} value={String(finishedThisYear)} half={mobile} />
+        <Metric grow={!mobile} label="MÉDIA CRÍTICA" value={stats.averageRating.toFixed(1)} accent half={mobile} />
+        <Metric grow={!mobile} label="PÁGINAS DO CICLO" value={stats.pagesRead.toLocaleString(appLocale) + ' pág.'} half={mobile} wide />
+        <Metric grow={!mobile} label="EM FOCO" value={books.find((book) => book.status === 'reading')?.title || '—'} half={mobile} wide />
       </View>
 
       <SectionHeader color={appColors.emerald} title={'Meta de ' + year} action="AJUSTAR" href="/settings" />
@@ -131,20 +134,22 @@ export default function DashboardScreen() {
       </View>
 
       <View style={[styles.bottomStats, mobile && styles.stack]}>
-        <Metric label="ACERVO TOTAL" value={stats.totalBooks + ' Livros'} />
-        <Metric label="HORIZONTES" value={stats.finishedBooks + ' Lidos'} />
-        <Metric label="PAGINAS LIDAS" value={stats.pagesRead.toLocaleString(appLocale)} />
+        <Metric grow={!mobile} label="ACERVO TOTAL" value={stats.totalBooks + ' Livros'} />
+        <Metric grow={!mobile} label="HORIZONTES" value={stats.finishedBooks + ' Lidos'} />
+        <Metric grow={!mobile} label="PÁGINAS LIDAS" value={stats.pagesRead.toLocaleString(appLocale)} />
       </View>
     </Screen>
   );
 }
 
-function Metric({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
+function Metric({ label, value, accent = false, half = false, wide = false, grow = false }: { label: string; value: string; accent?: boolean; half?: boolean; wide?: boolean; grow?: boolean }) {
   return (
-    <Card>
-      <Text style={styles.metricLabel}>{label}</Text>
-      <Text style={[styles.metricValue, accent && styles.metricAccent]} numberOfLines={1}>{value}</Text>
-    </Card>
+    <View style={[styles.metricCell, grow && styles.metricGrow, half && (wide ? styles.metricFull : styles.metricHalf)]}>
+      <Card>
+        <Text style={[styles.metricLabel, half && !wide && styles.metricLabelTight]} numberOfLines={1} adjustsFontSizeToFit>{label}</Text>
+        <Text style={[styles.metricValue, accent && styles.metricAccent]} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
+      </Card>
+    </View>
   );
 }
 
@@ -176,6 +181,7 @@ function buildShelfCards(shelves: Array<{ name: string; description?: string; co
 const styles = StyleSheet.create({
   heroCard: { minHeight: 330, borderColor: appColors.borderSoft, borderWidth: 1, borderRadius: 54, padding: 42, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', backgroundColor: appColors.backgroundSoft, gap: 14 },
   heroKicker: { color: appColors.textDim, letterSpacing: 8, fontSize: 11, fontWeight: '900' },
+  heroKickerMobile: { letterSpacing: 3, textAlign: 'center', alignSelf: 'stretch' },
   heroTitle: { color: appColors.text, fontFamily: appFonts.display, fontSize: 72, lineHeight: 80, fontWeight: '900' },
   heroTitleMobile: { fontSize: 44, lineHeight: 50 },
   heroQuote: { color: appColors.text, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 18, textAlign: 'center', maxWidth: 520 },
@@ -188,7 +194,12 @@ const styles = StyleSheet.create({
   heroEmpty: { color: appColors.textDim, fontSize: 13, textAlign: 'center', maxWidth: 380, marginTop: 18, lineHeight: 20 },
   stack: { flexDirection: 'column', alignItems: 'stretch' },
   statsGrid: { flexDirection: 'row', gap: 18 },
-  mobileGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  mobileGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  metricCell: { minWidth: 0 },
+  metricGrow: { flex: 1 },
+  metricHalf: { flexBasis: '47%', flexGrow: 1 },
+  metricFull: { flexBasis: '100%' },
+  metricLabelTight: { letterSpacing: 1.5 },
   metricLabel: { color: appColors.textDim, fontSize: 11, fontWeight: '900', letterSpacing: 4 },
   metricValue: { color: appColors.text, fontSize: 34, fontWeight: '900' },
   metricAccent: { color: appColors.gold },

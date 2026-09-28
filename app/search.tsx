@@ -35,14 +35,14 @@ export default function SearchScreen() {
   return (
     <Screen>
       <Text style={styles.title}>Pesquisa</Text>
-      <Text style={styles.subtitle}>Busca unificada em livros, citacoes e estantes.</Text>
+      <Text style={styles.subtitle}>Busca unificada em livros, citações e estantes.</Text>
       <TextInput style={styles.input} placeholder="Digite aqui" placeholderTextColor={appColors.textDim} value={text} onChangeText={setText} />
-      <Text style={styles.count}>{bookResults.length} livro(s), {quoteResults.length} citacao(oes), {shelfResults.length} estante(s)</Text>
+      <Text style={styles.count}>{bookResults.length} livro(s), {quoteResults.length} citação(ões), {shelfResults.length} estante(s)</Text>
 
       <Text style={styles.section}>Livros</Text>
       {bookResults.map((book) => <BookCard key={book.id} book={book} />)}
 
-      <Text style={styles.section}>Citacoes</Text>
+      <Text style={styles.section}>Citações</Text>
       {quoteResults.map((quote) => (
         <Card key={quote.id}>
           <Text style={styles.quote}>{quote.text}</Text>
@@ -59,7 +59,7 @@ export default function SearchScreen() {
                 <Text style={styles.shelf}>{shelf.name}</Text>
                 <Text style={styles.meta}>{shelf.bookIds.length} livros</Text>
               </View>
-              <Text style={styles.meta}>{shelf.description || 'Sem descricao.'}</Text>
+              <Text style={styles.meta}>{shelf.description || 'Sem descrição.'}</Text>
             </Card>
           </Pressable>
         </Link>

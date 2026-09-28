@@ -12,6 +12,13 @@ import { appColors, appFonts } from '@/theme/tokens';
 
 const filters: Array<'all' | BookStatus> = ['all', 'wishlist', 'finished', 'reading', 'dnf'];
 const sortOptions = ['recentes', 'nota', 'titulo', 'paginas'] as const;
+// As chaves acima são internas; o que aparece na tela é isto.
+const sortLabels: Record<(typeof sortOptions)[number], string> = {
+  recentes: 'Mais Recentes',
+  nota: 'Melhor nota',
+  titulo: 'Título (A–Z)',
+  paginas: 'Mais páginas'
+};
 
 type SortOption = typeof sortOptions[number];
 
@@ -85,7 +92,7 @@ export default function LibraryScreen() {
           <View style={styles.selectRow}>
             <FilterSelect label={genreFilter === 'all' ? 'Todas' : genreFilter} />
             <FilterSelect label={filter === 'all' ? 'Todos' : labelFor(filter)} />
-            <FilterSelect label={sortBy === 'recentes' ? 'Mais Recentes' : sortBy} onPress={() => setSortBy(nextSort(sortBy))} />
+            <FilterSelect label={sortLabels[sortBy]} onPress={() => setSortBy(nextSort(sortBy))} />
           </View>
         </View>
       </Card>

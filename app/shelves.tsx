@@ -38,14 +38,14 @@ export default function ShelvesScreen() {
       <View style={styles.header}>
         <Text style={styles.kicker}>MINHAS ESTANTES</Text>
         <Text style={styles.title}>Estantes</Text>
-        <Text style={styles.subtitle}>Colecoes manuais para agrupar leituras do seu jeito.</Text>
+        <Text style={styles.subtitle}>Coleções manuais para agrupar leituras do seu jeito.</Text>
       </View>
 
       {creating ? (
         <Card>
           <Text style={styles.cardKicker}>NOVA ESTANTE</Text>
           <TextInput style={styles.input} placeholder="Nome da estante" placeholderTextColor={appColors.textDim} value={name} onChangeText={setName} autoFocus />
-          <TextInput style={styles.input} placeholder="Descricao (opcional)" placeholderTextColor={appColors.textDim} value={description} onChangeText={setDescription} />
+          <TextInput style={styles.input} placeholder="Descrição (opcional)" placeholderTextColor={appColors.textDim} value={description} onChangeText={setDescription} />
           <View style={styles.formActions}>
             <Pressable style={[styles.primaryButton, !name.trim() && styles.disabled]} onPress={handleAdd} disabled={!name.trim()}>
               <ReadoraIcon name="shelves" size={16} color={appColors.background} />
@@ -67,7 +67,7 @@ export default function ShelvesScreen() {
         <View style={styles.empty}>
           <ReadoraIcon name="shelves" size={48} color={appColors.gold} />
           <Text style={styles.emptyTitle}>Nenhuma estante ainda</Text>
-          <Text style={styles.emptyText}>Agrupe leituras por autor, humor, ano ou o criterio que fizer sentido para voce.</Text>
+          <Text style={styles.emptyText}>Agrupe leituras por autor, humor, ano ou o critério que fizer sentido para você.</Text>
         </View>
       ) : null}
 
@@ -108,7 +108,7 @@ export default function ShelvesScreen() {
               <Text style={styles.emptyShelf}>Estante vazia — abra para escolher os livros.</Text>
             )}
 
-            {pages > 0 ? <Text style={styles.meta}>{pages.toLocaleString(appLocale)} paginas no total</Text> : null}
+            {pages > 0 ? <Text style={styles.meta}>{pages.toLocaleString(appLocale)} páginas no total</Text> : null}
 
             <View style={[styles.actions, mobile && styles.actionsStacked]}>
               <Link href={{ pathname: '/shelf/[id]', params: { id: shelf.id } }} asChild>

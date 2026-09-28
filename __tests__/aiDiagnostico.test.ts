@@ -1,5 +1,5 @@
 import { aiDiagnostico } from '@/services/bookEnrichment';
-import { coverLooksReal, resetCoverProbeCache } from '@/services/coverProbe';
+import { coverLooksReal, resetCoverProbeCache, resolveCoverUrl, setImageSizer } from '@/services/coverProbe';
 
 /**
  * As tres falhas da IA devolviam `null` identico: chave ausente, chave
@@ -83,5 +83,30 @@ describe('sonda de capa', () => {
     await coverLooksReal('https://x/mesma.jpg');
     await coverLooksReal('https://x/mesma.jpg');
     expect(f).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('zoom=2 falso do Google', () => {
+  beforeEach(() => { resetCoverProbeCache(); });
+  afterEach(() => { (global as any).fetch = undefined; });
+  const grande = 'https://books.google.com/books/content?id=abc&printsec=frontcover&img=1&zoom=2';
+
+  it('imagem pequena no zoom=2 e o aviso "image not available": volta para zoom=1', async () => {
+    setImageSizer(async () => ({ width: 128, height: 190 }));
+    expect(await resolveCoverUrl(grande)).toContain('zoom=1');
+    expect(await coverLooksReal(grande)).toBe(false);
+  });
+
+  it('capa zoom=2 de verdade fica como esta', async () => {
+    setImageSizer(async () => ({ width: 575, height: 880 }));
+    (global as any).fetch = jest.fn(() => Promise.resolve({ ok: true, url: grande, headers: { get: (h: string) => (h === 'content-type' ? 'image/jpeg' : '90000') } }));
+    expect(await resolveCoverUrl(grande)).toBe(grande);
+    expect(await coverLooksReal(grande)).toBe(true);
+  });
+
+  it('nao mexe em capa de outra fonte', async () => {
+    setImageSizer(async () => ({ width: 50, height: 50 }));
+    const ol = 'https://covers.openlibrary.org/b/isbn/1-M.jpg?default=false';
+    expect(await resolveCoverUrl(ol)).toBe(ol);
   });
 });

@@ -21,17 +21,17 @@ export default function InsightsScreen() {
   return (
     <Screen>
       <Text style={styles.title}>Insights</Text>
-      <Text style={styles.subtitle}>Leitura analitica dos seus autores, generos, citacoes, humores e ritmo.</Text>
+      <Text style={styles.subtitle}>Leitura analítica dos seus autores, gêneros, citações, humores e ritmo.</Text>
 
       <View style={styles.grid}>
-        <Card><Text style={styles.big}>{insights.totalPages.toLocaleString(appLocale)}</Text><Text style={styles.label}>paginas lidas</Text></Card>
-        <Card><Text style={styles.big}>{insights.averagePagesPerBook}</Text><Text style={styles.label}>paginas por livro</Text></Card>
+        <Card><Text style={styles.big}>{insights.totalPages.toLocaleString(appLocale)}</Text><Text style={styles.label}>páginas lidas</Text></Card>
+        <Card><Text style={styles.big}>{insights.averagePagesPerBook}</Text><Text style={styles.label}>páginas por livro</Text></Card>
       </View>
 
       <Card>
         <Text style={styles.kicker}>Diversidade de leitura</Text>
         <View style={styles.divRow}>
-          <View style={styles.divStat}><Text style={styles.big}>{diversity.distinctGenres}</Text><Text style={styles.label}>generos</Text></View>
+          <View style={styles.divStat}><Text style={styles.big}>{diversity.distinctGenres}</Text><Text style={styles.label}>gêneros</Text></View>
           <View style={styles.divStat}><Text style={styles.big}>{diversity.distinctAuthors}</Text><Text style={styles.label}>autores</Text></View>
           <View style={styles.divStat}><Text style={styles.big}>{diversity.spanYears || '—'}</Text><Text style={styles.label}>anos de span</Text></View>
         </View>
@@ -53,8 +53,8 @@ export default function InsightsScreen() {
       </Card>
 
       <InsightList title="Autores recorrentes" items={insights.topAuthors} />
-      <InsightList title="Generos fortes" items={insights.topGenres} />
-      <InsightList title="Tags das citacoes" items={insights.topQuoteTags} />
+      <InsightList title="Gêneros fortes" items={insights.topGenres} />
+      <InsightList title="Tags das citações" items={insights.topQuoteTags} />
       <InsightList title="Humores de leitura" items={insights.topMoods} />
 
       <Card>

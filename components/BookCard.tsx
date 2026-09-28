@@ -30,7 +30,7 @@ export function BookCard({ book }: { book: Book }) {
           <View style={styles.progressTrack}>
             <View style={[styles.progressFill, { width: percent(progress) }]} />
           </View>
-          <Text style={styles.progressText}>{progress}% concluido</Text>
+          <Text style={styles.progressText}>{progress}% concluído</Text>
         </View>
       </Pressable>
     </Link>

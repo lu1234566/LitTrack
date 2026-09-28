@@ -26,15 +26,15 @@ export default function GoalsScreen() {
         <Text style={styles.kicker}>Meta anual</Text>
         <Text style={styles.big}>{stats.finishedBooks}/{preferences.yearlyGoal}</Text>
         <View style={styles.progressTrack}><View style={[styles.progressFill, { width: percent(progress) }]} /></View>
-        <Text style={styles.body}>{progress}% concluido. Faltam {Math.max(0, preferences.yearlyGoal - stats.finishedBooks)} livro(s).</Text>
+        <Text style={styles.body}>{progress}% concluído. Faltam {Math.max(0, preferences.yearlyGoal - stats.finishedBooks)} livro(s).</Text>
       </Card>
       <Card>
-        <Text style={styles.kicker}>Paginas</Text>
+        <Text style={styles.kicker}>Páginas</Text>
         <Text style={styles.big}>{stats.pagesRead}</Text>
-        <Text style={styles.body}>Meta diaria atual: {preferences.dailyPageGoal} paginas.</Text>
+        <Text style={styles.body}>Meta diária atual: {preferences.dailyPageGoal} páginas.</Text>
       </Card>
       <TextInput style={styles.input} placeholder="Meta anual de livros" placeholderTextColor={appColors.textDim} value={yearlyGoal} onChangeText={setYearlyGoal} keyboardType="numeric" />
-      <TextInput style={styles.input} placeholder="Meta diaria de paginas" placeholderTextColor={appColors.textDim} value={dailyGoal} onChangeText={setDailyGoal} keyboardType="numeric" />
+      <TextInput style={styles.input} placeholder="Meta diária de páginas" placeholderTextColor={appColors.textDim} value={dailyGoal} onChangeText={setDailyGoal} keyboardType="numeric" />
       <Pressable style={styles.button} onPress={saveGoals}><Text style={styles.buttonText}>Salvar metas</Text></Pressable>
     </Screen>
   );

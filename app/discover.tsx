@@ -20,7 +20,7 @@ const instantResults: ExternalBook[] = [
     totalPages: 468,
     isbn: '9788532518485',
     coverUrl: 'https://covers.openlibrary.org/b/isbn/9780375826689-L.jpg',
-    description: 'Um jovem encontra uma pedra azul que revela ser um ovo de dragao, iniciando uma jornada em Alagaesia.',
+    description: 'Um jovem encontra uma pedra azul que revela ser um ovo de dragão, iniciando uma jornada em Alagaesia.',
     source: 'open-library'
   },
   {
@@ -33,7 +33,7 @@ const instantResults: ExternalBook[] = [
     totalPages: 748,
     isbn: '9780375826726',
     coverUrl: 'https://covers.openlibrary.org/b/isbn/9780375826726-L.jpg',
-    description: 'A saga de Eragon continua em meio a aliancas, conflitos e descobertas sobre os Cavaleiros de Dragao.',
+    description: 'A saga de Eragon continua em meio a alianças, conflitos e descobertas sobre os Cavaleiros de Dragão.',
     source: 'open-library'
   }
 ];
@@ -79,7 +79,7 @@ export default function DiscoverScreen() {
   async function importBook(book: ExternalBook, force = false) {
     const duplicate = findDuplicate(book);
     if (duplicate && !force) {
-      setMessage('Este livro ja existe na biblioteca: ' + duplicate.title + '. Use Importar mesmo assim para duplicar.');
+      setMessage('Este livro já existe na biblioteca: ' + duplicate.title + '. Use Importar mesmo assim para duplicar.');
       return;
     }
     await addBook({
@@ -119,9 +119,9 @@ export default function DiscoverScreen() {
   return (
     <Screen>
       <Text style={styles.title}>Descobrir livros</Text>
-      <Text style={styles.subtitle}>Busque e importe capa, autor, editora, ano, paginas e ISBN. Se a API externa falhar, o app usa fallback para teste.</Text>
+      <Text style={styles.subtitle}>Busque e importe capa, autor, editora, ano, páginas e ISBN. Se a API externa falhar, o app usa fallback para teste.</Text>
       <View style={styles.searchRow}>
-        <TextInput style={styles.input} placeholder="Titulo, autor ou ISBN" placeholderTextColor={appColors.textDim} value={query} onChangeText={setQuery} />
+        <TextInput style={styles.input} placeholder="Título, autor ou ISBN" placeholderTextColor={appColors.textDim} value={query} onChangeText={setQuery} />
         <Pressable style={styles.button} onPress={search}><Text style={styles.buttonText}>{loading ? '...' : 'Buscar'}</Text></Pressable>
       </View>
       {message ? <Text style={styles.message}>{message}</Text> : null}
@@ -138,15 +138,15 @@ export default function DiscoverScreen() {
                 <Text style={styles.bookTitle}>{book.title}</Text>
                 <Text style={styles.meta}>{book.author}</Text>
                 <Text style={styles.meta}>{book.publisher || 'Editora desconhecida'} • {book.publishedDate || 'sem ano'}</Text>
-                <Text style={styles.meta}>{book.totalPages || 0} paginas • {book.genre}</Text>
-                <Text style={styles.source}>{book.source}{isDuplicate ? ' • ja existe' : ''}</Text>
+                <Text style={styles.meta}>{book.totalPages || 0} páginas • {book.genre}</Text>
+                <Text style={styles.source}>{book.source}{isDuplicate ? ' • já existe' : ''}</Text>
               </View>
             </View>
             {book.description ? <Text style={styles.description} numberOfLines={3}>{book.description}</Text> : null}
-            {isDuplicate ? <Text style={styles.duplicate}>Este livro ja esta na biblioteca.</Text> : null}
+            {isDuplicate ? <Text style={styles.duplicate}>Este livro já está na biblioteca.</Text> : null}
             <View style={styles.actionRow}>
               <Pressable style={styles.importButton} onPress={() => importBook(book)}><Text style={styles.importText}>{isDuplicate ? 'Bloquear duplicado' : 'Importar'}</Text></Pressable>
-              <Pressable style={styles.secondaryButton} onPress={() => isDuplicate ? startExistingBook(book) : importBook(book, true)}><Text style={styles.secondaryText}>{isDuplicate ? 'Comecar leitura' : 'Importar mesmo assim'}</Text></Pressable>
+              <Pressable style={styles.secondaryButton} onPress={() => isDuplicate ? startExistingBook(book) : importBook(book, true)}><Text style={styles.secondaryText}>{isDuplicate ? 'Começar leitura' : 'Importar mesmo assim'}</Text></Pressable>
             </View>
           </Card>
         );

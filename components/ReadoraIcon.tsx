@@ -23,6 +23,7 @@ const ICONS = {
   dashboard: ['ion', 'home-outline'],
   library: ['ion', 'book-outline'],
   shelves: ['mci', 'bookshelf'],
+  series: ['mci', 'book-multiple-outline'],
   quotes: ['mci', 'format-quote-close'],
   profile: ['ion', 'person-outline'],
   literaryProfile: ['ion', 'person-circle-outline'],

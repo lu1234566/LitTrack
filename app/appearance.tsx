@@ -15,7 +15,7 @@ const accents: Array<{ label: string; value: VisualAccent }> = [
 ];
 
 const densities: Array<{ label: string; value: VisualDensity }> = [
-  { label: 'Confortavel', value: 'comfortable' },
+  { label: 'Confortável', value: 'comfortable' },
   { label: 'Compacto', value: 'compact' }
 ];
 
@@ -30,8 +30,8 @@ export default function AppearanceScreen() {
 
   return (
     <Screen>
-      <Text style={styles.title}>Aparencia</Text>
-      <Text style={styles.subtitle}>Ajustes visuais locais para preparar a nova identidade do Readora antes do Firebase.</Text>
+      <Text style={styles.title}>Aparência</Text>
+      <Text style={styles.subtitle}>Escolha cores, espaçamento e tamanho do texto do seu jeito.</Text>
 
       <Card>
         <Text style={styles.kicker}>Cor de destaque</Text>

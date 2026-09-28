@@ -215,8 +215,8 @@ export default function AddBookScreen() {
       </Card>
 
       <Card>
-        <View style={styles.sectionHeader}><ReadoraIcon name="starOutline" size={24} color={appColors.gold} /><Text style={styles.sectionTitle}>Controle de Qualidade</Text><ReadoraIcon name="chevronDown" size={22} color={appColors.textMuted} style={styles.chevron} /></View>
-        <View style={styles.ratingPill}><Text style={styles.ratingText}>Média: {rating || '0.0'} ★</Text></View>
+        <View style={styles.sectionHeader}><ReadoraIcon name="starOutline" size={24} color={appColors.gold} /><Text style={styles.sectionTitle}>Sua avaliação</Text><ReadoraIcon name="chevronDown" size={22} color={appColors.textMuted} style={styles.chevron} /></View>
+        <View style={styles.ratingPill}><Text style={styles.ratingText}>Nota: {rating || '0.0'} ★</Text></View>
         <View style={styles.ratingRow}>{[0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5].map((value) => <Pressable key={value} style={[styles.ratingChip, Number(rating) === value && styles.ratingChipActive]} onPress={() => setRating(String(value))}><Text style={[styles.ratingChipText, Number(rating) === value && styles.ratingChipTextActive]}>{value}★</Text></Pressable>)}</View>
       </Card>
 

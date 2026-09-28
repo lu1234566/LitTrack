@@ -38,7 +38,7 @@ export function stringifyBackup(backup: ReadoraBackup) {
 
 export function parseReadoraBackup(raw: string): ReadoraBackup {
   const parsed = JSON.parse(raw) as Partial<ReadoraBackup> & LegacyReadoraBackup;
-  if (!parsed || typeof parsed !== 'object') throw new Error('Arquivo de backup invalido.');
+  if (!parsed || typeof parsed !== 'object') throw new Error('Arquivo de backup inválido.');
 
   if (parsed.app === 'Readora') {
     return {
@@ -67,7 +67,7 @@ export function parseReadoraBackup(raw: string): ReadoraBackup {
     };
   }
 
-  throw new Error('Arquivo de backup invalido ou formato nao reconhecido.');
+  throw new Error('Arquivo de backup inválido ou formato não reconhecido.');
 }
 
 function parseLegacyReadoraBackup(parsed: LegacyReadoraBackup): ReadoraBackup {

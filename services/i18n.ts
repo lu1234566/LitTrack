@@ -45,10 +45,29 @@ function interpolar(texto: string, vars?: Vars) {
   return texto.replace(/\{(\w+)\}/g, (_, k) => (k in vars ? String(vars[k]) : '{' + k + '}'));
 }
 
+/**
+ * O mesmo texto com e sem acento ("paginas" / "páginas") deve achar a mesma
+ * tradução: corrigir a acentuação de uma tela não pode desfazer o inglês dela.
+ */
+const semAcento = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '');
+const indicesSemAcento = new WeakMap<Record<string, string>, Map<string, string>>();
+function buscarSemAcento(dic: Record<string, string>, chave: string) {
+  let indice = indicesSemAcento.get(dic);
+  if (!indice) {
+    indice = new Map();
+    for (const [k, v] of Object.entries(dic)) {
+      const f = semAcento(k);
+      if (!indice.has(f)) indice.set(f, v);
+    }
+    indicesSemAcento.set(dic, indice);
+  }
+  return indice.get(semAcento(chave));
+}
+
 /** Tradução de um trecho já sem espaços nas pontas. `undefined` = não sabe. */
 function traduzirNucleo(nucleo: string, dic: Record<string, string>, padroes: typeof enPatterns, profundidade = 0): string | undefined {
   if (!nucleo) return nucleo;
-  const exato = dic[nucleo];
+  const exato = dic[nucleo] ?? buscarSemAcento(dic, nucleo);
   if (exato !== undefined) return exato;
 
   const sub = (s: string) => traduzirNucleo(s, dic, padroes, profundidade + 1) ?? s;

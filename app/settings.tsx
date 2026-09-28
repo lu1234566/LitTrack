@@ -9,6 +9,8 @@ import { useBooks } from '@/contexts/BookContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
 import { useQuotes } from '@/contexts/QuoteContext';
 import { useShelves } from '@/contexts/ShelfContext';
+import { useSession } from '@/contexts/SessionContext';
+import { Link } from 'expo-router';
 import { isNativeFirebaseConfigured, pullReadoraBundle, pushReadoraBundle } from '@/services/firebaseNative';
 import { cancelReadingReminders, scheduleReadingReminder } from '@/services/notificationScheduler';
 import { ReadoraIcon, ReadoraIconName } from '@/components/ReadoraIcon';
@@ -33,6 +35,7 @@ export default function SettingsScreen() {
   const { quotes, setQuoteList } = useQuotes();
   const { shelves, setShelfList } = useShelves();
   const { preferences, updatePreferences } = usePreferences();
+  const { user } = useSession();
   const { width } = useWindowDimensions();
   const mobile = width < 760;
   const [readerName, setReaderName] = useState(preferences.readerName);
@@ -95,25 +98,28 @@ export default function SettingsScreen() {
     setSyncMessage(result.message);
   }
 
+  // Enviar/receber manual usa a conta logada. Antes pedia um "ID local de
+  // sincronização" digitado à mão — ferramenta de depuração que ficou na tela
+  // e, sem login, nem funcionava (as regras do Firestore exigem autenticação).
   async function pushAll() {
-    const nextPreferences = { ...preferences, readerName, favoriteFormat, reminderText, reminderEnabled, reminderFrequency, layoutMode, syncUserId, yearlyGoal: Number(yearlyGoal) || 0, dailyPageGoal: Number(dailyPageGoal) || 0 };
+    if (!user) return;
+    const nextPreferences = { ...preferences, readerName, favoriteFormat, reminderText, reminderEnabled, reminderFrequency, layoutMode, yearlyGoal: Number(yearlyGoal) || 0, dailyPageGoal: Number(dailyPageGoal) || 0 };
     await updatePreferences(nextPreferences);
-    const result = await pushReadoraBundle(syncUserId || 'local-reader', { books, quotes, shelves, preferences: nextPreferences });
-    setSyncMessage(result.ok ? result.count + ' item(ns) enviados ao Firestore.' : 'Firebase ainda não configurado.');
+    const result = await pushReadoraBundle(user.uid, { books, quotes, shelves, preferences: nextPreferences });
+    setSyncMessage(result.ok ? result.count + ' item(ns) enviados para a nuvem.' : 'Não foi possível sincronizar agora.');
   }
 
   async function pullAll() {
-    await updatePreferences({ syncUserId });
-    const bundle = await pullReadoraBundle(syncUserId || 'local-reader');
-    if (!isNativeFirebaseConfigured) {
-      setSyncMessage('Firebase ainda não configurado.');
+    if (!user || !isNativeFirebaseConfigured) {
+      setSyncMessage('Não foi possível sincronizar agora.');
       return;
     }
+    const bundle = await pullReadoraBundle(user.uid);
     if (bundle.books?.length) await replaceBooks(bundle.books);
     if (bundle.quotes?.length) await setQuoteList(bundle.quotes);
     if (bundle.shelves?.length) await setShelfList(bundle.shelves);
     if (bundle.preferences) {
-      await updatePreferences({ ...preferences, ...bundle.preferences, syncUserId });
+      await updatePreferences({ ...preferences, ...bundle.preferences });
       setReaderName(bundle.preferences.readerName || readerName);
       setFavoriteFormat(bundle.preferences.favoriteFormat || favoriteFormat);
       setReminderText(bundle.preferences.reminderText || reminderText);
@@ -122,7 +128,7 @@ export default function SettingsScreen() {
       setReminderEnabled(bundle.preferences.reminderEnabled ?? reminderEnabled);
     }
     const total = (bundle.books?.length || 0) + (bundle.quotes?.length || 0) + (bundle.shelves?.length || 0);
-    setSyncMessage(total > 0 ? total + ' item(ns) recebidos do Firestore.' : 'Nenhum dado remoto encontrado.');
+    setSyncMessage(total > 0 ? total + ' item(ns) recebidos da nuvem.' : 'Nenhum dado remoto encontrado.');
   }
 
   async function checkForUpdate() {
@@ -197,30 +203,38 @@ export default function SettingsScreen() {
       </Card>
 
       <Card>
-        <View style={styles.titleRow}><ReadoraIcon name="cloudSync" size={20} color={appColors.gold} /><Text style={styles.cardTitle}>Firebase e Sincronização</Text></View>
-        <Text style={styles.value}>{isNativeFirebaseConfigured ? 'Configurado' : 'Pendente'}</Text>
-        <Text style={styles.body}>Use EXPO_PUBLIC_FIREBASE_* no ambiente Expo para ativar sincronização.</Text>
-        <TextInput style={styles.input} placeholder="ID local de sincronização" placeholderTextColor={appColors.textDim} value={syncUserId} onChangeText={setSyncUserId} />
+        <View style={styles.titleRow}><ReadoraIcon name="cloudSync" size={20} color={appColors.gold} /><Text style={styles.cardTitle}>Sincronização</Text></View>
+        <Text style={styles.value}>{user ? 'Ativa' : 'Desligada'}</Text>
+        <Text style={styles.body}>
+          {user
+            ? 'Seus livros, citações e estantes sincronizam sozinhos com a nuvem. Use os botões só se quiser forçar agora.'
+            : 'Entre com sua conta Google para guardar seus livros na nuvem e vê-los também no site.'}
+        </Text>
+        {user ? (
         <View style={[styles.actionRow, mobile && styles.stack]}>
           <Pressable style={[styles.secondaryButton, styles.btnRow]} onPress={pushAll}><ReadoraIcon name="export" size={15} color={appColors.gold} /><Text style={styles.secondaryText}>Enviar tudo</Text></Pressable>
           <Pressable style={[styles.secondaryButton, styles.btnRow]} onPress={pullAll}><ReadoraIcon name="import" size={15} color={appColors.gold} /><Text style={styles.secondaryText}>Receber tudo</Text></Pressable>
         </View>
+        ) : (
+          <Link href="/account" asChild>
+            <Pressable style={StyleSheet.flatten([styles.secondaryButton, styles.btnRow])}><ReadoraIcon name="account" size={15} color={appColors.gold} /><Text style={styles.secondaryText}>Entrar com Google</Text></Pressable>
+          </Link>
+        )}
         {syncMessage ? <Text style={styles.message}>{syncMessage}</Text> : null}
       </Card>
 
       <Card>
-        <View style={styles.titleRow}><ReadoraIcon name="refresh" size={20} color={appColors.gold} /><Text style={styles.cardTitle}>Versão e Atualizações</Text></View>
+        <View style={styles.titleRow}><ReadoraIcon name="refresh" size={20} color={appColors.gold} /><Text style={styles.cardTitle}>Versão do app</Text></View>
         {Platform.OS === 'web' || !Updates.isEnabled ? (
-          <Text style={styles.body}>Atualizações OTA se aplicam apenas ao app instalado via build (não à versão web).</Text>
+          <Text style={styles.body}>No site você sempre vê a versão mais recente.</Text>
         ) : (
           <>
-            <Text style={styles.value}>{Updates.isEmbeddedLaunch ? 'Build nativa' : 'Atualização OTA aplicada'}</Text>
+            <Text style={styles.value}>{Updates.isEmbeddedLaunch ? 'Versão instalada pela loja' : 'Atualizado'}</Text>
             <Text style={styles.body}>
-              Canal: {Updates.channel || 'desconhecido'}
+              {Updates.isEmbeddedLaunch ? 'O app se atualiza sozinho: basta abrir com internet.' : 'Atualizado em: ' + (Updates.createdAt ? Updates.createdAt.toLocaleString(appLocale) : '—')}
               {'\n'}
-              {Updates.isEmbeddedLaunch ? 'Nenhuma atualização OTA foi baixada ainda.' : 'Publicada em: ' + (Updates.createdAt ? Updates.createdAt.toLocaleString(appLocale) : 'desconhecido')}
-              {'\n'}
-              ID: {Updates.updateId ? Updates.updateId.slice(0, 8) : '—'}
+              {/* O código ajuda no suporte: identifica exatamente qual versão está no aparelho. */}
+              Código: {Updates.updateId ? Updates.updateId.slice(0, 8) : '—'}
             </Text>
             <Pressable style={[styles.secondaryButton, styles.btnRow]} onPress={checkForUpdate} disabled={checkingUpdate}>
               <ReadoraIcon name="refresh" size={15} color={appColors.gold} />

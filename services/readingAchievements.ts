@@ -31,13 +31,13 @@ export function buildAchievements(books: Book[], quotes: Quote[], shelves: Shelf
     make('first-book', 'Primeira leitura', 'Concluir o primeiro livro.', finishedBooks, 1),
     make('five-books', 'Estante viva', 'Concluir 5 livros.', finishedBooks, 5),
     make('twenty-books', 'Maratonista', 'Concluir 20 livros.', finishedBooks, 20),
-    make('hundred-pages', 'Cem paginas', 'Acumular 100 paginas lidas.', pages, 100),
-    make('thousand-pages', 'Mil paginas', 'Acumular 1000 paginas lidas.', pages, 1000),
-    make('ten-thousand-pages', 'Dez mil paginas', 'Acumular 10000 paginas lidas.', pages, 10000),
-    make('five-quotes', 'Guardiao de trechos', 'Salvar 5 citacoes.', quotes.length, 5),
-    make('favorite-quotes', 'Curador de frases', 'Favoritar 3 citacoes.', favoriteQuotes, 3),
-    make('three-shelves', 'Bibliotecario', 'Criar 3 estantes.', shelves.length, 3),
-    make('rated-books', 'Critico literario', 'Avaliar 10 livros.', ratedBooks, 10),
+    make('hundred-pages', 'Cem páginas', 'Acumular 100 páginas lidas.', pages, 100),
+    make('thousand-pages', 'Mil páginas', 'Acumular 1.000 páginas lidas.', pages, 1000),
+    make('ten-thousand-pages', 'Dez mil páginas', 'Acumular 10.000 páginas lidas.', pages, 10000),
+    make('five-quotes', 'Guardião de trechos', 'Salvar 5 citações.', quotes.length, 5),
+    make('favorite-quotes', 'Curador de frases', 'Favoritar 3 citações.', favoriteQuotes, 3),
+    make('three-shelves', 'Bibliotecário', 'Criar 3 estantes.', shelves.length, 3),
+    make('rated-books', 'Crítico literário', 'Avaliar 10 livros.', ratedBooks, 10),
     make('covered-books', 'Parede de capas', 'Ter 15 livros com capa.', withCover, 15)
   ];
 }

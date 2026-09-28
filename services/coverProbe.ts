@@ -48,17 +48,61 @@ async function verificar(url: string): Promise<boolean> {
  */
 export function coverLooksReal(url: string): Promise<boolean> {
   if (!url) return Promise.resolve(false);
-  // `document` só existe no navegador — evita importar o React Native aqui,
-  // que é lógica pura e roda também nos testes.
-  if (typeof document !== 'undefined') return Promise.resolve(true);
   const guardado = cache.get(url);
   if (guardado) return guardado;
-  const promessa = verificar(url);
+  const promessa = (async () => {
+    if (await zoomGrandeFalso(url)) return false;
+    // `document` só existe no navegador: lá o fetch esbarra no CORS do Google,
+    // então só a checagem de tamanho (que usa <img>, sem CORS) vale.
+    if (typeof document !== 'undefined') return true;
+    return verificar(url);
+  })();
   cache.set(url, promessa);
   return promessa;
+}
+
+/**
+ * Mede a imagem sem baixar pelo `fetch` — o app registra aqui o
+ * `Image.getSize` do React Native. Fica injetável porque este arquivo é
+ * lógica pura e roda nos testes, onde o React Native não existe.
+ */
+export type ImageSizer = (url: string) => Promise<{ width: number; height: number }>;
+let medir: ImageSizer | null = null;
+export function setImageSizer(fn: ImageSizer | null) {
+  medir = fn;
+}
+
+const ZOOM_GRANDE = /^https?:\/\/books\.google\.[^/]+\/books\/.*[?&]zoom=2(&|$)/i;
+
+/**
+ * O "image not available" que escapava das outras checagens.
+ *
+ * O app pede ao Google a capa grande (`zoom=2`). Quando o volume não tem
+ * versão grande, o Google não devolve erro: devolve a imagem de aviso, com
+ * status 200 e endereço normal — por isso nem nome de arquivo nem cabeçalho
+ * a denunciavam. O que a denuncia é o tamanho: uma capa zoom=2 de verdade
+ * tem bem mais que 200 px de largura. Pequena assim, não é a capa grande, e
+ * a cadeia de fallback cai para a miniatura (zoom=1), que existe.
+ */
+async function zoomGrandeFalso(url: string): Promise<boolean> {
+  if (!medir || !ZOOM_GRANDE.test(url)) return false;
+  try {
+    const { width } = await medir(url);
+    return width > 0 && width <= 200;
+  } catch {
+    // Não carregou nem para medir: a miniatura é aposta mais segura.
+    return true;
+  }
+}
+
+/** Endereço que vale desenhar: troca o zoom=2 falso pela miniatura real. */
+export async function resolveCoverUrl(url: string): Promise<string> {
+  if (!url || !ZOOM_GRANDE.test(url)) return url;
+  return (await zoomGrandeFalso(url)) ? url.replace(/([?&])zoom=2/, '$1zoom=1') : url;
 }
 
 /** Só para os testes: a memória entre casos falsearia o resultado. */
 export function resetCoverProbeCache() {
   cache.clear();
+  medir = null;
 }

@@ -14,7 +14,7 @@ import {
   type EnrichedBookReport,
   type PendingChoice
 } from '@/services/bookEnrichment';
-import { coverLooksReal } from '@/services/coverProbe';
+import { coverLooksReal, resolveCoverUrl } from '@/services/coverProbe';
 import { coverFallbackChain } from '@/services/externalBookSearch';
 import { haptic } from '@/services/feedback';
 import { appColors, appFonts } from '@/theme/tokens';
@@ -89,7 +89,11 @@ export function EnrichLibraryCard({ compact = false }: { compact?: boolean }) {
     const patch = patchForCandidate(candidato.external, escolha.book);
     // Nunca salvar como capa a imagem de "image not available": ela é um
     // arquivo válido, então sem esta checagem ela virava a capa do livro.
-    if (patch.coverUrl && !(await coverLooksReal(patch.coverUrl))) delete patch.coverUrl;
+    if (patch.coverUrl) {
+      // Troca o zoom=2 falso pela miniatura real antes de conferir a capa.
+      patch.coverUrl = await resolveCoverUrl(patch.coverUrl);
+      if (!(await coverLooksReal(patch.coverUrl))) delete patch.coverUrl;
+    }
     setPendentes((atuais) => atuais.filter((p) => p.book.id !== escolha.book.id));
     try {
       await updateBook(escolha.book.id, patch);
