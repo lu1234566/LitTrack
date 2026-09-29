@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Book } from '@/types/book';
+import { progressPercentOf } from '@/services/bookFormat';
 
 const STORAGE_KEY = '@readora_native_books';
 const now = Date.now();
@@ -22,8 +23,8 @@ export async function saveBooks(books: Book[]) {
 }
 
 export function calculateProgress(book: Book) {
-  if (!book.totalPages || !book.currentPage) return book.status === 'finished' ? 100 : 0;
-  return Math.min(100, Math.round((book.currentPage / book.totalPages) * 100));
+  // Páginas, % do e-book ou tempo do audiolivro, conforme o formato.
+  return progressPercentOf(book);
 }
 
 export function statusLabel(status: Book['status']) {

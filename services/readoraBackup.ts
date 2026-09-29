@@ -151,6 +151,11 @@ function normalizeLegacyBook(input: LegacyReadoraBook): Book | null {
     rating: legacyRating(input),
     totalPages: numberValue(input.totalPages) || numberValue(input.pageCount) || numberValue(input.paginas) || numberValue(input.totalPaginas) || numberValue(input.numeroPaginas) || numberValue(input.pages),
     currentPage: numberValue(input.currentPage),
+    // Formato (backups do próprio Readora); ausente = físico.
+    format: input.format === 'ebook' || input.format === 'audiobook' ? input.format : undefined,
+    progressPercent: optionalNumber(input.progressPercent),
+    totalMinutes: optionalNumber(input.totalMinutes),
+    listenedMinutes: optionalNumber(input.listenedMinutes),
     review: reviewParts.join('\n\n'),
     favoriteQuote: stringValue(input.citacaoFavorita || input.favoriteQuote),
     publisher: stringValue(input.publisher),
@@ -168,6 +173,11 @@ function normalizeLegacyBook(input: LegacyReadoraBook): Book | null {
     createdAt,
     updatedAt
   };
+}
+
+function optionalNumber(value: unknown): number | undefined {
+  const n = numberValue(value);
+  return n > 0 ? n : undefined;
 }
 
 function legacyRating(input: LegacyReadoraBook): number {

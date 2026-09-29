@@ -9,7 +9,9 @@ import { stripHtml } from '@/services/plainText';
 import { lookupExternalBooks } from '@/services/externalBookSearch';
 import { scanBarcodeFromImage } from '@/services/webPlatformTools';
 import { CoverPicker } from '@/components/CoverPicker';
-import { Book, BookStatus } from '@/types/book';
+import { Book, BookFormat, BookStatus } from '@/types/book';
+import { FormatPicker } from '@/components/FormatPicker';
+import { parseDuration } from '@/services/bookFormat';
 import { ExternalBook } from '@/types/externalBook';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { haptic } from '@/services/feedback';
@@ -31,6 +33,8 @@ export default function AddBookScreen() {
   const [year, setYear] = useState('');
   const [totalPages, setTotalPages] = useState('');
   const [currentPage, setCurrentPage] = useState('');
+  const [format, setFormat] = useState<BookFormat>('physical');
+  const [duration, setDuration] = useState('');
   const [rating, setRating] = useState('0');
   const [reason, setReason] = useState('');
   const [quote, setQuote] = useState('');
@@ -126,8 +130,16 @@ export default function AddBookScreen() {
       weaknesses.trim() ? 'Pontos fracos: ' + weaknesses.trim() : ''
     ].filter(Boolean).join('\n\n');
 
+    const totalMinutes = format === 'audiobook' && duration.trim() ? parseDuration(duration) : undefined;
+    if (Number.isNaN(totalMinutes)) {
+      Alert.alert('Duração inválida', 'Use o formato 11h30, 11:30 ou 45min.');
+      return;
+    }
+
     const draft = {
       title: title.trim(),
+      format,
+      totalMinutes,
       author: author.trim(),
       genre: genre.trim() || 'A definir',
       publisher: publisher.trim(),
@@ -206,6 +218,12 @@ export default function AddBookScreen() {
             </Pressable>
           ))}
         </View>
+
+        <Text style={styles.label}>Formato</Text>
+        <FormatPicker value={format} onChange={setFormat} />
+        {format === 'audiobook' ? (
+          <Field label="Duração do audiolivro" value={duration} onChangeText={setDuration} placeholder="Ex: 11h30" />
+        ) : null}
 
         <MonthYearField
           value={readAt}

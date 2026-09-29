@@ -98,6 +98,7 @@ export function csvToBooks(text: string, now: number = Date.now()): CsvImportRes
         publishedDate: col(row, 'Year Published') || col(row, 'Original Publication Year'),
         totalPages: Number(col(row, 'Number of Pages')) || 0,
         status: goodreadsStatus(col(row, 'Exclusive Shelf')),
+        format: formatFromCsv(col(row, 'Binding')),
         review: col(row, 'My Review'),
         finishedAt
       };
@@ -110,6 +111,7 @@ export function csvToBooks(text: string, now: number = Date.now()): CsvImportRes
         isbn: col(row, 'ISBN/UID'),
         rating: Number(col(row, 'Star Rating')) || 0,
         status: storygraphStatus(col(row, 'Read Status')),
+        format: formatFromCsv(col(row, 'Format')),
         review: col(row, 'Review'),
         mood: col(row, 'Moods'),
         contentWarnings: warnings,
@@ -148,4 +150,15 @@ export function mergeImported(existing: Book[], imported: Book[]): { merged: Boo
     added++;
   });
   return { merged: [...fresh, ...existing], added, skipped };
+}
+
+/**
+ * "Kindle Edition", "ebook", "digital" → e-book; "Audible Audio", "Audio CD",
+ * "audio" → audiolivro. O resto (capa dura, brochura...) fica como físico.
+ */
+export function formatFromCsv(value: string): Book['format'] {
+  const v = (value || '').toLowerCase();
+  if (/audio|audible/.test(v)) return 'audiobook';
+  if (/kindle|e-?book|digital|nook|kobo/.test(v)) return 'ebook';
+  return undefined;
 }

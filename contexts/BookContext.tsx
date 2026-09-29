@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Book, BookStatus, ReadingStats } from '@/types/book';
 import { calculateProgress, loadBooks, saveBooks } from '@/services/bookStorage';
+import { applyProgress } from '@/services/bookFormat';
 import { looksLikeHtml, stripHtml } from '@/services/plainText';
 import { persistLocalCover } from '@/services/webPlatformTools';
 import { updateReadingWidget } from '@/services/readingWidget';
@@ -114,7 +115,7 @@ interface BookContextValue {
   deleteBook: (bookId: string) => Promise<void>;
   replaceBooks: (nextBooks: Book[]) => Promise<void>;
   reload: () => Promise<void>;
-  updateProgress: (bookId: string, currentPage: number) => Promise<void>;
+  updateProgress: (bookId: string, value: number) => Promise<void>;
   updateStatus: (bookId: string, status: BookStatus) => Promise<void>;
   getBook: (bookId: string) => Book | undefined;
 }
@@ -224,21 +225,11 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
     await persist(booksRef.current.filter((book) => book.id !== bookId));
   }
 
-  async function updateProgress(bookId: string, currentPage: number) {
-    const nextBooks = booksRef.current.map((book) => {
-      if (book.id !== bookId) return book;
-      const totalPages = book.totalPages || 0;
-      const nextCurrentPage = Math.max(0, Math.min(currentPage, totalPages || currentPage));
-      return {
-        ...book,
-        currentPage: nextCurrentPage,
-        status: totalPages > 0 && nextCurrentPage >= totalPages ? 'finished' : book.status,
-        // Só carimba a conclusão se ainda não houver data — assim o mês de
-        // leitura escolhido à mão não é sobrescrito por "hoje".
-        finishedAt: totalPages > 0 && nextCurrentPage >= totalPages ? (book.finishedAt || Date.now()) : book.finishedAt,
-        updatedAt: Date.now()
-      };
-    });
+  /** `value` na unidade do formato do livro: páginas, % ou minutos. */
+  async function updateProgress(bookId: string, value: number) {
+    // applyProgress só carimba a conclusão se ainda não houver data — assim o
+    // mês de leitura escolhido à mão não é sobrescrito por "hoje".
+    const nextBooks = booksRef.current.map((book) => book.id === bookId ? applyProgress(book, value) : book);
     await persist(nextBooks);
   }
 

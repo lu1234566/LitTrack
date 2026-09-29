@@ -6,19 +6,20 @@ import { Card } from '@/components/Card';
 import { BookCover } from '@/components/BookCover';
 import { useBooks } from '@/contexts/BookContext';
 import { haptic } from '@/services/feedback';
+import { applyProgress, currentValue, formatDuration, formatOf, progressFraction, progressLine, progressPercentOf, quickSteps } from '@/services/bookFormat';
 import { t } from '@/services/i18n';
 import { appColors } from '@/theme/tokens';
 import type { Book } from '@/types/book';
 
-const PASSOS = [5, 10, 25];
 const MAX_LIVROS = 3;
 
 type Ultimo = {
   bookId: string;
   title: string;
   added: number;
+  format: ReturnType<typeof formatOf>;
   finished: boolean;
-  antes: Pick<Book, 'currentPage' | 'status' | 'finishedAt'>;
+  antes: Pick<Book, 'currentPage' | 'status' | 'finishedAt' | 'progressPercent' | 'listenedMinutes'>;
 };
 
 /**
@@ -50,19 +51,22 @@ export function QuickProgress() {
   }, [ultimo]);
 
   async function somar(book: Book, passo: number) {
-    const antes = { currentPage: book.currentPage, status: book.status, finishedAt: book.finishedAt };
-    const total = book.totalPages || 0;
-    const atual = book.currentPage || 0;
-    const proxima = total > 0 ? Math.min(total, atual + passo) : atual + passo;
-    if (proxima === atual) return;
-    const terminou = total > 0 && proxima >= total;
+    const antes = { currentPage: book.currentPage, status: book.status, finishedAt: book.finishedAt, progressPercent: book.progressPercent, listenedMinutes: book.listenedMinutes };
+    const atual = currentValue(book);
+    // Simula antes de gravar: diz se chegou ao fim e quanto de fato somou
+    // (perto do fim, +25 pode virar +7).
+    const depois = applyProgress(book, atual + passo);
+    const somado = currentValue(depois) - atual;
+    if (somado <= 0 && depois.status === book.status) return;
+    const terminou = depois.status === 'finished' && book.status !== 'finished';
     haptic(terminou ? 'success' : 'light');
-    await updateProgress(book.id, proxima);
+    await updateProgress(book.id, atual + passo);
     setUltimo((anterior) => ({
       bookId: book.id,
       title: book.title,
+      format: formatOf(book),
       // Toques seguidos no mesmo livro somam, e o "desfazer" volta ao início deles.
-      added: (anterior?.bookId === book.id ? anterior.added : 0) + (proxima - atual),
+      added: (anterior?.bookId === book.id ? anterior.added : 0) + somado,
       finished: terminou,
       antes: anterior?.bookId === book.id ? anterior.antes : antes
     }));
@@ -80,9 +84,8 @@ export function QuickProgress() {
   return (
     <Card>
       {lendo.map((book, i) => {
-        const total = book.totalPages || 0;
-        const atual = book.currentPage || 0;
-        const pct = total > 0 ? Math.min(100, Math.round((atual / total) * 100)) : 0;
+        const temTotal = progressFraction(book) !== null;
+        const pct = progressPercentOf(book);
         return (
           <View key={book.id} style={[styles.row, i > 0 && styles.divider]}>
             <Pressable style={styles.cover} onPress={() => router.push({ pathname: '/book/[id]', params: { id: book.id } })}>
@@ -92,19 +95,19 @@ export function QuickProgress() {
               <Pressable onPress={() => router.push({ pathname: '/book/[id]', params: { id: book.id } })}>
                 <Text style={styles.title} numberOfLines={1}>{book.title}</Text>
                 <Text style={styles.pages} numberOfLines={1}>
-                  {total > 0 ? t('pág. {a} de {b}', { a: atual, b: total }) + ' · ' + pct + '%' : t('pág. {a}', { a: atual })}
+                  {progressLine(book)}
                 </Text>
               </Pressable>
-              {total > 0 ? <View style={styles.track}><View style={[styles.fill, { width: (pct + '%') as `${number}%` }]} /></View> : null}
+              {temTotal ? <View style={styles.track}><View style={[styles.fill, { width: (pct + '%') as `${number}%` }]} /></View> : null}
               <View style={styles.buttons}>
-                {PASSOS.map((passo) => (
+                {quickSteps(formatOf(book)).map((passo) => (
                   <Pressable
-                    key={passo}
+                    key={passo.value}
                     style={({ pressed }) => [styles.step, pressed && styles.stepPressed]}
-                    onPress={() => somar(book, passo)}
-                    accessibilityLabel={t('Somar {n} páginas', { n: passo })}
+                    onPress={() => somar(book, passo.value)}
+                    accessibilityLabel={t('Somar {n}', { n: passo.label.slice(1) })}
                   >
-                    <Text style={styles.stepText}>+{passo}</Text>
+                    <Text style={styles.stepText}>{passo.label}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -118,7 +121,11 @@ export function QuickProgress() {
           <Text style={styles.toastText} numberOfLines={2}>
             {ultimo.finished
               ? t('Você terminou {title}! 🎉', { title: ultimo.title })
-              : t('+{n} páginas em {title}', { n: ultimo.added, title: ultimo.title })}
+              : ultimo.format === 'ebook'
+                ? t('+{n}% em {title}', { n: ultimo.added, title: ultimo.title })
+                : ultimo.format === 'audiobook'
+                  ? t('+{n} ouvidos em {title}', { n: formatDuration(ultimo.added), title: ultimo.title })
+                  : t('+{n} páginas em {title}', { n: ultimo.added, title: ultimo.title })}
           </Text>
           <Pressable onPress={desfazer} hitSlop={8}><Text style={styles.undo}>Desfazer</Text></Pressable>
         </View>

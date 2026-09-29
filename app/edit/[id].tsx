@@ -1,10 +1,12 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { Text, TextInput } from '@/components/TranslatedText';
 import { Screen } from '@/components/Screen';
 import { useBooks } from '@/contexts/BookContext';
-import { BookStatus } from '@/types/book';
+import { BookFormat, BookStatus } from '@/types/book';
+import { FormatPicker } from '@/components/FormatPicker';
+import { applyProgress, formatDuration, formatOf, parseDuration, progressInputText } from '@/services/bookFormat';
 import { lookupExternalBooks } from '@/services/externalBookSearch';
 import { CoverPicker } from '@/components/CoverPicker';
 import { MonthYearField } from '@/components/MonthYearField';
@@ -24,7 +26,10 @@ export default function EditBookScreen() {
   const [coverUrl, setCoverUrl] = useState(book?.coverUrl || '');
   const [source, setSource] = useState(book?.notes || '');
   const [totalPages, setTotalPages] = useState(book?.totalPages ? String(book.totalPages) : '');
-  const [currentPage, setCurrentPage] = useState(book?.currentPage ? String(book.currentPage) : '');
+  const [format, setFormat] = useState<BookFormat>(book ? formatOf(book) : 'physical');
+  // Progresso na unidade do formato: página, % ou tempo ouvido.
+  const [progress, setProgress] = useState(book ? progressInputText(book) : '');
+  const [duration, setDuration] = useState(book?.totalMinutes ? formatDuration(book.totalMinutes).replace(' ', '') : '');
   const [rating, setRating] = useState(book?.rating ? String(book.rating) : '');
   const [reason, setReason] = useState(book?.reasonToRead || '');
   const [quote, setQuote] = useState(book?.favoriteQuote || '');
@@ -44,7 +49,20 @@ export default function EditBookScreen() {
   const currentBook = book;
 
   async function handleSave() {
+    const totalMinutes = duration.trim() ? parseDuration(duration) : undefined;
+    const valor = format === 'audiobook' ? (progress.trim() ? parseDuration(progress) : 0) : Number(progress.replace(',', '.').replace('%', '')) || 0;
+    if (format === 'audiobook' && (Number.isNaN(totalMinutes) || Number.isNaN(valor))) {
+      Alert.alert('Tempo inválido', 'Use o formato 3h20, 3:20 ou 45min.');
+      return;
+    }
+    // Calcula os campos de progresso do formato escolhido (e a página
+    // proporcional); o status continua sendo o que foi marcado no formulário.
+    const comProgresso = applyProgress({ ...currentBook, format, totalPages: Number(totalPages) || 0, totalMinutes, status }, valor);
     await updateBook(currentBook.id, {
+      format,
+      totalMinutes,
+      progressPercent: comProgresso.progressPercent,
+      listenedMinutes: comProgresso.listenedMinutes,
       title: title.trim() || currentBook.title,
       author: author.trim() || currentBook.author,
       genre: genre.trim() || 'A definir',
@@ -55,7 +73,7 @@ export default function EditBookScreen() {
       notes: source.trim(),
       status,
       totalPages: Number(totalPages) || 0,
-      currentPage: Number(currentPage) || 0,
+      currentPage: comProgresso.currentPage || 0,
       rating: Number(rating) || 0,
       reasonToRead: reason.trim(),
       favoriteQuote: quote.trim(),
@@ -88,9 +106,27 @@ export default function EditBookScreen() {
       <CoverPicker title={title} author={author} isbn={isbn} value={coverUrl} onChange={setCoverUrl} />
 
       <TextInput style={styles.input} placeholder="Origem/fonte" placeholderTextColor={appColors.textDim} value={source} onChangeText={setSource} />
+      <Text style={styles.label}>Formato</Text>
+      <FormatPicker value={format} onChange={(next) => { setFormat(next); setProgress(progressInputText(currentBook, next)); }} />
+      {/* Rótulo acima de cada campo: preenchido, "21h" sozinho não diz nada. */}
       <View style={styles.row}>
-        <TextInput style={[styles.input, styles.half]} placeholder="Páginas" placeholderTextColor={appColors.textDim} value={totalPages} onChangeText={setTotalPages} keyboardType="numeric" />
-        <TextInput style={[styles.input, styles.half]} placeholder="Página atual" placeholderTextColor={appColors.textDim} value={currentPage} onChangeText={setCurrentPage} keyboardType="numeric" />
+        <View style={styles.half}>
+          <Text style={styles.fieldLabel}>{format === 'audiobook' ? 'Duração total' : 'Páginas'}</Text>
+          {format === 'audiobook'
+            ? <TextInput style={styles.input} placeholder="Ex: 11h30" placeholderTextColor={appColors.textDim} value={duration} onChangeText={setDuration} />
+            : <TextInput style={styles.input} placeholder={format === 'ebook' ? 'Opcional' : 'Ex: 320'} placeholderTextColor={appColors.textDim} value={totalPages} onChangeText={setTotalPages} keyboardType="numeric" />}
+        </View>
+        <View style={styles.half}>
+          <Text style={styles.fieldLabel}>{format === 'audiobook' ? 'Tempo ouvido' : format === 'ebook' ? '% lido' : 'Página atual'}</Text>
+          <TextInput
+            style={styles.input}
+            placeholder={format === 'audiobook' ? 'Ex: 3h20' : format === 'ebook' ? 'Ex: 42' : 'Ex: 120'}
+            placeholderTextColor={appColors.textDim}
+            value={progress}
+            onChangeText={setProgress}
+            keyboardType={format === 'audiobook' ? 'default' : 'numeric'}
+          />
+        </View>
       </View>
       <TextInput style={styles.input} placeholder="Nota (use .5 para meia-estrela, ex: 4.5)" placeholderTextColor={appColors.textDim} value={rating} onChangeText={setRating} keyboardType="numeric" />
       <View style={styles.statusRow}>
@@ -130,7 +166,8 @@ const styles = StyleSheet.create({
   title: { color: appColors.text, fontSize: 30, fontWeight: '900' },
   subtitle: { color: appColors.textMuted, fontSize: 15, lineHeight: 22 },
   row: { flexDirection: 'row', gap: 10 },
-  half: { flex: 1 },
+  half: { flex: 1, minWidth: 0 },
+  fieldLabel: { color: appColors.textDim, fontSize: 12, fontWeight: '800', marginBottom: 6 },
   label: { color: appColors.textMuted, fontSize: 16, fontWeight: '800', marginTop: 4 },
   outlineButton: { borderColor: appColors.goldDeep, backgroundColor: 'rgba(255,153,0,0.12)', borderWidth: 1, borderRadius: 14, paddingVertical: 13, alignItems: 'center' },
   outlineText: { color: appColors.gold, fontWeight: '900', fontSize: 13 },
@@ -144,3 +181,4 @@ const styles = StyleSheet.create({
   saveButton: { backgroundColor: appColors.gold, borderRadius: 999, paddingVertical: 16, alignItems: 'center', marginTop: 8 },
   saveText: { color: appColors.background, fontWeight: '900', fontSize: 16 }
 });
+

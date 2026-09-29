@@ -13,12 +13,13 @@ import { isAiConfigured } from '@/services/aiClient';
 import { appColors, appFonts } from '@/theme/tokens';
 import { appLocale } from '@/services/i18n';
 import { seriesOfBook } from '@/services/series';
+import { BOOK_FORMATS, formatOf, parseDuration, progressInputText, progressLabel } from '@/services/bookFormat';
 
 export default function BookDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { books, getBook, updateProgress, updateStatus, deleteBook } = useBooks();
   const book = useMemo(() => getBook(String(id)), [getBook, id]);
-  const [page, setPage] = useState(book?.currentPage ? String(book.currentPage) : '');
+  const [page, setPage] = useState(book ? progressInputText(book) : '');
   const [showCard, setShowCard] = useState(false);
   const [showChat, setShowChat] = useState(false);
 
@@ -34,16 +35,19 @@ export default function BookDetailsScreen() {
   const currentBook = book;
   const progress = calculateProgress(currentBook);
 
+  const formato = formatOf(currentBook);
+
   async function handleProgress() {
-    const rawPage = Number(page);
-    if (Number.isNaN(rawPage)) {
-      Alert.alert('Página inválida', 'Digite um número válido.');
+    // O valor vai na unidade do formato; updateProgress limita ao total.
+    const valor = formato === 'audiobook' ? parseDuration(page) : Number(page.replace(',', '.').replace('%', ''));
+    if (Number.isNaN(valor)) {
+      Alert.alert(
+        formato === 'audiobook' ? 'Tempo inválido' : formato === 'ebook' ? 'Porcentagem inválida' : 'Página inválida',
+        formato === 'audiobook' ? 'Use o formato 3h20, 3:20 ou 45min.' : 'Digite um número válido.'
+      );
       return;
     }
-    // O clamp espelha o que updateProgress aplica internamente.
-    const totalPages = currentBook.totalPages || 0;
-    const nextPage = Math.max(0, Math.min(rawPage, totalPages || rawPage));
-    await updateProgress(currentBook.id, nextPage);
+    await updateProgress(currentBook.id, valor);
   }
 
   async function handleDelete() {
@@ -60,6 +64,7 @@ export default function BookDetailsScreen() {
   const semGenero = !currentBook.genre || ['a definir', 'diverso', 'indefinido'].includes(currentBook.genre.trim().toLowerCase());
   const detalhes = [
     currentBook.rating ? { label: 'nota', value: currentBook.rating + '/5 ★' } : null,
+    formato !== 'physical' ? { label: 'formato', value: BOOK_FORMATS.find((f) => f.value === formato)!.label } : null,
     !semGenero ? { label: 'gênero', value: currentBook.genre } : null,
     currentBook.publisher ? { label: 'editora', value: currentBook.publisher } : null,
     currentBook.publishedDate ? { label: 'ano', value: currentBook.publishedDate.slice(0, 4) } : null,
@@ -93,7 +98,9 @@ export default function BookDetailsScreen() {
         <Text style={styles.cardTitle}>Progresso</Text>
         <Text style={styles.progressText}>{progress}% concluído</Text>
         <View style={styles.progressTrack}><View style={[styles.progressFill, { width: percent(progress) }]} /></View>
-        <Text style={styles.muted}>{currentBook.currentPage || 0} de {currentBook.totalPages || 0} páginas</Text>
+        {/* No e-book o rótulo repetiria a porcentagem de cima. */}
+        {formato !== 'ebook' ? <Text style={styles.muted}>{progressLabel(currentBook)}</Text> : null}
+        {formato === 'audiobook' && !currentBook.totalMinutes ? <Text style={styles.muted}>Informe a duração total em Editar para ver a porcentagem.</Text> : null}
       </Card>
 
       {/* Só o que foi preenchido. Antes todo campo aparecia, e um livro recém
@@ -133,7 +140,14 @@ export default function BookDetailsScreen() {
         </View>
       ) : null}
 
-      <TextInput style={styles.input} placeholder="Página atual" placeholderTextColor={appColors.textDim} value={page} onChangeText={setPage} keyboardType="numeric" />
+      <TextInput
+        style={styles.input}
+        placeholder={formato === 'audiobook' ? 'Tempo ouvido (ex.: 3h20)' : formato === 'ebook' ? '% lido (ex.: 42)' : 'Página atual'}
+        placeholderTextColor={appColors.textDim}
+        value={page}
+        onChangeText={setPage}
+        keyboardType={formato === 'audiobook' ? 'default' : 'numeric'}
+      />
       <Pressable style={[styles.primaryButton, styles.btnRow]} onPress={handleProgress}><ReadoraIcon name="trendingUp" size={17} color={appColors.background} /><Text style={styles.primaryText}>Atualizar progresso</Text></Pressable>
 
       <View style={styles.statusRow}>
@@ -201,3 +215,4 @@ const styles = StyleSheet.create({
   deleteButton: { borderColor: appColors.red, borderWidth: 1, borderRadius: 999, paddingVertical: 14, alignItems: 'center' },
   deleteText: { color: appColors.red, fontWeight: '900' }
 });
+

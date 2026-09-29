@@ -1,8 +1,6 @@
 import { Book } from '@/types/book';
 import { pickReadingWidgetData } from '@/widget/readingWidgetData';
-
-/** Até quantas páginas do fim o lembrete vira "falta pouco". */
-const FALTA_POUCO = 60;
+import { formatDuration, formatOf, remainingIfClose } from '@/services/bookFormat';
 
 export type ReminderMessage = { title: string; body: string; bookId?: string };
 
@@ -14,19 +12,23 @@ export type ReminderMessage = { title: string; body: string; bookId?: string };
  * Retorna o texto em português com {marcadores}; quem agenda traduz.
  */
 export function reminderMessage(books: Book[], dailyPageGoal = 0): ReminderMessage & { vars: Record<string, string | number> } {
-  const { book, currentPage, totalPages, percent } = pickReadingWidgetData(books);
+  const { book, currentPage, totalPages, percent, hasTotal } = pickReadingWidgetData(books);
+  const livro = book ? books.find((b) => b.id === book.id) : undefined;
 
-  if (book && totalPages > 0) {
-    const faltam = totalPages - currentPage;
-    if (faltam > 0 && faltam <= FALTA_POUCO) {
-      return {
-        title: 'Falta pouco!',
-        body: faltam === 1 ? 'Falta 1 página para terminar {title}.' : 'Faltam {n} páginas para terminar {title}.',
-        bookId: book.id,
-        vars: { title: book.title, n: faltam }
-      };
+  if (book && livro && hasTotal) {
+    // Perto do fim (60 páginas, 10% do e-book ou 1 h de audiolivro).
+    const perto = remainingIfClose(livro);
+    if (perto) {
+      const vars = { title: book.title, n: perto.kind === 'minutes' ? formatDuration(perto.amount) : perto.amount };
+      const body = perto.kind === 'percent'
+        ? 'Faltam {n}% para terminar {title}.'
+        : perto.kind === 'minutes'
+          ? 'Faltam {n} para terminar {title}.'
+          : perto.amount === 1 ? 'Falta 1 página para terminar {title}.' : 'Faltam {n} páginas para terminar {title}.';
+      return { title: 'Falta pouco!', body, bookId: book.id, vars };
     }
-    if (faltam > 0 && dailyPageGoal > 0) {
+    // Meta diária é em páginas: só faz sentido no livro físico.
+    if (percent < 100 && dailyPageGoal > 0 && formatOf(livro) === 'physical' && totalPages > 0) {
       return {
         title: 'Hora de ler no Readora',
         body: '{title}: você está na página {a} de {b}. Que tal mais {g} páginas hoje?',
@@ -34,7 +36,7 @@ export function reminderMessage(books: Book[], dailyPageGoal = 0): ReminderMessa
         vars: { title: book.title, a: currentPage, b: totalPages, g: dailyPageGoal }
       };
     }
-    if (faltam > 0) {
+    if (percent < 100) {
       return {
         title: 'Hora de ler no Readora',
         body: '{title}: você está em {p}%. Continue de onde parou.',

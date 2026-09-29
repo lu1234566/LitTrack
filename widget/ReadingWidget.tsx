@@ -53,9 +53,6 @@ export function ReadingWidget({ data, width, height = 110 }: { data: ReadingWidg
   // Largura útil da barra: widget menos padding (2×16), capa e espaço (14).
   const barra = Math.max(60, Math.round(width - 32 - capaW - 14));
   const cheio = Math.max(0, Math.min(barra, Math.round((barra * data.percent) / 100)));
-  const paginas = data.totalPages > 0
-    ? t('pág. {a} de {b}', { a: data.currentPage, b: data.totalPages })
-    : t('Número de páginas não informado');
 
   return (
     <FlexWidget
@@ -80,7 +77,7 @@ export function ReadingWidget({ data, width, height = 110 }: { data: ReadingWidg
         <FlexWidget style={{ width: barra, height: 6, borderRadius: 3, backgroundColor: COR.trilho, marginTop: 10 }}>
           <FlexWidget style={{ width: cheio, height: 6, borderRadius: 3, backgroundColor: COR.ouro }} />
         </FlexWidget>
-        <TextWidget text={data.percent + '% · ' + paginas} style={{ fontSize: 11, color: COR.apagado, marginTop: 6 }} maxLines={1} truncate="END" />
+        <TextWidget text={data.line} style={{ fontSize: 11, color: COR.apagado, marginTop: 6 }} maxLines={1} truncate="END" />
       </FlexWidget>
     </FlexWidget>
   );
