@@ -35,7 +35,7 @@ function Particle({ height, seed }: { height: number; seed: number }) {
   );
 }
 
-export function WrappedBackground({ colors, image }: { colors: readonly [string, string]; image?: ImageSourcePropType }) {
+export function WrappedBackground({ colors, image, tint }: { colors: readonly [string, string]; image?: ImageSourcePropType; tint?: readonly [string, string] }) {
   const { width, height } = useWindowDimensions();
   const kb = useRef(new Animated.Value(0)).current;
   const glow = useRef(new Animated.Value(0)).current;
@@ -65,6 +65,9 @@ export function WrappedBackground({ colors, image }: { colors: readonly [string,
       {image ? (
         <>
           <Animated.Image source={image} resizeMode="cover" style={[StyleSheet.absoluteFill, { width: '100%', height: '100%', transform: [{ scale }, { translateX: kbX }, { translateY: kbY }] }]} />
+          {/* Tinta do gênero do leitor sobre a arte: o mesmo fundo fica roxo e
+              dourado para quem lê fantasia, vermelho escuro para terror... */}
+          {tint ? <LinearGradient colors={tint} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} /> : null}
           <LinearGradient colors={['rgba(0,0,0,0.08)', 'rgba(0,0,0,0.38)']} style={StyleSheet.absoluteFill} />
         </>
       ) : null}

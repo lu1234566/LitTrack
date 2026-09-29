@@ -4,13 +4,17 @@ import { Text } from '@/components/TranslatedText';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { useBooks } from '@/contexts/BookContext';
+import { useQuotes } from '@/contexts/QuoteContext';
+import { usePreferences } from '@/contexts/PreferencesContext';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { WrappedStory } from '@/components/WrappedStory';
 import { appColors, appFonts } from '@/theme/tokens';
-import { appLocale } from '@/services/i18n';
+import { appLocale, t } from '@/services/i18n';
 
 export default function RetrospectiveScreen() {
   const { books, stats } = useBooks();
+  const { quotes } = useQuotes();
+  const { preferences } = usePreferences();
   const { width } = useWindowDimensions();
   const mobile = width < 760;
   const best = books.filter((book) => book.rating && book.rating > 0).sort((a, b) => (b.rating || 0) - (a.rating || 0))[0];
@@ -31,14 +35,15 @@ export default function RetrospectiveScreen() {
 
   return (
     <Screen>
-      {showWrapped ? <WrappedStory books={books} year={year} onClose={() => setShowWrapped(false)} /> : null}
+      {showWrapped ? <WrappedStory books={books} quotes={quotes} readerName={preferences.readerName?.trim() || undefined} year={year} onClose={() => setShowWrapped(false)} /> : null}
       <View style={styles.hero}>
         <Text style={styles.kicker}>RETROSPECTIVA</Text>
         <Text style={styles.title}>Sua jornada em números</Text>
         <Text style={styles.subtitle}>Um painel editorial com os marcos mais fortes da sua vida literária local.</Text>
         <Pressable style={styles.wrappedBtn} onPress={() => setShowWrapped(true)}>
           <ReadoraIcon name="sparkle" size={18} color={appColors.background} />
-          <Text style={styles.wrappedText}>Ver minha Readora Wrapped {year}</Text>
+          {/* Antes de dezembro o Wrapped já existe como "seu ano até agora". */}
+          <Text style={styles.wrappedText}>{new Date().getMonth() < 11 ? t('Ver meu {y} até agora', { y: year }) : t('Ver minha Readora Wrapped {y}', { y: year })}</Text>
         </Pressable>
       </View>
 

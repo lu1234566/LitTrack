@@ -16,7 +16,9 @@ const READORA_KEYS = [
   '@readora_native_preferences',
   '@readora_native_reading_sessions',
   '@readora_tombstones',
-  '@readora_last_sync'
+  '@readora_last_sync',
+  // Carta do Wrapped escrita pela IA (cita livros e o nome do leitor).
+  '@readora_wrapped_letter'
 ];
 
 export async function wipeLocalReadoraData() {

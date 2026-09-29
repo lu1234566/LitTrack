@@ -203,6 +203,25 @@ export async function askAboutBook(book: Book, question: string, history: ChatTu
   return callGemini({ contents, systemInstruction: { parts: [{ text: system }] }, generationConfig: { maxOutputTokens: 1024, thinkingConfig: NO_THINKING } });
 }
 
+/**
+ * Carta de encerramento do Wrapped. Recebe só fatos já calculados pelo app e
+ * é instruída a não inventar nada — a IA só dá a voz.
+ */
+export async function writeWrappedLetter(facts: string[], readerName?: string): Promise<string> {
+  const system = 'Você escreve a carta de encerramento da retrospectiva anual de leitura do app Readora. '
+    + 'Escreva em ' + IDIOMA_IA + ', na segunda pessoa, com tom caloroso, pessoal e um toque literário. '
+    + 'Entre 70 e 110 palavras, em 1 ou 2 parágrafos, sem título, sem listas, no máximo um emoji. '
+    + (readerName ? 'O leitor se chama ' + readerName + '. ' : '')
+    + 'Use SOMENTE os fatos fornecidos: não invente livros, números, datas nem acontecimentos das histórias, e não conte spoilers. '
+    + 'Cite 2 ou 3 fatos específicos e a persona do leitor. Se o ano ainda estiver em andamento, trate como "o seu ano até agora".';
+  const texto = await callGemini({
+    contents: [{ role: 'user', parts: [{ text: 'FATOS DO ANO:\n' + facts.join('\n') }] }],
+    systemInstruction: { parts: [{ text: system }] },
+    generationConfig: { maxOutputTokens: 700, thinkingConfig: NO_THINKING }
+  });
+  return texto.replace(/^["“]|["”]$/g, '').trim();
+}
+
 export type AiBookFacts = { description?: string; totalPages?: number; genre?: string };
 
 /**
