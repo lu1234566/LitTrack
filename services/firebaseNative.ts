@@ -2,17 +2,19 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initializeApp, getApp, getApps, type FirebaseApp } from 'firebase/app';
 import { collection, deleteDoc, doc, getDoc, getDocs, getFirestore, setDoc } from 'firebase/firestore';
-import { getAuth, initializeAuth, GoogleAuthProvider, onAuthStateChanged, signInWithCredential, signInWithPopup, signOut as firebaseSignOut, type Auth, type Persistence, type User } from 'firebase/auth';
+import { getAuth, getRedirectResult, initializeAuth, GoogleAuthProvider, onAuthStateChanged, signInWithCredential, signInWithPopup, signInWithRedirect, signOut as firebaseSignOut, type Auth, type Persistence, type User } from 'firebase/auth';
 import * as FirebaseAuthModule from 'firebase/auth';
 import { Book } from '@/types/book';
 import { Quote } from '@/types/quote';
 import { Shelf } from '@/types/shelf';
 import { ReaderPreferences } from '@/types/preferences';
 import { SessionUser } from '@/types/sessionUser';
+import { isInstalledWebApp, webAuthDomain } from '@/services/pwa';
 
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  // No site oficial, o próprio domínio (a Vercel repassa /__/auth ao Firebase).
+  authDomain: webAuthDomain() || process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
   storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
@@ -94,8 +96,26 @@ export async function signInFirebaseWithGooglePopup() {
   if (!nativeAuth) throw new Error('Firebase Auth não configurado.');
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: 'select_account' });
+  // App instalado na tela inicial (iPhone): pop-up não volta para o app.
+  // Sai para a página do Google e retorna; o resultado chega pelo
+  // onAuthStateChanged quando o app recarrega. Retorna null nesse caso.
+  if (isInstalledWebApp()) {
+    await signInWithRedirect(nativeAuth, provider);
+    return null;
+  }
   const result = await signInWithPopup(nativeAuth, provider);
   return toSessionUser(result.user);
+}
+
+/** Erro do login por redirecionamento, se houve (ao voltar do Google). */
+export async function webRedirectLoginError(): Promise<string | null> {
+  if (!nativeAuth || Platform.OS !== 'web') return null;
+  try {
+    await getRedirectResult(nativeAuth);
+    return null;
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error);
+  }
 }
 
 export async function signOutFirebaseUser() {

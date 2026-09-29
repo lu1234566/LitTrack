@@ -3,8 +3,18 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/((?!_expo|assets|favicon|.*\\.[a-zA-Z0-9]+$).*)",
+      "source": "/__/auth/:path*",
+      "destination": "https://littrack-2026.firebaseapp.com/__/auth/:path*"
+    },
+    {
+      "source": "/((?!_expo|assets|favicon|__/|.*\\.[a-zA-Z0-9]+$).*)",
       "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/manifest.webmanifest",
+      "headers": [{ "key": "Content-Type", "value": "application/manifest+json" }]
     }
   ]
 }
