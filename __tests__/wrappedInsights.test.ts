@@ -69,10 +69,19 @@ describe('cada leitor recebe uma historia diferente', () => {
     expect(s.persona.name).toMatch(/dos Clássicos$/);
   });
 
-  it('leitura relampago so com data de inicio real', () => {
-    const rapido = lido({ title: 'Duna', totalPages: 600, startedAt: dia(8, 1), finishedAt: dia(8, 4) });
+  it('mes com mais leituras, com o contraste de um mes em branco', () => {
+    const livros = [lido({ finishedAt: dia(0, 5) }), lido({ finishedAt: dia(4, 3) }), lido({ finishedAt: dia(4, 12) }), lido({ finishedAt: dia(4, 20) })];
+    const m = buildWrappedStory(livros, [], ANO, dezembro).insights.find((i) => i.id === 'bestMonth');
+    expect(m?.name).toBe('Maio');
+    expect(m?.lead).toBe('3 livros concluídos em Maio. Já Abril passou em branco.');
+    expect(m?.chart?.highlight).toEqual([4]);
+  });
+
+  it('nao existe mais a leitura relampago (datas do app nem sempre sao as reais)', () => {
+    const rapido = lido({ title: 'Eldest', totalPages: 700, startedAt: dia(4, 10, 8), finishedAt: dia(4, 10, 23) });
     const s = buildWrappedStory([rapido, lido({}), lido({})], [], ANO, dezembro);
-    expect(s.insights.find((i) => i.id === 'fastest')?.name).toBe('Duna');
+    expect(s.insights.map((i) => i.id)).not.toContain('fastest');
+    expect(s.letter).not.toContain('único dia');
   });
 
   it('frase do ano vem das citacoes favoritas', () => {
@@ -87,7 +96,7 @@ describe('selecao e carta', () => {
     const livros = Array.from({ length: 12 }, (_, i) => lido({ finishedAt: dia(i % 12, 3 + (i % 3)), genre: 'Fantasia', totalPages: 500 + i * 30, publishedDate: i === 0 ? '1900' : '2020' }));
     const s = buildWrappedStory(livros, [], ANO, dezembro);
     expect(s.insights.length).toBeLessThanOrEqual(6);
-    const ORDEM = ['pages', 'marathon', 'fastest', 'fireGhost', 'series', 'topAuthor', 'newAuthor', 'genre', 'vibe', 'formats', 'oldest', 'newest', 'waitList', 'longest', 'controversial', 'dnf', 'quote'];
+    const ORDEM = ['pages', 'marathon', 'bestMonth', 'series', 'topAuthor', 'newAuthor', 'genre', 'vibe', 'formats', 'oldest', 'newest', 'waitList', 'longest', 'controversial', 'dnf', 'quote'];
     const pos = s.insights.map((i) => ORDEM.indexOf(i.id));
     expect([...pos].sort((a, b) => a - b)).toEqual(pos);
   });
@@ -139,11 +148,4 @@ describe('ajustes vindos do uso real', () => {
     expect(s.insights.find((i) => i.id === 'quote')?.quote?.text).toBe('Of course I do. Everybody should know how.');
   });
 
-  it('leitura em um dia: singular, sem "dia(s)"', () => {
-    const rapido = lido({ title: 'Eldest', totalPages: 644, startedAt: dia(4, 10, 8), finishedAt: dia(4, 10, 23) });
-    const s = buildWrappedStory([rapido, lido({}), lido({})], [], ANO, dezembro);
-    const f = s.insights.find((i) => i.id === 'fastest');
-    expect(f?.chip).toBe('Eldest em 1 dia');
-    expect(f?.letter).toBe('devorou Eldest em um único dia');
-  });
 });

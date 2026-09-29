@@ -60,7 +60,7 @@ export type WrappedStoryData = {
 const MAX_INSIGHTS = 6;
 
 /** Ordem em que as descobertas escolhidas aparecem (conta uma história). */
-const ORDEM = ['pages', 'marathon', 'fastest', 'fireGhost', 'series', 'topAuthor', 'newAuthor', 'genre', 'vibe', 'formats', 'oldest', 'newest', 'waitList', 'longest', 'controversial', 'dnf', 'quote'];
+const ORDEM = ['pages', 'marathon', 'bestMonth', 'series', 'topAuthor', 'newAuthor', 'genre', 'vibe', 'formats', 'oldest', 'newest', 'waitList', 'longest', 'controversial', 'dnf', 'quote'];
 
 const DIA = 86400000;
 const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
@@ -140,44 +140,27 @@ function marathonInsight(fin: Book[]): Insight | null {
   };
 }
 
-function fastestInsight(fin: Book[]): Insight | null {
-  const candidatos = fin
-    .map((b) => {
-      const fim = realFinishDate(b);
-      if (!fim || !b.startedAt || !b.totalPages || b.totalPages < 150) return null;
-      const dias = Math.max(1, Math.round((fim - b.startedAt) / DIA));
-      return { b, dias, ritmo: b.totalPages / dias };
-    })
-    .filter((x): x is { b: Book; dias: number; ritmo: number } => x !== null && x.dias <= 7 && x.ritmo >= 60)
-    .sort((a, b) => b.ritmo - a.ritmo);
-  const top = candidatos[0];
-  if (!top) return null;
-  return {
-    id: 'fastest', score: Math.min(90, 50 + top.ritmo / 10), image: 'maior',
-    kicker: t('LEITURA RELÂMPAGO'),
-    name: top.b.title,
-    lead: top.dias === 1
-      ? t('{p} páginas em um único dia.', { p: top.b.totalPages || 0 })
-      : t('{p} páginas em {d} dias — umas {r} por dia.', { p: top.b.totalPages || 0, d: top.dias, r: Math.round(top.ritmo) }),
-    cover: card(top.b),
-    letter: top.dias === 1 ? t('devorou {title} em um único dia', { title: top.b.title }) : t('devorou {title} em {d} dias', { title: top.b.title, d: top.dias }),
-    chip: top.dias === 1 ? t('{title} em 1 dia', { title: top.b.title }) : t('{title} em {d} dias', { title: top.b.title, d: top.dias })
-  };
-}
-
-function fireGhostInsight(d: WrappedData, year: number, now: Date): Insight | null {
-  if (d.bestMonthCount < 3 || d.bestMonth < 0) return null;
+/**
+ * O mês com mais livros terminados. (Substituiu a "leitura relâmpago": ela
+ * dependia das datas de início e fim marcadas no app, que nem sempre são as
+ * da leitura de verdade — e acabava dizendo "700 páginas em um dia".)
+ */
+function bestMonthInsight(d: WrappedData, year: number, now: Date): Insight | null {
+  if (d.bestMonth < 0 || d.bestMonthCount < 2) return null;
+  const m = mes(d.bestMonth);
+  // Um mês zerado já passado, o mais perto do melhor, dá o contraste.
   const ultimoMes = year === now.getFullYear() ? now.getMonth() - 1 : 11;
   const zerados = d.monthly.map((c, i) => (c === 0 && i <= ultimoMes ? i : -1)).filter((i) => i >= 0);
-  if (!zerados.length) return null;
-  const fantasma = zerados.reduce((perto, i) => (Math.abs(i - d.bestMonth) < Math.abs(perto - d.bestMonth) ? i : perto), zerados[0]);
+  const fantasma = zerados.length ? zerados.reduce((perto, i) => (Math.abs(i - d.bestMonth) < Math.abs(perto - d.bestMonth) ? i : perto), zerados[0]) : -1;
+  const base = t('{n} livros concluídos em {m}.', { n: d.bestMonthCount, m });
   return {
-    id: 'fireGhost', score: 55 + d.bestMonthCount * 2, image: 'mes',
-    kicker: t('ALTOS E BAIXOS'),
-    name: mes(d.bestMonth),
-    lead: t('{fantasma}: nenhum livro. {fogo}: {n}. Leitura também tem estação.', { fantasma: mes(fantasma), fogo: mes(d.bestMonth), n: d.bestMonthCount }),
+    id: 'bestMonth', score: Math.min(85, 52 + d.bestMonthCount * 3), image: 'mes',
+    kicker: t('SEU MÊS COM MAIS LEITURAS'),
+    name: m,
+    lead: fantasma >= 0 ? base + ' ' + t('Já {f} passou em branco.', { f: mes(fantasma) }) : base,
     chart: { monthly: d.monthly, highlight: [d.bestMonth] },
-    letter: t('fez de {m} o seu mês de fogo', { m: mes(d.bestMonth) })
+    letter: t('fez de {m} o seu mês mais forte', { m }),
+    chip: t('{n} livros em {m}', { n: d.bestMonthCount, m })
   };
 }
 
@@ -431,12 +414,11 @@ const TINTAS: Record<GenreFamily, { tint: readonly [string, string] | null; acce
   outro: { tint: ['rgba(10,20,70,0.45)', 'rgba(140,80,10,0.35)'], accent: '#fbbf24' }
 };
 
-export type Trait = 'maratonista' | 'sagas' | 'relampago' | 'critica' | 'generosa' | 'viajante' | 'curiosa' | 'ouvinte' | 'fiel' | 'contemplativa' | 'constante';
+export type Trait = 'maratonista' | 'sagas' | 'critica' | 'generosa' | 'viajante' | 'curiosa' | 'ouvinte' | 'fiel' | 'contemplativa' | 'constante';
 
 const TRACO: Record<Trait, { nome: string; descricao: string }> = {
   maratonista: { nome: 'Mente Maratonista', descricao: 'Quando uma história pega, você não larga — e emenda a próxima.' },
   sagas: { nome: 'Alma das Sagas', descricao: 'Você não lê livros soltos: você se muda para mundos inteiros.' },
-  relampago: { nome: 'Mente Relâmpago', descricao: 'Páginas somem nas suas mãos. Poucos leem tão rápido quanto você.' },
   critica: { nome: 'Mente Crítica', descricao: 'Cinco estrelas com você se conquistam. Sua nota vale ouro.' },
   generosa: { nome: 'Alma Generosa', descricao: 'Você encontra beleza em quase tudo que lê — e dá o crédito.' },
   viajante: { nome: 'Alma Viajante', descricao: 'Você atravessa décadas e séculos atrás de boas histórias.' },
@@ -459,7 +441,6 @@ function choosePersona(fin: Book[], d: WrappedData, found: Record<string, Insigh
   const forca: Array<[Trait, number]> = [
     ['maratonista', found.marathon ? found.marathon.score : d.totalBooks >= 30 ? 70 : 0],
     ['sagas', volumesSerie >= 3 ? 60 + volumesSerie * 5 : 0],
-    ['relampago', found.fastest ? found.fastest.score - 5 : 0],
     ['critica', avaliados.length >= 5 && media <= 3.2 ? 72 : 0],
     ['generosa', avaliados.length >= 5 && media >= 4.5 ? 62 : 0],
     ['viajante', velho <= 1950 ? 64 : 0],
@@ -503,8 +484,7 @@ export function buildWrappedStory(books: Book[], quotes: Quote[], year: number, 
   const found: Record<string, Insight | null> = {
     pages: pagesInsight(data),
     marathon: marathonInsight(fin),
-    fastest: fastestInsight(fin),
-    fireGhost: fireGhostInsight(data, year, now),
+    bestMonth: bestMonthInsight(data, year, now),
     series: seriesInsight(fin),
     topAuthor: topAuthorInsight(data),
     newAuthor: newAuthorInsight(books, fin, year),
