@@ -1,5 +1,5 @@
 import { ReactElement, ReactNode, useState } from 'react';
-import { Link, router, usePathname } from 'expo-router';
+import { Link, usePathname } from 'expo-router';
 import { FlatList, Image, Pressable, RefreshControl, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Text } from '@/components/TranslatedText';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,7 +10,6 @@ import { SessionUser } from '@/types/sessionUser';
 import { appColors, appFonts } from '@/theme/tokens';
 import { accentColor, densityValue, scaledFont } from '@/services/visualPreferences';
 import { ReadoraIcon, ReadoraIconName } from '@/components/ReadoraIcon';
-import { isInstalledWebApp } from '@/services/pwa';
 
 const menuItems: { icon: ReadoraIconName; label: string; href: string }[] = [
   { icon: 'dashboard', label: 'Dashboard', href: '/' },
@@ -227,25 +226,12 @@ function Sidebar({ accent, textScale, user, onSignOut }: { accent: string; textS
   );
 }
 
-// Telas da barra inferior: nelas o menu fica, nas outras aparece o "voltar".
-const TELAS_PRINCIPAIS = ['/', '/library', '/shelves', '/quotes', '/literary-profile'];
-
 function MobileTopbar({ accent, onMenu, user, insetTop }: { accent: string; onMenu: () => void; user: SessionUser | null; insetTop: number }) {
-  const pathname = usePathname();
-  // Instalado na tela inicial do iPhone não há botão de voltar do navegador
-  // (no Android, o do próprio celular resolve): o cabeçalho ganha um.
-  const mostrarVoltar = isInstalledWebApp() && !TELAS_PRINCIPAIS.includes(pathname) && router.canGoBack();
   return (
     <View style={[styles.mobileTopbar, { height: 70 + insetTop, paddingTop: insetTop }]}>
-      {mostrarVoltar ? (
-        <Pressable onPress={() => router.back()} hitSlop={6} style={styles.menuButton} accessibilityLabel="Voltar">
-          <ReadoraIcon name="back" size={26} color={appColors.textMuted} />
-        </Pressable>
-      ) : (
-        <Pressable onPress={onMenu} hitSlop={6} style={styles.menuButton}>
-          <ReadoraIcon name="menu" size={26} color={appColors.textMuted} />
-        </Pressable>
-      )}
+      <Pressable onPress={onMenu} hitSlop={6} style={styles.menuButton}>
+        <ReadoraIcon name="menu" size={26} color={appColors.textMuted} />
+      </Pressable>
       <View style={styles.topbarBrand}><Brand compact /></View>
       <Link href="/account" asChild>
         <Pressable hitSlop={8} style={styles.topbarAvatar}>

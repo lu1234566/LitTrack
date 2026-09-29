@@ -4,7 +4,7 @@ import { exchangeCodeAsync } from 'expo-auth-session';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import { SessionUser } from '@/types/sessionUser';
-import { isNativeFirebaseConfigured, listenToFirebaseUser, signInFirebaseWithGoogleIdToken, signInFirebaseWithGooglePopup, signOutFirebaseUser, webRedirectLoginError } from '@/services/firebaseNative';
+import { isNativeFirebaseConfigured, listenToFirebaseUser, signInFirebaseWithGoogleIdToken, signInFirebaseWithGooglePopup, signOutFirebaseUser } from '@/services/firebaseNative';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -55,13 +55,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   });
 
   useEffect(() => listenToFirebaseUser(setUser), []);
-
-  // Voltando do login por redirecionamento (app instalado no iPhone): se o
-  // Google ou o Firebase recusou, mostra o motivo em vez de só não logar.
-  useEffect(() => {
-    if (Platform.OS !== 'web') return;
-    webRedirectLoginError().then((erro) => { if (erro) setAuthNotice('Falha no login: ' + erro); });
-  }, []);
 
   // No Android/iOS o Google devolve um `code` que precisa ser trocado por
   // tokens; o id_token nunca vem no retorno imediato do promptAsync. Este
@@ -118,8 +111,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     if (Platform.OS === 'web') {
       try {
         const loggedUser = await signInFirebaseWithGooglePopup();
-        // null = saiu para a página do Google (app instalado); volta logado.
-        if (!loggedUser) return 'Abrindo o login do Google...';
         setUser(loggedUser);
         setAuthNotice(loggedUser?.email ? 'Login concluído: ' + loggedUser.email : 'Login concluído.');
         return 'Login concluído.';
