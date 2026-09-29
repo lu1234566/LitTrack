@@ -470,6 +470,7 @@ export const en: Record<string, string> = {
   'Gerar e revisar': 'Create and review',
   'Gerencie sua biblioteca com segurança, exportando relatórios ou restaurando backups.': 'Manage your library safely by exporting reports or restoring backups.',
   'GESTÃO': 'MANAGEMENT',
+  'AJUSTAR': 'ADJUST',
   'Grande': 'Large',
   'Guardiao de trechos': 'Keeper of passages',
   'Guardião de trechos': 'Keeper of passages',
@@ -1086,7 +1087,28 @@ export const en: Record<string, string> = {
   'Use EXPO_PUBLIC_FIREBASE_* no ambiente Expo para ativar sincronização.': 'Cloud sync is not configured in this build.',
   'Configure Firebase e Google Client IDs para ativar a conta real.': 'Sign-in is not configured in this build.',
   'Use o fluxo de login do Google para criar uma sessão Firebase real. Confira se as variáveis de ambiente foram preenchidas antes de testar.': 'Sign in with Google to sync your library across devices.',
-  'Resultados iniciais prontos para teste. Clique em Buscar para tentar APIs externas.': 'Sample results ready. Tap Search to look online.'
+  'Resultados iniciais prontos para teste. Clique em Buscar para tentar APIs externas.': 'Sample results ready. Tap Search to look online.',
+  // Lendo agora (painel), lembretes e sugestões.
+  'Lendo agora': 'Reading now',
+  'pág. {a}': 'p. {a}',
+  'Somar {n} páginas': 'Add {n} pages',
+  'Você terminou {title}! 🎉': 'You finished {title}! 🎉',
+  '+{n} páginas em {title}': '+{n} pages in {title}',
+  'Desfazer': 'Undo',
+  'Falta pouco!': 'Almost there!',
+  'Falta 1 página para terminar {title}.': '1 page left to finish {title}.',
+  'Faltam {n} páginas para terminar {title}.': '{n} pages left to finish {title}.',
+  '{title}: você está na página {a} de {b}. Que tal mais {g} páginas hoje?': '{title}: you’re on page {a} of {b}. How about {g} more pages today?',
+  '{title}: você está em {p}%. Continue de onde parou.': '{title}: you’re at {p}%. Pick up where you left off.',
+  'Que tal continuar {title} hoje?': 'How about continuing {title} today?',
+  'Nenhuma leitura em andamento. Que tal começar {title}?': 'Nothing in progress. How about starting {title}?',
+  'COMO VAI CHEGAR': 'PREVIEW',
+  'Enviar sugestão': 'Send feedback',
+  'Escrever sugestão': 'Write feedback',
+  'Achou um problema ou tem uma ideia? Abre um e-mail já com a versão do app e o modelo do aparelho — é só escrever.': 'Found a problem or have an idea? This opens an email with the app version and device model already filled in — just write.',
+  'Nenhum app de e-mail encontrado': 'No email app found',
+  'Os dados do app foram copiados. Mande sua sugestão para {email}.': 'The app details were copied. Send your feedback to {email}.',
+  'Os dados do app foram copiados. Cole junto com a sua sugestão no grupo de testadores.': 'The app details were copied. Paste them with your feedback in the testers group.',
 };
 
 type Sub = (s: string) => string;

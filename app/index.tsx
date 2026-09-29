@@ -6,6 +6,7 @@ import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { BookCard } from '@/components/BookCard';
 import { BookCover } from '@/components/BookCover';
+import { QuickProgress } from '@/components/QuickProgress';
 import { useBooks } from '@/contexts/BookContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
 import { useShelves } from '@/contexts/ShelfContext';
@@ -70,6 +71,10 @@ export default function DashboardScreen() {
         )}
         <Text style={styles.heroWatermark}>R</Text>
       </View>
+
+      {/* Somar páginas sem abrir o livro: a ação mais repetida do app. */}
+      {books.some((book) => book.status === 'reading') ? <SectionHeader color={appColors.gold} title="Lendo agora" /> : null}
+      <QuickProgress />
 
       {/* No celular: dois cartões por linha, e o livro em foco na linha toda
           (o título é longo). Antes cada cartão tinha a largura do conteúdo e

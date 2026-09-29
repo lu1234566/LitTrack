@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Alert, Linking, Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Text, TextInput } from '@/components/TranslatedText';
 import * as Updates from 'expo-updates';
 import { Screen } from '@/components/Screen';
@@ -16,7 +16,10 @@ import { cancelReadingReminders, scheduleReadingReminder } from '@/services/noti
 import { ReadoraIcon, ReadoraIconName } from '@/components/ReadoraIcon';
 import { appColors, appFonts } from '@/theme/tokens';
 import type { LayoutMode, ReminderFrequency } from '@/types/preferences';
-import { appLocale } from '@/services/i18n';
+import { appLocale, t } from '@/services/i18n';
+import { reminderMessage } from '@/services/reminderMessage';
+import { feedbackDeviceInfo, feedbackMailUrl, FEEDBACK_EMAIL } from '@/services/feedbackMail';
+import { copyText } from '@/services/feedback';
 
 const layoutOptions: Array<{ value: LayoutMode; title: string; text: string; icon: ReadoraIconName }> = [
   { value: 'auto', title: 'Automático', text: 'Adapta-se ao tamanho da tela', icon: 'layoutAuto' },
@@ -87,6 +90,18 @@ export default function SettingsScreen() {
     }
   }
 
+  async function sendFeedback() {
+    try {
+      await Linking.openURL(feedbackMailUrl());
+    } catch {
+      // Sem app de e-mail: copia os dados para colar onde a pessoa preferir.
+      await copyText(feedbackDeviceInfo());
+      Alert.alert('Nenhum app de e-mail encontrado', FEEDBACK_EMAIL
+        ? t('Os dados do app foram copiados. Mande sua sugestão para {email}.', { email: FEEDBACK_EMAIL })
+        : 'Os dados do app foram copiados. Cole junto com a sua sugestão no grupo de testadores.');
+    }
+  }
+
   async function saveReminders() {
     await save();
     if (!reminderEnabled) {
@@ -94,7 +109,7 @@ export default function SettingsScreen() {
       setSyncMessage('Lembretes desativados e cancelados.');
       return;
     }
-    const result = await scheduleReadingReminder(reminderText, reminderFrequency);
+    const result = await scheduleReadingReminder(reminderText, reminderFrequency, books, Number(dailyPageGoal) || 0);
     setSyncMessage(result.message);
   }
 
@@ -185,12 +200,10 @@ export default function SettingsScreen() {
         <View style={styles.chips}>{frequencies.map((item) => <Pressable key={item.value} onPress={() => chooseFrequency(item.value)}><Text style={reminderFrequency === item.value ? styles.chipActive : styles.chip}>{item.label}</Text></Pressable>)}</View>
         <TextInput style={styles.input} placeholder="20:00" placeholderTextColor={appColors.textDim} value={reminderText} onChangeText={setReminderText} />
         <Text style={styles.body}>No Android/iOS, este botão agenda notificações reais. No web, o app apenas salva a preferência.</Text>
-        <Text style={styles.kicker}>TIPOS DE LEMBRETE</Text>
-        <View style={[styles.row, mobile && styles.stack]}>
-          <Reminder label="Hora de Ler" text="Um convite suave para seu próximo capítulo." />
-          <Reminder label="Atualizar Progresso" text="Lembrete para registrar sua leitura do dia." />
-          <Reminder label="Atualizar Status" text="Para livros que você não atualiza há algum tempo." />
-        </View>
+        {/* Prévia real: o lembrete cita o livro em andamento e se atualiza
+            sozinho quando o progresso muda. */}
+        <Text style={styles.kicker}>COMO VAI CHEGAR</Text>
+        <ReminderPreview books={books} dailyPageGoal={Number(dailyPageGoal) || 0} />
         <Pressable style={[styles.saveButton, styles.btnRow]} onPress={saveReminders}><ReadoraIcon name="check" size={16} color={appColors.background} /><Text style={styles.saveText}>Salvar e Agendar</Text></Pressable>
       </Card>
 
@@ -221,6 +234,15 @@ export default function SettingsScreen() {
           </Link>
         )}
         {syncMessage ? <Text style={styles.message}>{syncMessage}</Text> : null}
+      </Card>
+
+      <Card>
+        <View style={styles.titleRow}><ReadoraIcon name="feedback" size={20} color={appColors.gold} /><Text style={styles.cardTitle}>Enviar sugestão</Text></View>
+        <Text style={styles.body}>Achou um problema ou tem uma ideia? Abre um e-mail já com a versão do app e o modelo do aparelho — é só escrever.</Text>
+        <Pressable style={[styles.secondaryButton, styles.btnRow]} onPress={sendFeedback}>
+          <ReadoraIcon name="feedback" size={15} color={appColors.gold} />
+          <Text style={styles.secondaryText}>Escrever sugestão</Text>
+        </Pressable>
       </Card>
 
       <Card>
@@ -256,8 +278,9 @@ function LayoutOption({ title, text, active = false, onPress, icon }: { title: s
   return <Pressable style={[styles.layoutOption, active && styles.layoutOptionActive]} onPress={onPress}><ReadoraIcon name={icon} size={28} color={appColors.gold} /><Text style={styles.layoutTitle}>{title}</Text><Text style={styles.layoutText}>{text}</Text></Pressable>;
 }
 
-function Reminder({ label, text }: { label: string; text: string }) {
-  return <View style={styles.reminder}><ReadoraIcon name="checkCircle" size={16} color="#3b82f6" /><View style={styles.reminderTextBox}><Text style={styles.reminderTitle}>{label}</Text><Text style={styles.reminderText}>{text}</Text></View></View>;
+function ReminderPreview({ books, dailyPageGoal }: { books: Parameters<typeof reminderMessage>[0]; dailyPageGoal: number }) {
+  const msg = reminderMessage(books, dailyPageGoal);
+  return <View style={styles.reminder}><ReadoraIcon name="bell" size={16} color={appColors.gold} /><View style={styles.reminderTextBox}><Text style={styles.reminderTitle}>{t(msg.title)}</Text><Text style={styles.reminderText}>{t(msg.body, msg.vars)}</Text></View></View>;
 }
 
 const styles = StyleSheet.create({
@@ -290,7 +313,7 @@ const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
   chip: { color: appColors.textMuted, borderColor: appColors.border, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, overflow: 'hidden', fontWeight: '800' },
   chipActive: { color: appColors.gold, borderColor: appColors.gold, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, overflow: 'hidden', fontWeight: '900' },
-  reminder: { flex: 1, flexDirection: 'row', gap: 10, backgroundColor: appColors.background, borderColor: appColors.border, borderWidth: 1, borderRadius: 12, padding: 14, marginTop: 10 },
+  reminder: { flexDirection: 'row', gap: 10, backgroundColor: appColors.background, borderColor: appColors.border, borderWidth: 1, borderRadius: 12, padding: 14, marginTop: 10 },
   check: { color: '#3b82f6', fontWeight: '900' },
   reminderTextBox: { flex: 1 },
   reminderTitle: { color: appColors.text, fontWeight: '900' },

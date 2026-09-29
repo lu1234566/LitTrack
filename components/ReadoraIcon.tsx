@@ -24,6 +24,7 @@ const ICONS = {
   library: ['ion', 'book-outline'],
   shelves: ['mci', 'bookshelf'],
   series: ['mci', 'book-multiple-outline'],
+  feedback: ['ion', 'chatbubble-ellipses-outline'],
   quotes: ['mci', 'format-quote-close'],
   profile: ['ion', 'person-outline'],
   literaryProfile: ['ion', 'person-circle-outline'],

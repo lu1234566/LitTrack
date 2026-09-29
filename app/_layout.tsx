@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router';
 import { useEffect } from 'react';
-import { Image, Text as RNText, TextInput as RNTextInput } from 'react-native';
+import { Image, Platform, Text as RNText, TextInput as RNTextInput } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
@@ -8,6 +8,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { AutoSyncBridge } from '@/components/AutoSyncBridge';
 import { UpdateBanner } from '@/components/UpdateBanner';
+import { NotificationOpener } from '@/components/NotificationOpener';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { installAlertTranslation } from '@/components/TranslatedText';
 import { setImageSizer } from '@/services/coverProbe';
@@ -90,6 +91,7 @@ export default function RootLayout() {
                 </Stack>
                 <AutoSyncBridge />
                 <UpdateBanner />
+                {Platform.OS !== 'web' ? <NotificationOpener /> : null}
             </ShelfProvider>
           </QuoteProvider>
         </BookProvider>

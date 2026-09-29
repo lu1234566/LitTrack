@@ -4,6 +4,7 @@ import { calculateProgress, loadBooks, saveBooks } from '@/services/bookStorage'
 import { looksLikeHtml, stripHtml } from '@/services/plainText';
 import { persistLocalCover } from '@/services/webPlatformTools';
 import { updateReadingWidget } from '@/services/readingWidget';
+import { refreshReadingReminder } from '@/services/notificationScheduler';
 
 /**
  * Livros salvos antes da limpeza de HTML guardam a marcação crua do Google
@@ -185,6 +186,8 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
     await saveBooks(nextBooks);
     // Widget da tela inicial acompanha o progresso na hora (Android).
     updateReadingWidget(nextBooks);
+    // O lembrete agendado cita a página atual: reescreve com a nova.
+    refreshReadingReminder(nextBooks);
   }
 
   async function replaceBooks(nextBooks: Book[]) {
