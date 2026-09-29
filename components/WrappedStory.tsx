@@ -8,7 +8,8 @@ import { Quote } from '@/types/quote';
 import { buildWrappedStory, Insight, WrappedImage } from '@/services/wrappedInsights';
 import { getAiWrappedLetter } from '@/services/wrappedLetter';
 import { WrappedBackground } from '@/components/WrappedBackground';
-import { FeedCapsuleArt, FeedCapsuleBook } from '@/components/FeedCapsuleArt';
+import { FeedCapsuleBook } from '@/components/FeedCapsuleArt';
+import { SHARE_H, SHARE_W, WrappedShareCard } from '@/components/WrappedShareCard';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { haptic } from '@/services/feedback';
 import { appFonts } from '@/theme/tokens';
@@ -226,29 +227,13 @@ export function WrappedStory({ books, quotes = [], readerName, year, onClose }: 
   function next() { setIndex((i) => Math.min(slides.length - 1, i + 1)); }
   function prev() { setIndex((i) => Math.max(0, i - 1)); }
 
-  const feedData = {
-    monthName: String(year),
-    year,
-    heading: 'Cápsula Anual',
-    periodText: 'Retrospectiva de ' + year,
-    favoriteLabel: 'Favorito do Ano',
-    totalBooks: data.totalBooks,
-    totalPages: data.totalPages,
-    ratingOutOf10: data.ratingOutOf10,
-    dominantMood: data.vibe,
-    books: data.ranked as FeedCapsuleBook[],
-    bestBook: data.bestBook,
-    literaryCopy: data.totalBooks === 0
-      ? year + ' foi um ano de pausa e reflexão silenciosa entre as páginas.'
-      : persona.name + ' — ' + persona.description
-  };
-
   async function capture(): Promise<string | null> {
     if (!shotRef.current) return null;
-    const urls = [data.bestBook?.coverUrl, ...data.ranked.map((b) => b.coverUrl)].filter(Boolean) as string[];
+    const urls = [data.bestBook?.coverUrl, ...data.top5.map((b) => b.coverUrl)].filter((u): u is string => Boolean(u) && /^https?:/.test(u as string));
     await Promise.all(urls.map((u) => Image.prefetch(u).catch(() => false)));
     await new Promise((resolve) => setTimeout(resolve, 350));
-    return captureRef(shotRef, { format: 'png', quality: 1, result: 'tmpfile' });
+    // Desenhada em 360×640, sai em 1080×1920: o tamanho de um story.
+    return captureRef(shotRef, { format: 'png', quality: 1, result: 'tmpfile', width: SHARE_W * 3, height: SHARE_H * 3 });
   }
 
   async function handleShare() {
@@ -334,7 +319,7 @@ export function WrappedStory({ books, quotes = [], readerName, year, onClose }: 
 
         {/* off-screen capture source */}
         {Platform.OS !== 'web' ? (
-          <View style={styles.offscreen} pointerEvents="none"><FeedCapsuleArt ref={shotRef} scale={1} {...feedData} /></View>
+          <View style={styles.offscreen} pointerEvents="none"><WrappedShareCard ref={shotRef} story={story} year={year} /></View>
         ) : null}
       </View>
     </Modal>

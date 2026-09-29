@@ -217,7 +217,9 @@ export async function writeWrappedLetter(facts: string[], readerName?: string): 
   const texto = await callGemini({
     contents: [{ role: 'user', parts: [{ text: 'FATOS DO ANO:\n' + facts.join('\n') }] }],
     systemInstruction: { parts: [{ text: system }] },
-    generationConfig: { maxOutputTokens: 700, thinkingConfig: NO_THINKING }
+    // Folga: no Gemini 3 o raciocínio interno também consome este limite e,
+    // com 700, a carta voltava vazia.
+    generationConfig: { maxOutputTokens: 2048, thinkingConfig: NO_THINKING }
   });
   return texto.replace(/^["“]|["”]$/g, '').trim();
 }

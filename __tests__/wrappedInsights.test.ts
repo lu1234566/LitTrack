@@ -115,3 +115,35 @@ describe('selecao e carta', () => {
     expect(genreFamily('Literatura brasileira')).toBe('outro');
   });
 });
+
+describe('ajustes vindos do uso real', () => {
+  it('"Ficção" generico nao define a familia: vale o proximo genero', () => {
+    const livros = [
+      ...[1, 2, 3, 4].map(() => lido({ genre: 'Ficção' })),
+      lido({ genre: 'Thriller' }), lido({ genre: 'Thriller' }), lido({ genre: 'Fantasia' })
+    ];
+    const s = buildWrappedStory(livros, [], ANO, dezembro);
+    expect(s.palette.family).toBe('misterio');
+    expect(s.persona.name).toMatch(/do Mistério$/);
+  });
+
+  it('sem familia reconhecida ainda tem cor (a do Readora)', () => {
+    const s = buildWrappedStory([lido({ genre: 'Ficção' })], [], ANO, dezembro);
+    expect(s.palette.family).toBe('outro');
+    expect(s.palette.tint).not.toBeNull();
+  });
+
+  it('citacao que ja vem com aspas nao fica com aspas dobradas', () => {
+    const q: Quote = { id: 'q', bookTitle: 'The Wife Upstairs', text: '"Of course I do. Everybody should know how."', tags: [], favorite: true, createdAt: dia(3, 3), updatedAt: dia(3, 3) };
+    const s = buildWrappedStory([lido({})], [q], ANO, dezembro);
+    expect(s.insights.find((i) => i.id === 'quote')?.quote?.text).toBe('Of course I do. Everybody should know how.');
+  });
+
+  it('leitura em um dia: singular, sem "dia(s)"', () => {
+    const rapido = lido({ title: 'Eldest', totalPages: 644, startedAt: dia(4, 10, 8), finishedAt: dia(4, 10, 23) });
+    const s = buildWrappedStory([rapido, lido({}), lido({})], [], ANO, dezembro);
+    const f = s.insights.find((i) => i.id === 'fastest');
+    expect(f?.chip).toBe('Eldest em 1 dia');
+    expect(f?.letter).toBe('devorou Eldest em um único dia');
+  });
+});

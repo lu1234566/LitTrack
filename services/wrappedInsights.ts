@@ -160,8 +160,8 @@ function fastestInsight(fin: Book[]): Insight | null {
       ? t('{p} páginas em um único dia.', { p: top.b.totalPages || 0 })
       : t('{p} páginas em {d} dias — umas {r} por dia.', { p: top.b.totalPages || 0, d: top.dias, r: Math.round(top.ritmo) }),
     cover: card(top.b),
-    letter: t('devorou {title} em {d} dia(s)', { title: top.b.title, d: top.dias }),
-    chip: t('{title} em {d} dia(s)', { title: top.b.title, d: top.dias })
+    letter: top.dias === 1 ? t('devorou {title} em um único dia', { title: top.b.title }) : t('devorou {title} em {d} dias', { title: top.b.title, d: top.dias }),
+    chip: top.dias === 1 ? t('{title} em 1 dia', { title: top.b.title }) : t('{title} em {d} dias', { title: top.b.title, d: top.dias })
   };
 }
 
@@ -366,7 +366,8 @@ function quoteInsight(quotes: Quote[], year: number): Insight | null {
     id: 'quote', score: q.favorite ? 66 : 54, image: 'livro',
     kicker: t('A FRASE DO SEU ANO'),
     lead: '',
-    quote: { text: q.text, source: q.bookTitle + (q.author ? ' · ' + q.author : '') },
+    // A citação às vezes já vem entre aspas; a tela coloca as suas.
+    quote: { text: q.text.trim().replace(/^["“”'‘’]+|["“”'‘’]+$/g, '').trim(), source: q.bookTitle + (q.author ? ' · ' + q.author : '') },
     letter: t('guardou frases que ficaram')
   };
 }
@@ -376,6 +377,17 @@ function quoteInsight(quotes: Quote[], year: number): Insight | null {
 // ---------------------------------------------------------------------------
 
 export type GenreFamily = 'fantasia' | 'terror' | 'romance' | 'misterio' | 'scifi' | 'naoficcao' | 'classicos' | 'poesia' | 'quadrinhos' | 'outro';
+
+/**
+ * Família do leitor: o gênero mais lido que diga alguma coisa. "Ficção" ou
+ * "Literatura" sozinhos não definem cor nem persona — passa para o próximo.
+ */
+export function readerFamily(fin: Book[]): GenreFamily {
+  const contagem: Record<string, number> = {};
+  fin.forEach((b) => { if (b.genre) contagem[b.genre] = (contagem[b.genre] || 0) + 1; });
+  const ordem = Object.entries(contagem).sort((a, b) => b[1] - a[1]).map(([g]) => genreFamily(g));
+  return ordem.find((f) => f !== 'outro') || 'outro';
+}
 
 export function genreFamily(genre: string): GenreFamily {
   const g = (genre || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -415,7 +427,8 @@ const TINTAS: Record<GenreFamily, { tint: readonly [string, string] | null; acce
   classicos: { tint: ['rgba(100,65,30,0.5)', 'rgba(40,25,15,0.55)'], accent: '#e7c38a' },
   poesia: { tint: ['rgba(110,60,140,0.45)', 'rgba(240,170,200,0.3)'], accent: '#f0abfc' },
   quadrinhos: { tint: ['rgba(220,38,38,0.4)', 'rgba(250,204,21,0.3)'], accent: '#fde047' },
-  outro: { tint: null, accent: '#ffffff' }
+  // Sem família reconhecida: as cores do próprio Readora (azul-noite e ouro).
+  outro: { tint: ['rgba(10,20,70,0.45)', 'rgba(140,80,10,0.35)'], accent: '#fbbf24' }
 };
 
 export type Trait = 'maratonista' | 'sagas' | 'relampago' | 'critica' | 'generosa' | 'viajante' | 'curiosa' | 'ouvinte' | 'fiel' | 'contemplativa' | 'constante';
@@ -457,7 +470,7 @@ function choosePersona(fin: Book[], d: WrappedData, found: Record<string, Insigh
     ['constante', 30]
   ];
   const [trait] = forca.sort((a, b) => b[1] - a[1])[0];
-  const familia = genreFamily(d.topGenre);
+  const familia = readerFamily(fin);
   const chips = [
     ...Object.values(found).filter((i): i is Insight => Boolean(i?.chip)).sort((a, b) => b.score - a.score).map((i) => i.chip as string),
     avaliados.length ? t('média {m}★', { m: media.toFixed(1).replace('.', ',') }) : ''
@@ -514,7 +527,7 @@ export function buildWrappedStory(books: Book[], quotes: Quote[], year: number, 
     .sort((a, b) => ORDEM.indexOf(a.id) - ORDEM.indexOf(b.id));
 
   const persona = choosePersona(fin, data, found);
-  const familia = genreFamily(data.topGenre);
+  const familia = readerFamily(fin);
   const palette: Palette = { family: familia, ...TINTAS[familia] };
   const partial = year === now.getFullYear() && now.getMonth() < 11;
   const letter = composeLetter(data, persona, insights, partial, readerName);
