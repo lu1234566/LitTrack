@@ -48,15 +48,15 @@ export default function RetrospectiveScreen() {
       </View>
 
       <View style={[styles.grid, mobile && styles.stack]}>
-        <Metric label="LIVROS CONCLUÍDOS" value={String(stats.finishedBooks)} />
-        <Metric label="PÁGINAS LIDAS" value={stats.pagesRead.toLocaleString(appLocale)} />
-        <Metric label="NOTA MÉDIA" value={stats.averageRating.toFixed(1) + '/5'} />
+        <Metric wide={!mobile} label="LIVROS CONCLUÍDOS" value={String(stats.finishedBooks)} />
+        <Metric wide={!mobile} label="PÁGINAS LIDAS" value={stats.pagesRead.toLocaleString(appLocale)} />
+        <Metric wide={!mobile} label="NOTA MÉDIA" value={stats.averageRating.toFixed(1) + '/5'} />
       </View>
 
       <View style={[styles.featureGrid, mobile && styles.stack]}>
-        <Highlight title="Melhor avaliado" value={best ? best.title : 'Ainda sem notas'} detail={best ? best.rating + '/5 estrelas' : 'Avalie seus livros para destacar favoritos.'} color={appColors.gold} />
-        <Highlight title="Maior livro" value={longest ? longest.title : 'Ainda sem livros'} detail={longest ? (longest.totalPages || 0) + ' páginas' : 'Cadastre leituras para criar marcos.'} color={appColors.purple} />
-        <Highlight title="Mês mais forte" value={monthlyFinished[bestMonthIdx] > 0 ? monthNames[bestMonthIdx] : 'Ainda sem marcos'} detail={monthlyFinished[bestMonthIdx] > 0 ? monthlyFinished[bestMonthIdx] + ' livro(s) concluído(s)' : 'Conclua leituras para destacar seu melhor mês.'} color={appColors.emerald} />
+        <Highlight wide={!mobile} title="Melhor avaliado" value={best ? best.title : 'Ainda sem notas'} detail={best ? best.rating + '/5 estrelas' : 'Avalie seus livros para destacar favoritos.'} color={appColors.gold} />
+        <Highlight wide={!mobile} title="Maior livro" value={longest ? longest.title : 'Ainda sem livros'} detail={longest ? (longest.totalPages || 0) + ' páginas' : 'Cadastre leituras para criar marcos.'} color={appColors.purple} />
+        <Highlight wide={!mobile} title="Mês mais forte" value={monthlyFinished[bestMonthIdx] > 0 ? monthNames[bestMonthIdx] : 'Ainda sem marcos'} detail={monthlyFinished[bestMonthIdx] > 0 ? monthlyFinished[bestMonthIdx] + ' livro(s) concluído(s)' : 'Conclua leituras para destacar seu melhor mês.'} color={appColors.emerald} />
       </View>
 
       <Card>
@@ -84,12 +84,15 @@ export default function RetrospectiveScreen() {
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
-  return <Card><Text style={styles.metricLabel}>{label}</Text><Text style={styles.big}>{value}</Text></Card>;
+// No computador os cartões dividem a linha em partes iguais. Antes cada um
+// tinha a largura do próprio texto, e um título longo empurrava o último para
+// fora da tela.
+function Metric({ label, value, wide = false }: { label: string; value: string; wide?: boolean }) {
+  return <View style={wide && styles.cell}><Card><Text style={styles.metricLabel}>{label}</Text><Text style={styles.big} numberOfLines={1} adjustsFontSizeToFit>{value}</Text></Card></View>;
 }
 
-function Highlight({ title, value, detail, color }: { title: string; value: string; detail: string; color: string }) {
-  return <Card><View style={[styles.colorDot, { backgroundColor: color }]} /><Text style={styles.highlightTitle}>{title}</Text><Text style={styles.highlightValue}>{value}</Text><Text style={styles.body}>{detail}</Text></Card>;
+function Highlight({ title, value, detail, color, wide = false }: { title: string; value: string; detail: string; color: string; wide?: boolean }) {
+  return <View style={wide && styles.cell}><Card><View style={[styles.colorDot, { backgroundColor: color }]} /><Text style={styles.highlightTitle}>{title}</Text><Text style={styles.highlightValue} numberOfLines={2}>{value}</Text><Text style={styles.body}>{detail}</Text></Card></View>;
 }
 
 const styles = StyleSheet.create({
@@ -101,6 +104,7 @@ const styles = StyleSheet.create({
   wrappedBtn: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: appColors.gold, borderRadius: 999, paddingVertical: 14, paddingHorizontal: 24, marginTop: 8 },
   wrappedText: { color: appColors.background, fontWeight: '900', fontSize: 15 },
   grid: { flexDirection: 'row', gap: 16 },
+  cell: { flex: 1, minWidth: 0 },
   featureGrid: { flexDirection: 'row', gap: 16 },
   metricLabel: { color: appColors.textDim, fontSize: 10, letterSpacing: 3, fontWeight: '900' },
   big: { color: appColors.text, fontSize: 34, fontWeight: '900' },

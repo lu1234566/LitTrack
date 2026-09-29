@@ -110,16 +110,21 @@ export default function DashboardScreen() {
       <SectionHeader color={appColors.purple} title="Minhas Estantes" action="GESTÃO" href="/shelves" />
       <View style={[styles.shelfGrid, mobile && styles.stack]}>
         {buildShelfCards(shelves).map((shelf) => (
-          <Card key={shelf.name}>
+          // No computador as quatro estantes dividem a linha por igual; antes
+          // cada cartão tinha a largura do texto e as últimas saíam da tela.
+          <View key={shelf.name} style={!mobile && styles.cell}>
+          <Card>
             <View style={styles.shelfTop}><View style={styles.folderIcon}><ReadoraIcon name={shelf.icon} size={20} color={shelf.color} /></View><Text style={styles.shelfBadge}>{shelf.count}</Text></View>
             <Text style={styles.shelfTitle}>{shelf.name}</Text>
             <Text style={styles.shelfText}>{shelf.description}</Text>
           </Card>
+          </View>
         ))}
       </View>
 
       <SectionHeader color={appColors.rose} title="Atmosferas" />
       <View style={[styles.atmosGrid, mobile && styles.stack]}>
+        <View style={!mobile && styles.atmosMain}>
         <Card>
           <Text style={styles.displayCardTitle}>Retrato Literário</Text>
           <Text style={styles.body}>A essência da sua caminhada entre páginas e narrativas.</Text>
@@ -130,6 +135,7 @@ export default function DashboardScreen() {
             <MiniBox label="VASTIDÃO" value={String(stats.totalBooks)} />
           </View>
         </Card>
+        </View>
         <View style={styles.capsuleCardGold}>
           <View style={styles.capsuleIcon}><ReadoraIcon name="monthlyCapsule" size={24} color={appColors.gold} /></View>
           <Text style={styles.capsuleTitle}>Cápsula Mensal</Text>
@@ -215,6 +221,8 @@ const styles = StyleSheet.create({
   emptyPanel: { minHeight: 120, borderColor: appColors.border, borderStyle: 'dashed', borderWidth: 1, borderRadius: 34, alignItems: 'center', justifyContent: 'center', padding: 24 },
   emptyText: { color: appColors.textDim, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 16, textAlign: 'center' },
   shelfGrid: { flexDirection: 'row', gap: 20 },
+  cell: { flex: 1, minWidth: 0 },
+  atmosMain: { flex: 2, minWidth: 0 },
   shelfTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   folderIcon: { backgroundColor: appColors.surfaceSoft, borderColor: appColors.border, borderWidth: 1, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   shelfBadge: { color: appColors.textMuted, backgroundColor: appColors.surfaceSoft, borderColor: appColors.border, borderWidth: 1, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 5, overflow: 'hidden', fontSize: 11 },
@@ -224,10 +232,10 @@ const styles = StyleSheet.create({
   displayCardTitle: { color: appColors.text, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 34, fontWeight: '900' },
   body: { color: appColors.textMuted, lineHeight: 22 },
   profileGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 18 },
-  miniBox: { flexGrow: 1, minWidth: 180, backgroundColor: appColors.background, borderColor: appColors.borderSoft, borderWidth: 1, borderRadius: 24, padding: 22 },
+  miniBox: { flexGrow: 1, flexBasis: 180, minWidth: 0, backgroundColor: appColors.background, borderColor: appColors.borderSoft, borderWidth: 1, borderRadius: 24, padding: 22 },
   miniLabel: { color: appColors.textDim, fontSize: 10, letterSpacing: 3, fontWeight: '900' },
   miniValue: { color: appColors.text, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 18, fontWeight: '900', marginTop: 10 },
-  capsuleCardGold: { flex: 1, backgroundColor: appColors.gold, borderRadius: 28, padding: 28, gap: 16 },
+  capsuleCardGold: { flex: 1, minWidth: 0, backgroundColor: appColors.gold, borderRadius: 28, padding: 28, gap: 16 },
   capsuleIcon: { width: 44, height: 44, borderRadius: 14, backgroundColor: appColors.background, alignItems: 'center', justifyContent: 'center' },
   capsuleIconText: { color: appColors.gold, fontSize: 24 },
   capsuleTitle: { color: appColors.background, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 32, fontWeight: '900' },
