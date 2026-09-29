@@ -63,6 +63,7 @@ const ICONS = {
   streak: ['ion', 'flame-outline'],
   star: ['ion', 'star'],
   starOutline: ['ion', 'star-outline'],
+  starHalf: ['ion', 'star-half'],
   heart: ['ion', 'heart-outline'],
   people: ['ion', 'people-outline'],
   pace: ['ion', 'speedometer-outline'],

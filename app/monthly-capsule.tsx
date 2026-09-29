@@ -6,7 +6,7 @@ import * as Sharing from 'expo-sharing';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { FeedCapsuleArt, FeedCapsuleBook } from '@/components/FeedCapsuleArt';
-import { StoryCapsuleArt } from '@/components/StoryCapsuleArt';
+import { MonthlyPostcardArt } from '@/components/MonthlyPostcardArt';
 import { useBooks } from '@/contexts/BookContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
 import { downloadCapsulePng } from '@/services/webPlatformTools';
@@ -213,9 +213,11 @@ export default function MonthlyCapsuleScreen() {
               </View>
             ) : null}
             <View style={[styles.previewFrame, { width: previewWidth + 24 }]}>
-              {format === 'feed' || isYear
+              {/* Mês: cartão-postal claro. Ano: a arte antiga (o brilho do ano
+                  fica com o Wrapped, na Retrospectiva). */}
+              {isYear
                 ? <FeedCapsuleArt scale={previewScale} {...feedData} />
-                : <StoryCapsuleArt scale={previewScale} {...feedData} />}
+                : <MonthlyPostcardArt scale={previewScale} format={format} monthIndex={selMonth} {...feedData} />}
             </View>
           </View>
 
@@ -263,9 +265,9 @@ export default function MonthlyCapsuleScreen() {
       {/* Fonte de captura em alta resolução (Feed 1080×1350 / Story 1080×1920), fora da tela. */}
       {Platform.OS !== 'web' ? (
         <View style={styles.offscreen} pointerEvents="none">
-          {format === 'feed' || isYear
+          {isYear
             ? <FeedCapsuleArt ref={shotRef} scale={1} {...feedData} />
-            : <StoryCapsuleArt ref={shotRef} scale={1} {...feedData} />}
+            : <MonthlyPostcardArt ref={shotRef} scale={1} format={format} monthIndex={selMonth} {...feedData} />}
         </View>
       ) : null}
     </Screen>

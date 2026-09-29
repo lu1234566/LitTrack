@@ -13,7 +13,8 @@ import { isAiConfigured } from '@/services/aiClient';
 import { appColors, appFonts } from '@/theme/tokens';
 import { appLocale } from '@/services/i18n';
 import { seriesOfBook } from '@/services/series';
-import { BOOK_FORMATS, formatOf, parseDuration, progressInputText, progressLabel } from '@/services/bookFormat';
+import { FinishBookSheet } from '@/components/FinishBookSheet';
+import { applyProgress, BOOK_FORMATS, formatOf, parseDuration, progressInputText, progressLabel } from '@/services/bookFormat';
 
 export default function BookDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -22,6 +23,7 @@ export default function BookDetailsScreen() {
   const [page, setPage] = useState(book ? progressInputText(book) : '');
   const [showCard, setShowCard] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [avaliar, setAvaliar] = useState(false);
 
   if (!book) {
     return (
@@ -48,6 +50,13 @@ export default function BookDetailsScreen() {
       return;
     }
     await updateProgress(currentBook.id, valor);
+    // Chegou ao fim agora e ainda sem nota: pergunta o que achou.
+    if (currentBook.status !== 'finished' && !currentBook.rating && applyProgress(currentBook, valor).status === 'finished') setAvaliar(true);
+  }
+
+  async function marcarLido() {
+    await updateStatus(currentBook.id, 'finished');
+    if (currentBook.status !== 'finished' && !currentBook.rating) setAvaliar(true);
   }
 
   async function handleDelete() {
@@ -91,6 +100,7 @@ export default function BookDetailsScreen() {
       </View>
       {showCard ? <BookShareCard book={currentBook} onClose={() => setShowCard(false)} /> : null}
       {showChat ? <BookChat book={currentBook} onClose={() => setShowChat(false)} /> : null}
+      {avaliar ? <FinishBookSheet book={currentBook} onClose={() => setAvaliar(false)} /> : null}
       {isAiConfigured ? <Pressable style={[styles.startButton, styles.btnRow]} onPress={() => setShowChat(true)}><ReadoraIcon name="quotes" size={17} color={appColors.background} /><Text style={styles.startText}>Converse com o livro</Text></Pressable> : null}
       {currentBook.status === 'wishlist' ? <Pressable style={[styles.startButton, styles.btnRow]} onPress={() => updateStatus(currentBook.id, 'reading')}><ReadoraIcon name="bookDetails" size={17} color={appColors.background} /><Text style={styles.startText}>Começar leitura</Text></Pressable> : null}
 
@@ -152,7 +162,7 @@ export default function BookDetailsScreen() {
 
       <View style={styles.statusRow}>
         <Pressable style={styles.secondaryButton} onPress={() => updateStatus(currentBook.id, 'reading')}><Text style={styles.secondaryText}>Lendo</Text></Pressable>
-        <Pressable style={styles.secondaryButton} onPress={() => updateStatus(currentBook.id, 'finished')}><Text style={styles.secondaryText}>Lido</Text></Pressable>
+        <Pressable style={styles.secondaryButton} onPress={marcarLido}><Text style={styles.secondaryText}>Lido</Text></Pressable>
         <Pressable style={styles.secondaryButton} onPress={() => updateStatus(currentBook.id, 'wishlist')}><Text style={styles.secondaryText}>Quero ler</Text></Pressable>
         <Pressable style={styles.secondaryButton} onPress={() => updateStatus(currentBook.id, 'dnf')}><Text style={styles.secondaryText}>Abandonei</Text></Pressable>
       </View>

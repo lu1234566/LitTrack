@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/TranslatedText';
 import { Card } from '@/components/Card';
+import { FinishBookSheet } from '@/components/FinishBookSheet';
 import { BookCover } from '@/components/BookCover';
 import { useBooks } from '@/contexts/BookContext';
 import { haptic } from '@/services/feedback';
@@ -29,6 +30,8 @@ type Ultimo = {
 export function QuickProgress() {
   const { books, updateProgress, updateBook } = useBooks();
   const [ultimo, setUltimo] = useState<Ultimo | null>(null);
+  // Livro recém-concluído sem nota: abre a tela para avaliar na hora.
+  const [concluido, setConcluido] = useState<Book | null>(null);
 
   // A ordem fica fixa enquanto a tela está aberta: cada toque muda o
   // `updatedAt` e, ordenando por ele, o livro pularia de lugar sob o dedo.
@@ -61,6 +64,7 @@ export function QuickProgress() {
     const terminou = depois.status === 'finished' && book.status !== 'finished';
     haptic(terminou ? 'success' : 'light');
     await updateProgress(book.id, atual + passo);
+    if (terminou && !book.rating) setConcluido(depois);
     setUltimo((anterior) => ({
       bookId: book.id,
       title: book.title,
@@ -79,10 +83,11 @@ export function QuickProgress() {
     setUltimo(null);
   }
 
-  if (!lendo.length && !ultimo) return null;
+  if (!lendo.length && !ultimo && !concluido) return null;
 
   return (
     <Card>
+      {concluido ? <FinishBookSheet book={concluido} onClose={() => setConcluido(null)} /> : null}
       {lendo.map((book, i) => {
         const temTotal = progressFraction(book) !== null;
         const pct = progressPercentOf(book);
