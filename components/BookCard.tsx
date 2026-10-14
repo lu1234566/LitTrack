@@ -11,7 +11,7 @@ export function BookCard({ book, compact = false }: { book: Book; compact?: bool
 
   return (
     <Link href={{ pathname: '/book/[id]', params: { id: book.id } }} asChild>
-      <Pressable style={[styles.card, compact && styles.cardCompact]}>
+      <Pressable style={StyleSheet.flatten([styles.card, compact && styles.cardCompact])}>
         <View style={[styles.cover, compact && styles.coverCompact]}>
           {book.coverUrl ? <Image source={{ uri: book.coverUrl }} style={styles.coverImage} /> : <><Text style={styles.coverText}>{book.title.slice(0, 1).toUpperCase()}</Text><Text style={styles.coverGenre}>{book.genre.slice(0, 10)}</Text></>}
         </View>
