@@ -19,11 +19,12 @@
     "newArchEnabled": true,
     "android": {
       "package": "com.readora.app",
-      "versionCode": 9,
+      "versionCode": 10,
       "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#000b41"
+        "backgroundColor": "#000b41",
+        "backgroundImage": "./assets/adaptive-icon-bg.png"
       },
       "permissions": [
         "android.permission.CAMERA"
