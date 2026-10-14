@@ -14,9 +14,9 @@ export const READING_WIDGET = 'Reading';
  * Falhar aqui nunca pode atrapalhar o app: o widget é um extra.
  */
 export function updateReadingWidget(books: Book[]) {
-  if (Platform.OS !== 'android') return;
+  if (Platform.OS !== 'android') return Promise.resolve();
   const data = pickReadingWidgetData(books);
-  requestWidgetUpdate({
+  return requestWidgetUpdate({
     widgetName: READING_WIDGET,
     renderWidget: (info) => <ReadingWidget data={data} width={info.width} height={info.height} />
   }).catch(() => {});
