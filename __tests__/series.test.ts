@@ -51,7 +51,7 @@ describe('agrupar series', () => {
   });
 
   it('aponta o volume que falta na biblioteca', () => {
-    expect(groupSeries(tbate)[0].missing).toEqual([4]);
+    expect(groupSeries(tbate)[0].missing).toEqual([4, 7, 8, 9, 10, 11]);
   });
 
   it('proxima leitura: continuar o que esta em andamento', () => {
@@ -81,5 +81,48 @@ describe('widget lendo agora', () => {
 
   it('sem leitura em andamento, fica vazio', () => {
     expect(pickReadingWidgetData([livro('c', 'Lido')]).book).toBeNull();
+  });
+});
+
+describe('séries com títulos próprios (sem número no título)', () => {
+  it('reconhece e ordena o Ciclo da Herança', () => {
+    const groups = groupSeries([
+      livro('2', 'Eldest'), livro('4', 'Herança'),
+      livro('1', 'Eragon'), livro('3', 'Brisingr')
+    ]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].name).toBe('Ciclo da Herança');
+    expect(groups[0].volumes.map((v) => v.volume)).toEqual([1, 2, 3, 4]);
+    expect(groups[0].finished).toBe(4);
+    expect(groups[0].lastVolume).toBe(4);
+    expect(groups[0].missing).toEqual([]);
+  });
+
+  it('agrupa Shadow and Bone em inglês e português', () => {
+    const groups = groupSeries([
+      livro('1', 'Shadow and Bone'), livro('2', 'Sol e Tormenta'), livro('3', 'Ruína e Ascensão', 'reading')
+    ]);
+    expect(groups[0].volumes.map((v) => v.volume)).toEqual([1, 2, 3]);
+    expect(groups[0].finished).toBe(2);
+    expect(groups[0].next).toMatchObject({ kind: 'continue', volume: 3 });
+  });
+
+  it('reconhece os volumes da Empregada sem confundir com livros avulsos', () => {
+    const groups = groupSeries([livro('1', 'A Empregada'), livro('2', 'O Segredo da Empregada')]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].lastVolume).toBe(3);
+    expect(groups[0].finished).toBe(2);
+    expect(groups[0].missing).toEqual([3]);
+    expect(groupSeries([livro('u', 'A Empregada')])).toEqual([]);
+  });
+
+  it('não marca TBATE como completo quando falta o volume 11', () => {
+    const groups = groupSeries([
+      livro('9', 'The Beginning After the End: Reckoning'),
+      livro('10', 'The Beginning After the End: Retribution')
+    ]);
+    expect(groups[0].lastVolume).toBe(11);
+    expect(groups[0].missing).toContain(11);
+    expect(parseSeries('The Beginning After the End: Providence')?.volume).toBe(11);
   });
 });
