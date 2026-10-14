@@ -88,7 +88,7 @@ export default function DashboardScreen() {
 
       <SectionHeader color={appColors.emerald} title={'Meta de ' + year} action="AJUSTAR" href="/settings" />
       {yearlyGoal > 0 ? (
-        <Card>
+        <Card compact>
           <View style={styles.goalTop}>
             <Text style={styles.goalCount}>{finishedThisYear}<Text style={styles.goalOf}> / {yearlyGoal} livros</Text></Text>
             <Text style={styles.goalPct}>{goalPct}%</Text>
@@ -105,18 +105,18 @@ export default function DashboardScreen() {
       {!loading && recentBooks.length === 0 ? (
         <View style={styles.emptyPanel}><Text style={styles.emptyText}>Sua estante de finalizados aguarda a primeira obra.</Text></View>
       ) : null}
-      {recentBooks.map((book) => <BookCard key={book.id} book={book} />)}
+      {recentBooks.map((book) => <BookCard key={book.id} book={book} compact />)}
 
       <SectionHeader color={appColors.purple} title="Minhas Estantes" action="GESTÃO" href="/shelves" />
-      <View style={[styles.shelfGrid, mobile && styles.stack]}>
+      <View style={[styles.shelfGrid, mobile && styles.shelfMobileGrid]}>
         {buildShelfCards(shelves).map((shelf) => (
           // No computador as quatro estantes dividem a linha por igual; antes
           // cada cartão tinha a largura do texto e as últimas saíam da tela.
-          <View key={shelf.name} style={!mobile && styles.cell}>
-          <Card>
+          <View key={shelf.name} style={mobile ? styles.shelfMobileCell : styles.cell}>
+          <Card compact>
             <View style={styles.shelfTop}><View style={styles.folderIcon}><ReadoraIcon name={shelf.icon} size={20} color={shelf.color} /></View><Text style={styles.shelfBadge}>{shelf.count}</Text></View>
             <Text style={styles.shelfTitle}>{shelf.name}</Text>
-            <Text style={styles.shelfText}>{shelf.description}</Text>
+            {!mobile ? <Text style={styles.shelfText}>{shelf.description}</Text> : null}
           </Card>
           </View>
         ))}
@@ -221,12 +221,14 @@ const styles = StyleSheet.create({
   emptyPanel: { minHeight: 120, borderColor: appColors.border, borderStyle: 'dashed', borderWidth: 1, borderRadius: 34, alignItems: 'center', justifyContent: 'center', padding: 24 },
   emptyText: { color: appColors.textDim, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 16, textAlign: 'center' },
   shelfGrid: { flexDirection: 'row', gap: 20 },
+  shelfMobileGrid: { flexWrap: 'wrap', gap: 10 },
+  shelfMobileCell: { flexBasis: '47.5%', flexGrow: 1, minWidth: 0 },
   cell: { flex: 1, minWidth: 0 },
   atmosMain: { flex: 2, minWidth: 0 },
   shelfTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   folderIcon: { backgroundColor: appColors.surfaceSoft, borderColor: appColors.border, borderWidth: 1, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   shelfBadge: { color: appColors.textMuted, backgroundColor: appColors.surfaceSoft, borderColor: appColors.border, borderWidth: 1, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 5, overflow: 'hidden', fontSize: 11 },
-  shelfTitle: { color: appColors.text, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 18, fontWeight: '900' },
+  shelfTitle: { color: appColors.text, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 16, fontWeight: '900' },
   shelfText: { color: appColors.textDim, fontFamily: appFonts.display, fontStyle: 'italic', lineHeight: 19 },
   atmosGrid: { flexDirection: 'row', gap: 28 },
   displayCardTitle: { color: appColors.text, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 34, fontWeight: '900' },
