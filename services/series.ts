@@ -50,7 +50,7 @@ const TITULOS_CONHECIDOS: Array<{ series: string; volume: number; titles: string
 
 function tituloConhecido(title: string): SeriesInfo | null {
   // Sufixos de edição não mudam a identidade do livro.
-  const normalized = seriesKey(title.replace(/\\((?:edição|edition|capa dura|hardcover|paperback|audiobook|kindle)\\)/gi, ''));
+  const normalized = seriesKey(title.replace(/\((?:edição|edition|capa dura|hardcover|paperback|audiobook|kindle)\)/gi, ''));
   for (const item of TITULOS_CONHECIDOS) {
     if (item.titles.some((alias) => seriesKey(alias) === normalized)) {
       const subtitle = item.titles[0].includes(':') ? item.titles[0].split(':').slice(1).join(':').trim() : item.titles[0];
@@ -103,6 +103,16 @@ export type SeriesGroup = {
   next: { kind: 'continue' | 'start' | 'missing'; volume: number; book?: Book } | null;
 };
 
+/** Total conhecido de volumes, mesmo quando ainda não foram cadastrados. */
+function totalConhecido(series: string) {
+  const key = seriesKey(series);
+  if (key === 'ciclo da heranca' || key === 'o ciclo da heranca') return 4;
+  if (key === 'shadow and bone' || key === 'a trilogia grisha') return 3;
+  if (key === 'a empregada' || key === 'the housemaid') return 3;
+  if (key === 'the beginning after the end') return 11;
+  return 0;
+}
+
 /**
  * Agrupa os livros em séries. Só vira série o que tiver 2+ volumes: um livro
  * isolado com "(Volume 3)" no título não é informação útil de agrupamento.
@@ -112,7 +122,8 @@ export function groupSeries(books: Book[]): SeriesGroup[] {
   for (const book of books) {
     const info = parseSeries(book.title);
     if (!info) continue;
-    const key = seriesKey(info.series);
+    const originalKey = seriesKey(info.series);
+    const key = originalKey === 'o ciclo da heranca' ? 'ciclo da heranca' : originalKey === 'the housemaid' ? 'a empregada' : originalKey;
     const g = grupos.get(key) || { name: info.series, volumes: [] };
     g.volumes.push({ book, volume: info.volume, subtitle: info.subtitle });
     grupos.set(key, g);
@@ -123,7 +134,7 @@ export function groupSeries(books: Book[]): SeriesGroup[] {
     if (g.volumes.length < 2) continue;
     // Mesmo volume duas vezes (edição normal e HQ): o lido vem primeiro.
     const volumes = g.volumes.sort((a, b) => a.volume - b.volume || Number(b.book.status === 'finished') - Number(a.book.status === 'finished'));
-    const lastVolume = Math.max(...volumes.map((v) => v.volume));
+    const lastVolume = Math.max(totalConhecido(g.name), ...volumes.map((v) => v.volume));
     const tem = new Set(volumes.map((v) => v.volume));
     const missing: number[] = [];
     for (let n = 1; n < lastVolume; n++) if (!tem.has(n)) missing.push(n);
