@@ -43,7 +43,7 @@ export default function RetrospectiveScreen() {
         <Pressable style={styles.wrappedBtn} onPress={() => setShowWrapped(true)}>
           <ReadoraIcon name="sparkle" size={18} color={appColors.background} />
           {/* Antes de dezembro o Wrapped já existe como "seu ano até agora". */}
-          <Text style={styles.wrappedText}>{new Date().getMonth() < 11 ? t('Ver meu {y} até agora', { y: year }) : t('Ver minha Readora Wrapped {y}', { y: year })}</Text>
+          <Text style={styles.wrappedText}>{new Date().getMonth() < 11 ? t('Ver meu {y} até agora', { y: year }) : t('Ver minha retrospectiva Códice {y}', { y: year })}</Text>
         </Pressable>
       </View>
 
