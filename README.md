@@ -1,11 +1,11 @@
-# Readora
+# Códice Literário
 
-**Readora** is a premium, polished literary journal and reading tracker in the cloud. Designed for bibliophiles who value elegance and organization, Readora provides a sophisticated environment to log your reading journey, analyze your habits, and connect with a community of readers.
+**Códice Literário** is a personal library and reading tracker. Designed for bibliophiles who value elegance and organization, Códice Literário provides a sophisticated environment to log your reading journey, analyze your habits, and connect with a community of readers.
 
 ## ✨ Features
 
 - **Personal Library**: Keep track of books read, currently reading, and your wishlist.
-- **Literary Journal**: Log your thoughts, ratings, and progress for every book.
+- **Reading Notes**: Log your thoughts, ratings, and progress for every book.
 - **Dynamic Insights**: Visualize your reading habits with monthly and annual statistics.
 - **Cloud Sync**: Powered by Firebase for real-time synchronization across devices.
 - **Reading Challenges**: Join community challenges and earn unique badges.
@@ -65,4 +65,4 @@ VITE_FIREBASE_DATABASE_ID=(optional)_custom_db_id
 
 ---
 
-*Readora — Seu diário literário na nuvem.*
+*Códice Literário — Sua biblioteca em um só lugar.*
