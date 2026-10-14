@@ -185,6 +185,7 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (typeof AppState?.addEventListener !== 'function') return;
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') void updateReadingWidget(booksRef.current);
     });
