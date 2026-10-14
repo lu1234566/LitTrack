@@ -45,8 +45,8 @@ export default function DashboardScreen() {
   return (
     <Screen>
       <View style={styles.heroCard}>
-        <Text style={[styles.heroKicker, mobile && styles.heroKickerMobile]} numberOfLines={1} adjustsFontSizeToFit>READORA — LITERARY JOURNAL</Text>
-        <Text style={[styles.heroTitle, mobile && styles.heroTitleMobile]}>Readora</Text>
+        <Text style={[styles.heroKicker, mobile && styles.heroKickerMobile]} numberOfLines={1} adjustsFontSizeToFit>CÓDICE LITERÁRIO</Text>
+        <Text style={[styles.heroTitle, mobile && styles.heroTitleMobile]}>Códice</Text>
         <Text style={styles.heroQuote}>“Os livros são uma forma única de magia portátil.” — Stephen King</Text>
         {/* As capas do que voce ja leu, no lugar dos dois botoes que antes
             ocupavam este espaco — a mesma navegacao existe na barra inferior e
@@ -69,7 +69,7 @@ export default function DashboardScreen() {
         ) : (
           <Text style={styles.heroEmpty}>Sua estante de concluídos começa no primeiro livro terminado.</Text>
         )}
-        <Text style={styles.heroWatermark}>R</Text>
+        <Text style={styles.heroWatermark}>C</Text>
       </View>
 
       {/* Somar páginas sem abrir o livro: a ação mais repetida do app. */}

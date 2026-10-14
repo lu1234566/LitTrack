@@ -56,7 +56,7 @@ export default function AccountScreen() {
       await signOut();
       setDeleteStep('idle');
       setConfirmText('');
-      setMessage('Conta e dados excluídos. Nada mais seu permanece no Readora.');
+      setMessage('Conta e dados excluídos. Nada mais seu permanece no Códice.');
     } catch (error) {
       setMessage(error instanceof Error ? 'Falha ao excluir: ' + error.message : 'Falha ao excluir os dados.');
     } finally {
@@ -70,7 +70,7 @@ export default function AccountScreen() {
     <Screen>
       <View style={styles.header}>
         <Text style={styles.kicker}>CONTA E NUVEM</Text>
-        <Text style={styles.title}>Conta Readora</Text>
+        <Text style={styles.title}>Conta Códice</Text>
         <Text style={styles.subtitle}>Entre com sua conta Google para guardar seus livros na nuvem e acessá-los em qualquer aparelho e no site.</Text>
       </View>
 
@@ -85,11 +85,11 @@ export default function AccountScreen() {
           <View style={styles.userRow}>
             {user.photoURL ? <Image source={{ uri: user.photoURL }} style={styles.avatar} /> : <View style={styles.avatarFallback}><Text style={styles.avatarText}>{(user.displayName || user.email || 'R').slice(0, 1).toUpperCase()}</Text></View>}
             <View style={styles.userTextBox}>
-              <Text style={styles.userName}>{user.displayName || 'Leitor Readora'}</Text>
+              <Text style={styles.userName}>{user.displayName || 'Leitor do Códice'}</Text>
               <Text style={styles.userEmail}>{user.email || user.uid}</Text>
             </View>
           </View>
-          <Text style={styles.body}>Com a conta ativa, o Readora sincroniza automaticamente livros, citações, estantes e preferências.</Text>
+          <Text style={styles.body}>Com a conta ativa, o Códice sincroniza automaticamente livros, citações, estantes e preferências.</Text>
           <Pressable style={styles.secondaryButton} onPress={signOut}><Text style={styles.secondaryText}>Desconectar</Text></Pressable>
         </Card>
       ) : (

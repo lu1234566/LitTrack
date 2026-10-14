@@ -16,7 +16,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error) {
     // eslint-disable-next-line no-console
-    console.error('Readora capturou um erro de renderização:', error);
+    console.error('Códice capturou um erro de renderização:', error);
   }
 
   reset = () => this.setState({ error: null });

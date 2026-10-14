@@ -136,7 +136,7 @@ describe('ajustes vindos do uso real', () => {
     expect(s.persona.name).toMatch(/do Mistério$/);
   });
 
-  it('sem familia reconhecida ainda tem cor (a do Readora)', () => {
+  it('sem familia reconhecida ainda tem cor (a da marca)', () => {
     const s = buildWrappedStory([lido({ genre: 'Ficção' })], [], ANO, dezembro);
     expect(s.palette.family).toBe('outro');
     expect(s.palette.tint).not.toBeNull();

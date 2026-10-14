@@ -47,7 +47,7 @@ export const BookCardArt = forwardRef<View, { book: Book; scale?: number }>(func
         <Text style={{ color: C.n500, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(26), letterSpacing: u(3), textTransform: 'uppercase' }}>Minha Leitura</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: u(10), backgroundColor: C.amber, paddingHorizontal: u(28), paddingVertical: u(14), borderRadius: u(24) }}>
           <ReadoraIcon name="sparkle" size={u(28)} color={C.bg} />
-          <Text style={{ color: C.bg, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(22), textTransform: 'uppercase', letterSpacing: u(2) }}>Readora</Text>
+          <Text style={{ color: C.bg, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(22), textTransform: 'uppercase', letterSpacing: u(2) }}>Códice</Text>
         </View>
       </View>
 
@@ -87,8 +87,8 @@ export const BookCardArt = forwardRef<View, { book: Book; scale?: number }>(func
       ) : <View />}
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopColor: C.border, borderTopWidth: 1, paddingTop: u(34) }}>
-        <Text style={{ color: C.n700, fontFamily: appFonts.mono, fontSize: u(22) }}>Gerado no Readora</Text>
-        <Text style={{ color: C.amber, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(28), letterSpacing: u(6), textTransform: 'uppercase' }}>Readora</Text>
+        <Text style={{ color: C.n700, fontFamily: appFonts.mono, fontSize: u(22) }}>Gerado no Códice</Text>
+        <Text style={{ color: C.amber, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(28), letterSpacing: u(6), textTransform: 'uppercase' }}>Códice</Text>
       </View>
     </View>
   );

@@ -29,7 +29,7 @@ export default function ScanIsbnScreen() {
         <View style={styles.center}>
           <ReadoraIcon name="scanIsbn" size={54} color={appColors.gold} />
           <Text style={styles.title}>Permissão de câmera</Text>
-          <Text style={styles.subtitle}>O Readora precisa da câmera para escanear o código de barras ISBN do livro.</Text>
+          <Text style={styles.subtitle}>O Códice precisa da câmera para escanear o código de barras ISBN do livro.</Text>
           <Pressable style={styles.button} onPress={requestPermission}><Text style={styles.buttonText}>Permitir câmera</Text></Pressable>
           <Pressable style={styles.secondaryButton} onPress={() => router.back()}><Text style={styles.secondaryText}>Voltar</Text></Pressable>
         </View>

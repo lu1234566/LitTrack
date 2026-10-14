@@ -173,7 +173,7 @@ export default function SettingsScreen() {
     <Screen>
       <View style={styles.header}>
         <View style={styles.titleRow}><ReadoraIcon name="settings" size={32} color={appColors.gold} /><Text style={styles.title}>Configurações</Text></View>
-        <Text style={styles.subtitle}>Personalize sua experiência no Readora.</Text>
+        <Text style={styles.subtitle}>Personalize sua experiência no Códice.</Text>
       </View>
 
       <EnrichLibraryCard />

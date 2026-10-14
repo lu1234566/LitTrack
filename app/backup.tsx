@@ -119,7 +119,7 @@ export default function BackupScreen() {
     const selectedPages = selectedBooks.reduce((sum, book) => sum + (book.totalPages || 0), 0);
     const selectedAverage = selectedBooks.length ? selectedBooks.reduce((sum, book) => sum + (book.rating || 0), 0) / selectedBooks.length : 0;
     return [
-      'READORA — RELATÓRIO DA BIBLIOTECA',
+      'CÓDICE — RELATÓRIO DA BIBLIOTECA',
       'Leitor: ' + preferences.readerName,
       'Gerado em: ' + new Date().toLocaleString(appLocale),
       'Filtro de status: ' + labelForScope(scope),
@@ -169,7 +169,7 @@ export default function BackupScreen() {
     const text = reportText || buildReportText();
     setReportText(text);
     setMessage('Gerando PDF...');
-    const ok = await exportPdfDocument('Readora — Relatório da Biblioteca', text);
+    const ok = await exportPdfDocument('Códice — Relatório da Biblioteca', text);
     setMessage(ok
       ? (Platform.OS === 'web' ? 'Janela de impressão aberta. Use “Salvar como PDF”.' : 'PDF gerado — escolha onde salvar ou enviar.')
       : 'Não foi possível gerar o PDF. Tente novamente.');

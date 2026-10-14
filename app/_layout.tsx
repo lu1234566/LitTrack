@@ -70,7 +70,7 @@ export default function RootLayout() {
                     contentStyle: { backgroundColor: appColors.background }
                   }}
                 >
-                  <Stack.Screen name="index" options={{ title: 'Readora' }} />
+                  <Stack.Screen name="index" options={{ title: 'Códice' }} />
                   <Stack.Screen name="library" options={{ title: 'Biblioteca' }} />
                   <Stack.Screen name="series" options={{ title: 'Séries' }} />
                   <Stack.Screen name="discover" options={{ title: 'Descobrir' }} />

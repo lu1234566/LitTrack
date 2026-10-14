@@ -189,7 +189,7 @@ export async function extractQuoteFromImage(base64: string, mimeType = 'image/jp
  * é instruída a não inventar nada — a IA só dá a voz.
  */
 export async function writeWrappedLetter(facts: string[], readerName?: string): Promise<string> {
-  const system = 'Você escreve a carta de encerramento da retrospectiva anual de leitura do app Readora. '
+  const system = 'Você escreve a carta de encerramento da retrospectiva anual de leitura do app Códice. '
     + 'Escreva em ' + IDIOMA_IA + ', na segunda pessoa, com tom caloroso, pessoal e um toque literário. '
     + 'Entre 70 e 110 palavras, em 1 ou 2 parágrafos, sem título, sem listas, no máximo um emoji. '
     + (readerName ? 'O leitor se chama ' + readerName + '. ' : '')

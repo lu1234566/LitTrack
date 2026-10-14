@@ -44,7 +44,7 @@ export const WrappedShareCard = forwardRef<View, { story: WrappedStoryData; year
 
       <View style={styles.header}>
         <Image source={MARCA} style={styles.mark} />
-        <Text style={styles.brand}>Readora</Text>
+        <Text style={styles.brand}>Códice</Text>
         <Text style={styles.wrappedTag}>WRAPPED</Text>
       </View>
 
@@ -105,7 +105,7 @@ export const WrappedShareCard = forwardRef<View, { story: WrappedStoryData; year
       ) : null}
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>Readora · seu diário de leitura</Text>
+        <Text style={styles.footerText}>Códice · seu diário literário</Text>
       </View>
     </View>
   );

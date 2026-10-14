@@ -171,7 +171,7 @@ function Brand({ compact = false }: { compact?: boolean }) {
         <Image source={BRAND_MARK} style={styles.logoImage} />
       </View>
       <View style={{ flexShrink: 1, minWidth: 0 }}>
-        <Text numberOfLines={1} style={[styles.brandName, compact && styles.brandNameSmall]}>Readora</Text>
+        <Text numberOfLines={1} style={[styles.brandName, compact && styles.brandNameSmall]}>Códice</Text>
         <Text numberOfLines={1} style={[styles.brandSub, compact && styles.brandSubSmall]}>DIÁRIO LITERÁRIO</Text>
       </View>
     </View>

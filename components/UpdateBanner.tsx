@@ -46,7 +46,7 @@ export function UpdateBanner() {
         <View style={styles.iconBox}><ReadoraIcon name="sparkle" size={17} color={appColors.gold} /></View>
         <View style={styles.textBox}>
           <Text style={styles.title}>Nova versão disponível</Text>
-          <Text style={styles.subtitle}>Reinicie para usar as novidades do Readora.</Text>
+          <Text style={styles.subtitle}>Reinicie para usar as novidades do Códice.</Text>
         </View>
         <Pressable style={styles.action} onPress={applyUpdate} disabled={restarting || isDownloading} hitSlop={6}>
           {restarting

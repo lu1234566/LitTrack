@@ -249,7 +249,7 @@ export function downloadCapsulePng(data: CapsulePngData) {
 
   ctx.fillStyle = gold;
   ctx.font = '700 28px Georgia, serif';
-  ctx.fillText('READORA • MEMÓRIAS LITERÁRIAS', 130, 190);
+  ctx.fillText('CÓDICE • MEMÓRIAS LITERÁRIAS', 130, 190);
 
   ctx.fillStyle = text;
   ctx.font = '800 76px Georgia, serif';

@@ -61,7 +61,7 @@ export default function ShelfDetailScreen() {
       ) : (
         <>
           <Text style={styles.title}>{currentShelf.name}</Text>
-          <Text style={styles.subtitle}>{currentShelf.description || 'Coleção manual do Readora.'}</Text>
+          <Text style={styles.subtitle}>{currentShelf.description || 'Coleção manual do Códice.'}</Text>
           <Pressable style={styles.outlineButton} onPress={startEditing}><Text style={styles.outlineText}>Editar nome e descrição</Text></Pressable>
         </>
       )}

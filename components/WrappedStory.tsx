@@ -100,7 +100,7 @@ export function WrappedStory({ books, quotes = [], readerName, year, onClose }: 
       colors: cor(0), image: 'intro',
       render: () => (
         <View style={styles.center}>
-          <Text style={styles.kicker}>READORA WRAPPED</Text>
+          <Text style={styles.kicker}>CÓDICE WRAPPED</Text>
           <Text style={styles.bigYear}>{year}</Text>
           <Text style={styles.lead}>{partial ? 'Seu ano de leitura até agora.' : 'Sua retrospectiva literária do ano.'}</Text>
           <Text style={styles.hint}>toque para começar →</Text>
@@ -182,7 +182,7 @@ export function WrappedStory({ books, quotes = [], readerName, year, onClose }: 
         <View style={styles.center}>
           <Text style={styles.kicker}>UMA CARTA PARA VOCÊ</Text>
           <Text style={styles.letter}>{aiLetter || story.letter}</Text>
-          {aiLetter ? <Text style={styles.letterNote}>Escrita pela IA do Readora a partir das suas leituras.</Text> : null}
+          {aiLetter ? <Text style={styles.letterNote}>Escrita pela IA do Códice a partir das suas leituras.</Text> : null}
         </View>
       )
     });
@@ -191,7 +191,7 @@ export function WrappedStory({ books, quotes = [], readerName, year, onClose }: 
       colors: ['#0b132b', '#1c2541'], image: 'final',
       render: () => (
         <View style={styles.center}>
-          <Text style={styles.kicker}>SUA READORA WRAPPED</Text>
+          <Text style={styles.kicker}>SEU CÓDICE WRAPPED</Text>
           <Text style={styles.bigYear}>{year}</Text>
           {data.totalBooks > 0 ? <Text style={[styles.personaTag, { color: palette.accent }]}>{persona.name}</Text> : null}
           <View style={styles.recapGrid}>
@@ -240,7 +240,7 @@ export function WrappedStory({ books, quotes = [], readerName, year, onClose }: 
     if (Platform.OS === 'web') { setMessage('Compartilhamento disponível no app.'); return; }
     try {
       const uri = await capture();
-      if (uri && (await Sharing.isAvailableAsync())) { haptic('success'); await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Minha Readora Wrapped' }); }
+      if (uri && (await Sharing.isAvailableAsync())) { haptic('success'); await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Meu Códice Wrapped' }); }
       else setMessage('Compartilhamento não disponível.');
     } catch { haptic('error'); setMessage('Não foi possível gerar a imagem.'); }
   }
@@ -262,7 +262,7 @@ export function WrappedStory({ books, quotes = [], readerName, year, onClose }: 
     if (Platform.OS === 'web') { setMessage('Compartilhamento disponível no app.'); return; }
     try {
       const uri = await captureSlide();
-      if (uri && (await Sharing.isAvailableAsync())) { haptic('success'); await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Meu slide Readora Wrapped' }); }
+      if (uri && (await Sharing.isAvailableAsync())) { haptic('success'); await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Meu slide do Códice Wrapped' }); }
       else setMessage('Compartilhamento não disponível.');
     } catch { haptic('error'); setMessage('Não foi possível gerar a imagem.'); }
   }
@@ -285,7 +285,7 @@ export function WrappedStory({ books, quotes = [], readerName, year, onClose }: 
         </View>
 
         <View style={styles.topBar}>
-          <Text style={styles.brand}>Readora</Text>
+          <Text style={styles.brand}>Códice</Text>
           {!capturing ? <Pressable onPress={onClose} hitSlop={14}><ReadoraIcon name="close" size={26} color="#fff" /></Pressable> : null}
         </View>
 

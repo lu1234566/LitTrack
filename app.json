@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Readora",
+    "name": "Códice",
     "slug": "readora-native",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "runtimeVersion": {
       "policy": "fingerprint"
     },
@@ -19,7 +19,7 @@
     "newArchEnabled": true,
     "android": {
       "package": "com.readora.app",
-      "versionCode": 8,
+      "versionCode": 9,
       "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -39,10 +39,10 @@
       "bundleIdentifier": "com.readora.app",
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "O Readora usa a câmera para escanear o código ISBN dos seus livros e capturar capas.",
-        "NSPhotoLibraryUsageDescription": "O Readora acessa suas fotos para definir capas de livros e importar imagens da sua biblioteca.",
-        "NSPhotoLibraryAddUsageDescription": "O Readora salva a imagem da sua Cápsula Literária na galeria para você compartilhar.",
-        "NSMicrophoneUsageDescription": "O Readora pode acessar o microfone durante a captura com a câmera."
+        "NSCameraUsageDescription": "O Códice usa a câmera para escanear o código ISBN dos seus livros e capturar capas.",
+        "NSPhotoLibraryUsageDescription": "O Códice acessa suas fotos para definir capas de livros e importar imagens da sua biblioteca.",
+        "NSPhotoLibraryAddUsageDescription": "O Códice salva a imagem da sua Cápsula Literária na galeria para você compartilhar.",
+        "NSMicrophoneUsageDescription": "O Códice pode acessar o microfone durante a captura com a câmera."
       }
     },
     "plugins": [
@@ -130,7 +130,7 @@
           "widgets": [
             {
               "name": "Reading",
-              "label": "Readora — Lendo agora",
+              "label": "Códice — Lendo agora",
               "description": "O livro que você está lendo e o seu progresso",
               "minWidth": "110dp",
               "minHeight": "110dp",

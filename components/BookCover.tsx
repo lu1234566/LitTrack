@@ -69,7 +69,7 @@ function FallbackCover({ book, height, reserveBottom }: { book: Book; height: nu
   }
   return (
     <View style={[styles.fallback, compact && styles.fallbackCompact, reserveBottom > 0 && { paddingBottom: reserveBottom }]}>
-      {!compact ? <Text style={styles.kicker} numberOfLines={1}>{book.genre || 'READORA'}</Text> : null}
+      {!compact ? <Text style={styles.kicker} numberOfLines={1}>{book.genre || 'CÓDICE'}</Text> : null}
       <Text style={[styles.initial, { fontSize: Math.max(30, 74 * scale) }]}>{book.title.slice(0, 1).toUpperCase()}</Text>
       <Text style={[styles.title, { fontSize: Math.max(11, 22 * scale), lineHeight: Math.max(14, 26 * scale) }]} numberOfLines={compact ? 2 : 3}>
         {book.title}

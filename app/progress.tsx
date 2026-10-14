@@ -23,7 +23,7 @@ export default function ProgressScreen() {
   return (
     <Screen>
       <Text style={styles.title}>Progresso</Text>
-      <Text style={styles.subtitle}>Conquistas, metas e ritmo de leitura do Readora.</Text>
+      <Text style={styles.subtitle}>Conquistas, metas e ritmo de leitura do Códice.</Text>
 
       <Card>
         <Text style={styles.kicker}>Meta anual</Text>

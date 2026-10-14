@@ -133,7 +133,7 @@ export const FeedCapsuleArt = forwardRef<View, FeedCapsuleArtProps>(function Fee
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: u(9), backgroundColor: C.amber, paddingHorizontal: u(26), paddingVertical: u(14), borderRadius: u(24) }}>
             <ReadoraIcon name="sparkle" size={u(28)} color={C.bg} />
-            <Text style={{ color: C.bg, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(22), textTransform: 'uppercase', letterSpacing: u(1.8) }}>Readora</Text>
+            <Text style={{ color: C.bg, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(22), textTransform: 'uppercase', letterSpacing: u(1.8) }}>Códice</Text>
           </View>
         </View>
 
@@ -232,10 +232,10 @@ export const FeedCapsuleArt = forwardRef<View, FeedCapsuleArtProps>(function Fee
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', borderTopColor: C.border, borderTopWidth: 1, paddingTop: u(26), marginTop: u(14) }}>
           <View style={{ flex: 1, paddingRight: u(24) }}>
             <Text numberOfLines={2} style={{ color: C.n400, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: u(22), lineHeight: u(27) }}>&ldquo;{literaryCopy}&rdquo;</Text>
-            <Text style={[labelStyle, { fontSize: u(17), letterSpacing: u(3.4), marginTop: u(5), color: C.n600 }]}>Gerado por seu app Readora</Text>
+            <Text style={[labelStyle, { fontSize: u(17), letterSpacing: u(3.4), marginTop: u(5), color: C.n600 }]}>Gerado pelo seu app Códice</Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
-            <Text style={{ color: C.amber, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(28), textTransform: 'uppercase', letterSpacing: u(7) }}>Readora</Text>
+            <Text style={{ color: C.amber, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(28), textTransform: 'uppercase', letterSpacing: u(7) }}>Códice</Text>
             <Text style={{ color: C.n700, fontFamily: appFonts.mono, fontSize: u(16) }}>EST. 2024</Text>
           </View>
         </View>
