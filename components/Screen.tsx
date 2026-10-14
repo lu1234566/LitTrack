@@ -159,20 +159,14 @@ export function Screen<T>({
   );
 }
 
-const BRAND_MARK = require('../assets/brand-mark.png');
-
 function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <View style={[styles.brandRow, compact && styles.brandRowCompact]}>
       <View style={[styles.logoMark, compact && styles.logoMarkSmall]}>
-        {/* Arquivo próprio, fora do app.json: o ícone do app e o do splash
-            entram na impressão digital do build, este não — então muda por
-            update, sem precisar publicar versão nova na loja. */}
-        <Image source={BRAND_MARK} style={styles.logoImage} />
+        <Text style={[styles.brandMonogram, compact && styles.brandMonogramSmall]}>C</Text>
       </View>
       <View style={{ flexShrink: 1, minWidth: 0 }}>
-        <Text numberOfLines={1} style={[styles.brandName, compact && styles.brandNameSmall]}>Readora</Text>
-        <Text numberOfLines={1} style={[styles.brandSub, compact && styles.brandSubSmall]}>DIÁRIO LITERÁRIO</Text>
+        <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.brandName, compact && styles.brandNameSmall]}>Códice Literário</Text>
       </View>
     </View>
   );
@@ -348,11 +342,12 @@ const styles = StyleSheet.create({
   sidebarFooter: { borderTopColor: appColors.border, borderTopWidth: 1, padding: 16, gap: 10 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 24 },
   brandRowCompact: { paddingHorizontal: 0, gap: 10 },
-  logoMark: { width: 42, height: 42, borderRadius: 12, borderColor: 'rgba(120,140,255,0.35)', borderWidth: 1, backgroundColor: appColors.surface, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  logoImage: { width: '100%', height: '100%' },
+  logoMark: { width: 42, height: 42, borderRadius: 12, borderColor: appColors.gold, borderWidth: 1, backgroundColor: appColors.backgroundSoft, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  brandMonogram: { color: appColors.gold, fontFamily: appFonts.display, fontSize: 28, fontWeight: '900', lineHeight: 35 },
+  brandMonogramSmall: { fontSize: 23, lineHeight: 28 },
   logoMarkSmall: { width: 36, height: 36, borderRadius: 10 },
-  brandName: { color: appColors.text, fontFamily: appFonts.display, fontSize: 27, fontStyle: 'italic', fontWeight: '900', lineHeight: 28 },
-  brandNameSmall: { fontSize: 23, lineHeight: 24 },
+  brandName: { color: appColors.text, fontFamily: appFonts.display, fontSize: 25, fontStyle: 'italic', fontWeight: '900', lineHeight: 29 },
+  brandNameSmall: { fontSize: 20, lineHeight: 25 },
   brandSub: { color: appColors.gold, fontFamily: appFonts.display, fontSize: 12, letterSpacing: 4, marginTop: 1 },
   brandSubSmall: { fontSize: 9, letterSpacing: 2.5 },
   sideItem: { minHeight: 45, borderRadius: 14, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16 },
