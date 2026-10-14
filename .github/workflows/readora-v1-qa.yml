@@ -1,0 +1,31 @@
+name: Readora v1 - TypeScript and tests
+
+on:
+  push:
+    branches:
+      - feature/readora-v1-polish-20261014
+  pull_request:
+    paths:
+      - 'app/**'
+      - 'components/**'
+      - 'contexts/**'
+      - 'services/**'
+      - 'widget/**'
+      - '__tests__/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Validate TypeScript
+        run: npm run lint
+      - name: Run regression tests
+        run: npm test -- --runInBand
