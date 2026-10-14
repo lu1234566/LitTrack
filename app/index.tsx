@@ -45,8 +45,7 @@ export default function DashboardScreen() {
   return (
     <Screen>
       <View style={styles.heroCard}>
-        <Text style={[styles.heroKicker, mobile && styles.heroKickerMobile]} numberOfLines={1} adjustsFontSizeToFit>READORA — LITERARY JOURNAL</Text>
-        <Text style={[styles.heroTitle, mobile && styles.heroTitleMobile]}>Readora</Text>
+        <Text style={[styles.heroTitle, mobile && styles.heroTitleMobile]}>Códice Literário</Text>
         <Text style={styles.heroQuote}>“Os livros são uma forma única de magia portátil.” — Stephen King</Text>
         {/* As capas do que voce ja leu, no lugar dos dois botoes que antes
             ocupavam este espaco — a mesma navegacao existe na barra inferior e
@@ -69,7 +68,7 @@ export default function DashboardScreen() {
         ) : (
           <Text style={styles.heroEmpty}>Sua estante de concluídos começa no primeiro livro terminado.</Text>
         )}
-        <Text style={styles.heroWatermark}>R</Text>
+        <Text style={styles.heroWatermark}>C</Text>
       </View>
 
       {/* Somar páginas sem abrir o livro: a ação mais repetida do app. */}
@@ -193,8 +192,8 @@ const styles = StyleSheet.create({
   heroCard: { minHeight: 330, borderColor: appColors.borderSoft, borderWidth: 1, borderRadius: 54, padding: 42, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', backgroundColor: appColors.backgroundSoft, gap: 14 },
   heroKicker: { color: appColors.textDim, letterSpacing: 8, fontSize: 11, fontWeight: '900' },
   heroKickerMobile: { letterSpacing: 3, textAlign: 'center', alignSelf: 'stretch' },
-  heroTitle: { color: appColors.text, fontFamily: appFonts.display, fontSize: 72, lineHeight: 80, fontWeight: '900' },
-  heroTitleMobile: { fontSize: 44, lineHeight: 50 },
+  heroTitle: { color: appColors.text, fontFamily: appFonts.display, fontSize: 60, lineHeight: 72, fontWeight: '900', textAlign: 'center' },
+  heroTitleMobile: { fontSize: 36, lineHeight: 44, textAlign: 'center' },
   heroQuote: { color: appColors.text, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 18, textAlign: 'center', maxWidth: 520 },
   heroWatermark: { position: 'absolute', right: 26, top: 8, color: 'rgba(255,255,255,0.025)', fontFamily: appFonts.display, fontSize: 350, fontWeight: '900' },
   heroShelf: { alignItems: 'center', gap: 14, marginTop: 20 },
