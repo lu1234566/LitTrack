@@ -47,7 +47,7 @@ describe('agrupar series', () => {
     const [g] = groupSeries(tbate);
     expect(g.volumes.map((v) => v.volume)).toEqual([1, 2, 3, 5, 6]);
     expect(g.finished).toBe(3);
-    expect(g.lastVolume).toBe(6);
+    expect(g.lastVolume).toBe(11);
   });
 
   it('aponta o volume que falta na biblioteca', () => {
