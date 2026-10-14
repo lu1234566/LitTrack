@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 import { Book, BookStatus, ReadingStats } from '@/types/book';
 import { calculateProgress, loadBooks, saveBooks } from '@/services/bookStorage';
 import { applyProgress } from '@/services/bookFormat';
@@ -175,10 +176,19 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
       const cleaned = withCleanText(await comCapasResgatadas(loaded));
       booksRef.current = cleaned;
       setBooks(cleaned);
+      // O widget pode ter sido criado com o app fechado; sincroniza ao abrir.
+      void updateReadingWidget(cleaned);
       // Só regrava se algo realmente mudou — o mapa devolve o mesmo objeto
       // quando os dados já estão limpos.
       if (cleaned.some((book, index) => book !== loaded[index])) await saveBooks(cleaned);
     }).finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void updateReadingWidget(booksRef.current);
+    });
+    return () => sub.remove();
   }, []);
 
   async function persist(nextBooks: Book[]) {
@@ -186,7 +196,7 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
     setBooks(nextBooks);
     await saveBooks(nextBooks);
     // Widget da tela inicial acompanha o progresso na hora (Android).
-    updateReadingWidget(nextBooks);
+    await updateReadingWidget(nextBooks);
     // O lembrete agendado cita a página atual: reescreve com a nova.
     refreshReadingReminder(nextBooks);
   }
@@ -204,6 +214,7 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
       booksRef.current = next;
       setBooks(next);
       await saveBooks(next);
+      await updateReadingWidget(next);
     } finally {
       setLoading(false);
     }
