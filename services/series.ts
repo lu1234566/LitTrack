@@ -137,7 +137,7 @@ export function groupSeries(books: Book[]): SeriesGroup[] {
     const lastVolume = Math.max(totalConhecido(g.name), ...volumes.map((v) => v.volume));
     const tem = new Set(volumes.map((v) => v.volume));
     const missing: number[] = [];
-    for (let n = 1; n < lastVolume; n++) if (!tem.has(n)) missing.push(n);
+    for (let n = 1; n <= lastVolume; n++) if (!tem.has(n)) missing.push(n);
     const lidos = new Set(volumes.filter((v) => v.book.status === 'finished').map((v) => v.volume));
 
     let next: SeriesGroup['next'] = null;
@@ -161,6 +161,7 @@ export function groupSeries(books: Book[]): SeriesGroup[] {
 export function seriesOfBook(book: Book, books: Book[]): SeriesGroup | null {
   const info = parseSeries(book.title);
   if (!info) return null;
-  const key = seriesKey(info.series);
+  const originalKey = seriesKey(info.series);
+  const key = originalKey === 'o ciclo da heranca' ? 'ciclo da heranca' : originalKey === 'the housemaid' ? 'a empregada' : originalKey;
   return groupSeries(books).find((g) => g.key === key) || null;
 }
