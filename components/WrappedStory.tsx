@@ -191,7 +191,7 @@ export function WrappedStory({ books, quotes = [], readerName, year, onClose }: 
       colors: ['#0b132b', '#1c2541'], image: 'final',
       render: () => (
         <View style={styles.center}>
-          <Text style={styles.kicker}>SUA CÓDICE • RETROSPECTIVA</Text>
+          <Text style={styles.kicker}>SUA RETROSPECTIVA</Text>
           <Text style={styles.bigYear}>{year}</Text>
           {data.totalBooks > 0 ? <Text style={[styles.personaTag, { color: palette.accent }]}>{persona.name}</Text> : null}
           <View style={styles.recapGrid}>
