@@ -20,6 +20,46 @@ function limpar(s: string) {
   return s.replace(/[\s,:\-–—]+$/g, '').replace(/^[\s,:\-–—]+/g, '').trim();
 }
 
+
+// Catálogo enxuto de títulos que não trazem "Vol. 2" no próprio nome.
+// Não altera os livros nem exige migração da biblioteca.
+// Obras fora deste catálogo continuam passando pelas regras numéricas.
+const TITULOS_CONHECIDOS: Array<{ series: string; volume: number; titles: string[] }> = [
+  { series: 'Ciclo da Herança', volume: 1, titles: ['Eragon'] },
+  { series: 'Ciclo da Herança', volume: 2, titles: ['Eldest'] },
+  { series: 'Ciclo da Herança', volume: 3, titles: ['Brisingr'] },
+  { series: 'Ciclo da Herança', volume: 4, titles: ['Herança', 'Inheritance'] },
+  { series: 'Shadow and Bone', volume: 1, titles: ['Sombra e Ossos', 'Sombra e Osso', 'Shadow and Bone'] },
+  { series: 'Shadow and Bone', volume: 2, titles: ['Sol e Tormenta', 'Siege and Storm'] },
+  { series: 'Shadow and Bone', volume: 3, titles: ['Ruína e Ascensão', 'Ruin and Rising'] },
+  { series: 'A Empregada', volume: 1, titles: ['A Empregada', 'The Housemaid'] },
+  { series: 'A Empregada', volume: 2, titles: ['O Segredo da Empregada', "The Housemaid's Secret"] },
+  { series: 'A Empregada', volume: 3, titles: ['A Empregada Está de Olho', 'The Housemaid Is Watching'] },
+  { series: 'The Beginning After the End', volume: 1, titles: ['The Beginning After the End: Early Years'] },
+  { series: 'The Beginning After the End', volume: 2, titles: ['The Beginning After the End: New Heights'] },
+  { series: 'The Beginning After the End', volume: 3, titles: ['The Beginning After the End: Beckoning Fates', 'The Beginning After the End: Beckoning Fate'] },
+  { series: 'The Beginning After the End', volume: 4, titles: ["The Beginning After the End: Horizon's Edge"] },
+  { series: 'The Beginning After the End', volume: 5, titles: ['The Beginning After the End: Convergence'] },
+  { series: 'The Beginning After the End', volume: 6, titles: ['The Beginning After the End: Transcendence'] },
+  { series: 'The Beginning After the End', volume: 7, titles: ['The Beginning After the End: Divergence'] },
+  { series: 'The Beginning After the End', volume: 8, titles: ['The Beginning After the End: Ascension'] },
+  { series: 'The Beginning After the End', volume: 9, titles: ['The Beginning After the End: Reckoning'] },
+  { series: 'The Beginning After the End', volume: 10, titles: ['The Beginning After the End: Retribution'] },
+  { series: 'The Beginning After the End', volume: 11, titles: ['The Beginning After the End: Providence'] }
+];
+
+function tituloConhecido(title: string): SeriesInfo | null {
+  // Sufixos de edição não mudam a identidade do livro.
+  const normalized = seriesKey(title.replace(/\\((?:edição|edition|capa dura|hardcover|paperback|audiobook|kindle)\\)/gi, ''));
+  for (const item of TITULOS_CONHECIDOS) {
+    if (item.titles.some((alias) => seriesKey(alias) === normalized)) {
+      const subtitle = item.titles[0].includes(':') ? item.titles[0].split(':').slice(1).join(':').trim() : item.titles[0];
+      return { series: item.series, volume: item.volume, subtitle };
+    }
+  }
+  return null;
+}
+
 /** Série e volume a partir do título; `null` quando não dá para ter certeza. */
 export function parseSeries(title: string): SeriesInfo | null {
   const t = (title || '').replace(/\s+/g, ' ').trim();
@@ -40,7 +80,7 @@ export function parseSeries(title: string): SeriesInfo | null {
     const subtitle = limpar(m[3].replace(/\((comic|manga|mangá|hq|graphic novel|deluxe edition|edição de luxo)\)/i, ''));
     if (nome.length >= 2) return { series: nome, volume: Number(m[2]), subtitle };
   }
-  return null;
+  return tituloConhecido(t);
 }
 
 /** Chave de agrupamento: ignora caixa, acento e pontuação ("TBATE" ≠, mas "the beginning" = "The Beginning"). */
