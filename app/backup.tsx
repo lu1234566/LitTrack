@@ -107,7 +107,7 @@ export default function BackupScreen() {
     const text = backupText || buildBackupText();
     setBackupText(text);
     setMessage('Gerando arquivo JSON...');
-    const ok = await saveTextFile('readora-backup-' + new Date().toISOString().slice(0, 10) + '.json', text, 'application/json;charset=utf-8');
+    const ok = await saveTextFile('codice-literario-backup-' + new Date().toISOString().slice(0, 10) + '.json', text, 'application/json;charset=utf-8');
     setMessage(ok
       ? (Platform.OS === 'web' ? 'Arquivo JSON baixado.' : 'Arquivo JSON pronto — escolha onde salvar ou enviar.')
       : 'Não foi possível gerar o arquivo. Copie o JSON manualmente.');
@@ -119,7 +119,7 @@ export default function BackupScreen() {
     const selectedPages = selectedBooks.reduce((sum, book) => sum + (book.totalPages || 0), 0);
     const selectedAverage = selectedBooks.length ? selectedBooks.reduce((sum, book) => sum + (book.rating || 0), 0) / selectedBooks.length : 0;
     return [
-      'READORA — RELATÓRIO DA BIBLIOTECA',
+      'CÓDICE LITERÁRIO — RELATÓRIO DA BIBLIOTECA',
       'Leitor: ' + preferences.readerName,
       'Gerado em: ' + new Date().toLocaleString(appLocale),
       'Filtro de status: ' + labelForScope(scope),
@@ -149,7 +149,7 @@ export default function BackupScreen() {
     const text = reportText || buildReportText();
     setReportText(text);
     setMessage('Gerando relatório .txt...');
-    const ok = await saveTextFile('readora-relatorio-' + new Date().toISOString().slice(0, 10) + '.txt', text);
+    const ok = await saveTextFile('codice-literario-relatorio-' + new Date().toISOString().slice(0, 10) + '.txt', text);
     setMessage(ok
       ? (Platform.OS === 'web' ? 'Relatório .txt baixado.' : 'Relatório .txt pronto — escolha onde salvar ou enviar.')
       : 'Não foi possível gerar o arquivo. Copie o relatório manualmente.');
@@ -169,7 +169,7 @@ export default function BackupScreen() {
     const text = reportText || buildReportText();
     setReportText(text);
     setMessage('Gerando PDF...');
-    const ok = await exportPdfDocument('Readora — Relatório da Biblioteca', text);
+    const ok = await exportPdfDocument('Códice Literário — Relatório da Biblioteca', text);
     setMessage(ok
       ? (Platform.OS === 'web' ? 'Janela de impressão aberta. Use “Salvar como PDF”.' : 'PDF gerado — escolha onde salvar ou enviar.')
       : 'Não foi possível gerar o PDF. Tente novamente.');
