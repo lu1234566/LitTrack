@@ -5,32 +5,33 @@ import { Book } from '@/types/book';
 import { calculateProgress, statusLabel } from '@/services/bookStorage';
 import { appColors } from '@/theme/tokens';
 
-export function BookCard({ book }: { book: Book }) {
+export function BookCard({ book, compact = false }: { book: Book; compact?: boolean }) {
   const progress = calculateProgress(book);
   const rating = book.rating && book.rating > 0 ? 'Nota ' + book.rating + '/5' : 'Sem nota';
 
   return (
     <Link href={{ pathname: '/book/[id]', params: { id: book.id } }} asChild>
-      <Pressable style={styles.card}>
-        <View style={styles.cover}>
+      <Pressable style={StyleSheet.flatten([styles.card, compact && styles.cardCompact])}>
+        <View style={[styles.cover, compact && styles.coverCompact]}>
           {book.coverUrl ? <Image source={{ uri: book.coverUrl }} style={styles.coverImage} /> : <><Text style={styles.coverText}>{book.title.slice(0, 1).toUpperCase()}</Text><Text style={styles.coverGenre}>{book.genre.slice(0, 10)}</Text></>}
         </View>
         <View style={styles.info}>
           <View style={styles.topLine}>
             <Text style={styles.title} numberOfLines={2}>{book.title}</Text>
-            <Text style={styles.rating}>{rating}</Text>
+            {!compact ? <Text style={styles.rating}>{rating}</Text> : null}
           </View>
-          <Text style={styles.author}>{book.author}</Text>
-          <View style={styles.metaRow}>
+          <Text style={styles.author} numberOfLines={1}>{book.author}</Text>
+          {compact ? <View style={styles.compactInfo}><Text style={styles.badge}>{statusLabel(book.status)}</Text><Text style={styles.rating}>{rating}</Text></View> : null}
+          {!compact ? <View style={styles.metaRow}>
             <Text style={styles.badge}>{statusLabel(book.status)}</Text>
             <Text style={styles.genre}>{book.genre}</Text>
             {book.publisher ? <Text style={styles.genre}>{book.publisher}</Text> : null}
-          </View>
-          <Text style={styles.reason} numberOfLines={2}>{book.reasonToRead || book.review || 'Toque para ver detalhes da leitura.'}</Text>
-          <View style={styles.progressTrack}>
+          </View> : null}
+          {!compact ? <Text style={styles.reason} numberOfLines={2}>{book.reasonToRead || book.review || 'Toque para ver detalhes da leitura.'}</Text> : null}
+          {!compact ? <View style={styles.progressTrack}>
             <View style={[styles.progressFill, { width: percent(progress) }]} />
-          </View>
-          <Text style={styles.progressText}>{progress}% concluído</Text>
+          </View> : null}
+          {!compact ? <Text style={styles.progressText}>{progress}% concluído</Text> : null}
         </View>
       </Pressable>
     </Link>
@@ -42,6 +43,9 @@ function percent(value: number) {
 }
 
 const styles = StyleSheet.create({
+  cardCompact: { borderRadius: 18, padding: 12, gap: 12, alignItems: 'center' },
+  coverCompact: { width: 62, height: 92, borderRadius: 12 },
+  compactInfo: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10, marginTop: 2 },
   card: { flexDirection: 'row', gap: 14, backgroundColor: appColors.surface, borderColor: appColors.border, borderWidth: 1, borderRadius: 22, padding: 14 },
   cover: { width: 68, height: 98, borderRadius: 16, backgroundColor: appColors.surfaceSoft, alignItems: 'center', justifyContent: 'center', borderColor: appColors.gold, borderWidth: 1, padding: 0, overflow: 'hidden' },
   coverImage: { width: '100%', height: '100%' },

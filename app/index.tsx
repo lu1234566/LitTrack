@@ -45,8 +45,7 @@ export default function DashboardScreen() {
   return (
     <Screen>
       <View style={styles.heroCard}>
-        <Text style={[styles.heroKicker, mobile && styles.heroKickerMobile]} numberOfLines={1} adjustsFontSizeToFit>READORA — LITERARY JOURNAL</Text>
-        <Text style={[styles.heroTitle, mobile && styles.heroTitleMobile]}>Readora</Text>
+        <Text style={[styles.heroTitle, mobile && styles.heroTitleMobile]}>Códice Literário</Text>
         <Text style={styles.heroQuote}>“Os livros são uma forma única de magia portátil.” — Stephen King</Text>
         {/* As capas do que voce ja leu, no lugar dos dois botoes que antes
             ocupavam este espaco — a mesma navegacao existe na barra inferior e
@@ -69,7 +68,7 @@ export default function DashboardScreen() {
         ) : (
           <Text style={styles.heroEmpty}>Sua estante de concluídos começa no primeiro livro terminado.</Text>
         )}
-        <Text style={styles.heroWatermark}>R</Text>
+        <Text style={styles.heroWatermark}>C</Text>
       </View>
 
       {/* Somar páginas sem abrir o livro: a ação mais repetida do app. */}
@@ -88,7 +87,7 @@ export default function DashboardScreen() {
 
       <SectionHeader color={appColors.emerald} title={'Meta de ' + year} action="AJUSTAR" href="/settings" />
       {yearlyGoal > 0 ? (
-        <Card>
+        <Card compact>
           <View style={styles.goalTop}>
             <Text style={styles.goalCount}>{finishedThisYear}<Text style={styles.goalOf}> / {yearlyGoal} livros</Text></Text>
             <Text style={styles.goalPct}>{goalPct}%</Text>
@@ -105,18 +104,18 @@ export default function DashboardScreen() {
       {!loading && recentBooks.length === 0 ? (
         <View style={styles.emptyPanel}><Text style={styles.emptyText}>Sua estante de finalizados aguarda a primeira obra.</Text></View>
       ) : null}
-      {recentBooks.map((book) => <BookCard key={book.id} book={book} />)}
+      {recentBooks.map((book) => <BookCard key={book.id} book={book} compact />)}
 
       <SectionHeader color={appColors.purple} title="Minhas Estantes" action="GESTÃO" href="/shelves" />
-      <View style={[styles.shelfGrid, mobile && styles.stack]}>
+      <View style={[styles.shelfGrid, mobile && styles.shelfMobileGrid]}>
         {buildShelfCards(shelves).map((shelf) => (
           // No computador as quatro estantes dividem a linha por igual; antes
           // cada cartão tinha a largura do texto e as últimas saíam da tela.
-          <View key={shelf.name} style={!mobile && styles.cell}>
-          <Card>
+          <View key={shelf.name} style={mobile ? styles.shelfMobileCell : styles.cell}>
+          <Card compact>
             <View style={styles.shelfTop}><View style={styles.folderIcon}><ReadoraIcon name={shelf.icon} size={20} color={shelf.color} /></View><Text style={styles.shelfBadge}>{shelf.count}</Text></View>
             <Text style={styles.shelfTitle}>{shelf.name}</Text>
-            <Text style={styles.shelfText}>{shelf.description}</Text>
+            {!mobile ? <Text style={styles.shelfText}>{shelf.description}</Text> : null}
           </Card>
           </View>
         ))}
@@ -193,8 +192,8 @@ const styles = StyleSheet.create({
   heroCard: { minHeight: 330, borderColor: appColors.borderSoft, borderWidth: 1, borderRadius: 54, padding: 42, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', backgroundColor: appColors.backgroundSoft, gap: 14 },
   heroKicker: { color: appColors.textDim, letterSpacing: 8, fontSize: 11, fontWeight: '900' },
   heroKickerMobile: { letterSpacing: 3, textAlign: 'center', alignSelf: 'stretch' },
-  heroTitle: { color: appColors.text, fontFamily: appFonts.display, fontSize: 72, lineHeight: 80, fontWeight: '900' },
-  heroTitleMobile: { fontSize: 44, lineHeight: 50 },
+  heroTitle: { color: appColors.text, fontFamily: appFonts.display, fontSize: 60, lineHeight: 72, fontWeight: '900', textAlign: 'center' },
+  heroTitleMobile: { fontSize: 36, lineHeight: 44, textAlign: 'center' },
   heroQuote: { color: appColors.text, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 18, textAlign: 'center', maxWidth: 520 },
   heroWatermark: { position: 'absolute', right: 26, top: 8, color: 'rgba(255,255,255,0.025)', fontFamily: appFonts.display, fontSize: 350, fontWeight: '900' },
   heroShelf: { alignItems: 'center', gap: 14, marginTop: 20 },
@@ -221,12 +220,14 @@ const styles = StyleSheet.create({
   emptyPanel: { minHeight: 120, borderColor: appColors.border, borderStyle: 'dashed', borderWidth: 1, borderRadius: 34, alignItems: 'center', justifyContent: 'center', padding: 24 },
   emptyText: { color: appColors.textDim, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 16, textAlign: 'center' },
   shelfGrid: { flexDirection: 'row', gap: 20 },
+  shelfMobileGrid: { flexWrap: 'wrap', gap: 10 },
+  shelfMobileCell: { flexBasis: '47.5%', flexGrow: 1, minWidth: 0 },
   cell: { flex: 1, minWidth: 0 },
   atmosMain: { flex: 2, minWidth: 0 },
   shelfTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   folderIcon: { backgroundColor: appColors.surfaceSoft, borderColor: appColors.border, borderWidth: 1, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   shelfBadge: { color: appColors.textMuted, backgroundColor: appColors.surfaceSoft, borderColor: appColors.border, borderWidth: 1, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 5, overflow: 'hidden', fontSize: 11 },
-  shelfTitle: { color: appColors.text, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 18, fontWeight: '900' },
+  shelfTitle: { color: appColors.text, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 16, fontWeight: '900' },
   shelfText: { color: appColors.textDim, fontFamily: appFonts.display, fontStyle: 'italic', lineHeight: 19 },
   atmosGrid: { flexDirection: 'row', gap: 28 },
   displayCardTitle: { color: appColors.text, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 34, fontWeight: '900' },

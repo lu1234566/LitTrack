@@ -55,7 +55,7 @@ function Brand({ u, color }: { u: (n: number) => number; color: string }) {
 }
 
 function Footer({ u }: { u: (n: number) => number }) {
-  return <Text style={{ color: C.n600, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(22), textTransform: 'uppercase', letterSpacing: u(5), textAlign: 'center' }}>readora.app</Text>;
+  return <Text style={{ color: C.n600, fontFamily: appFonts.body, fontWeight: '900', fontSize: u(22), textTransform: 'uppercase', letterSpacing: u(5), textAlign: 'center' }}>CÓDICE LITERÁRIO</Text>;
 }
 
 const ProfileCardArt = forwardRef<View, ArtProps>(function ProfileCardArt({ card, aspect, scale, profile, bestBook, yearBooks, yearPages, year }, ref) {

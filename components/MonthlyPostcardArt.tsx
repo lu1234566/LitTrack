@@ -48,7 +48,7 @@ export const MonthlyPostcardArt = forwardRef<View, MonthlyPostcardProps>(functio
 
       {/* Cabeçalho de revista */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-        <Text style={{ color: TINTA, fontSize: s(26), fontWeight: '900', letterSpacing: s(8) }}>READORA</Text>
+        <Text style={{ color: TINTA, fontSize: s(26), fontWeight: '900', letterSpacing: s(3) }}>CÓDICE LITERÁRIO</Text>
         <Text style={{ color: APAGADO, fontSize: s(24), fontWeight: '800', letterSpacing: s(4) }}>{t('CÁPSULA Nº {n}', { n: String(monthIndex + 1).padStart(2, '0') }) + ' · ' + year}</Text>
       </View>
       <View style={{ height: s(3), backgroundColor: TINTA, marginTop: s(18) }} />
@@ -91,7 +91,7 @@ export const MonthlyPostcardArt = forwardRef<View, MonthlyPostcardProps>(functio
 
       {/* Rodapé: carimbo */}
       <View style={{ position: 'absolute', left: s(80), right: s(80), bottom: s(story ? 70 : 56), flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text style={{ color: APAGADO, fontSize: s(22), fontWeight: '800', letterSpacing: s(3) }}>{t('SEU DIÁRIO DE LEITURA')}</Text>
+        <Text style={{ color: APAGADO, fontSize: s(22), fontWeight: '800', letterSpacing: s(3) }}>{t('SUAS LEITURAS')}</Text>
         <View style={{ width: s(96), height: s(96), borderRadius: s(48), borderWidth: s(3), borderColor: cor, alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '-12deg' }] }}>
           <Text style={{ color: cor, fontFamily: appFonts.display, fontStyle: 'italic', fontWeight: '900', fontSize: s(46), lineHeight: s(52) }}>R</Text>
         </View>

@@ -18,7 +18,7 @@ export function feedbackDeviceInfo(): string {
   const build = Constants.expoConfig?.android?.versionCode;
   const update = Updates.updateId ? Updates.updateId.slice(0, 8) : 'loja';
   return [
-    'Readora ' + versao + (build ? ' (build ' + build + ')' : ''),
+    'Códice Literário ' + versao + (build ? ' (build ' + build + ')' : ''),
     'Atualização: ' + update,
     'Aparelho: ' + aparelho,
     'Sistema: ' + sistema,
@@ -27,7 +27,7 @@ export function feedbackDeviceInfo(): string {
 }
 
 export function feedbackMailUrl(): string {
-  const assunto = appLanguage === 'en' ? 'Readora — feedback' : 'Readora — sugestão';
+  const assunto = appLanguage === 'en' ? 'Códice Literário — feedback' : 'Códice Literário — sugestão';
   const intro = appLanguage === 'en' ? 'Write your suggestion or problem here:' : 'Escreva aqui sua sugestão ou problema:';
   const corpo = intro + '\n\n\n\n---\n' + feedbackDeviceInfo();
   return 'mailto:' + FEEDBACK_EMAIL + '?subject=' + encodeURIComponent(assunto) + '&body=' + encodeURIComponent(corpo);

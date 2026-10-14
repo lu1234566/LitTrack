@@ -68,7 +68,7 @@ export default function AppearanceScreen() {
 
       <Card>
         <Text style={styles.kicker}>Preview</Text>
-        <Text style={[styles.previewTitle, { color: accent }]}>Readora</Text>
+        <Text style={[styles.previewTitle, { color: accent }]}>Códice Literário</Text>
         <Text style={styles.previewText}>Cards, barras inferiores e espaçamento já respondem aos ajustes escolhidos.</Text>
       </Card>
     </Screen>

@@ -30,7 +30,7 @@ export function reminderMessage(books: Book[], dailyPageGoal = 0): ReminderMessa
     // Meta diária é em páginas: só faz sentido no livro físico.
     if (percent < 100 && dailyPageGoal > 0 && formatOf(livro) === 'physical' && totalPages > 0) {
       return {
-        title: 'Hora de ler no Readora',
+        title: 'Hora de ler no Códice Literário',
         body: '{title}: você está na página {a} de {b}. Que tal mais {g} páginas hoje?',
         bookId: book.id,
         vars: { title: book.title, a: currentPage, b: totalPages, g: dailyPageGoal }
@@ -38,7 +38,7 @@ export function reminderMessage(books: Book[], dailyPageGoal = 0): ReminderMessa
     }
     if (percent < 100) {
       return {
-        title: 'Hora de ler no Readora',
+        title: 'Hora de ler no Códice Literário',
         body: '{title}: você está em {p}%. Continue de onde parou.',
         bookId: book.id,
         vars: { title: book.title, p: percent }
@@ -47,7 +47,7 @@ export function reminderMessage(books: Book[], dailyPageGoal = 0): ReminderMessa
   }
 
   if (book) {
-    return { title: 'Hora de ler no Readora', body: 'Que tal continuar {title} hoje?', bookId: book.id, vars: { title: book.title } };
+    return { title: 'Hora de ler no Códice Literário', body: 'Que tal continuar {title} hoje?', bookId: book.id, vars: { title: book.title } };
   }
 
   // Nada em andamento: sugere o último que entrou na lista de desejos.
@@ -56,12 +56,12 @@ export function reminderMessage(books: Book[], dailyPageGoal = 0): ReminderMessa
     .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0];
   if (proximo) {
     return {
-      title: 'Hora de ler no Readora',
+      title: 'Hora de ler no Códice Literário',
       body: 'Nenhuma leitura em andamento. Que tal começar {title}?',
       bookId: proximo.id,
       vars: { title: proximo.title }
     };
   }
 
-  return { title: 'Hora de ler no Readora', body: 'Separe alguns minutos para continuar sua jornada literária.', vars: {} };
+  return { title: 'Hora de ler no Códice Literário', body: 'Separe alguns minutos para continuar sua jornada literária.', vars: {} };
 }

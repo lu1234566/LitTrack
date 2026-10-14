@@ -245,7 +245,7 @@ export default function AddBookScreen() {
       </Card>
 
       <Card>
-        <View style={styles.sectionHeader}><ReadoraIcon name="editBook" size={24} color={appColors.gold} /><Text style={styles.sectionTitle}>Diário de Leitura</Text><ReadoraIcon name="chevronUp" size={22} color={appColors.textMuted} style={styles.chevron} /></View>
+        <View style={styles.sectionHeader}><ReadoraIcon name="editBook" size={24} color={appColors.gold} /><Text style={styles.sectionTitle}>Notas e Impressões</Text><ReadoraIcon name="chevronUp" size={22} color={appColors.textMuted} style={styles.chevron} /></View>
         <Text style={styles.label}>Resenha Completa</Text>
         <TextInput style={styles.textAreaLarge} placeholder="O que você achou da leitura? Quais foram as emoções?" placeholderTextColor={appColors.textDim} value={review} onChangeText={setReview} multiline />
         <View style={[styles.row, mobile && styles.stack]}>
