@@ -17,6 +17,9 @@ export interface Book {
   /** Audiolivro: duração total e tempo ouvido, em minutos. */
   totalMinutes?: number;
   listenedMinutes?: number;
+  /** Série informada (à mão ou pela IA) — vale mais que a deduzida do título. */
+  series?: string;
+  seriesVolume?: number;
   review?: string;
   favoriteQuote?: string;
   publisher?: string;

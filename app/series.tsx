@@ -8,10 +8,11 @@ import { BookCover } from '@/components/BookCover';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { useBooks } from '@/contexts/BookContext';
 import { groupSeries, type SeriesGroup } from '@/services/series';
+import { SeriesFinder } from '@/components/SeriesFinder';
 import { appColors, appFonts } from '@/theme/tokens';
 
 /**
- * Séries da biblioteca, deduzidas dos títulos. Cada uma mostra os volumes em
+ * Séries da biblioteca, deduzidas dos títulos ou informadas no livro. Cada uma mostra os volumes em
  * ordem, quantos já foram lidos, o que falta ter e o que ler em seguida.
  */
 export default function SeriesScreen() {
@@ -24,9 +25,11 @@ export default function SeriesScreen() {
         <Text style={styles.kicker}>SUAS SÉRIES</Text>
         <Text style={styles.title}>Séries</Text>
         <Text style={styles.subtitle}>
-          Os volumes de cada série em ordem, o seu progresso e o que ler em seguida. O app reconhece a série pelo título do livro.
+          Os volumes de cada série em ordem, o seu progresso e o que ler em seguida. O app reconhece a série pelo título do livro ou pela série informada em Editar.
         </Text>
       </View>
+
+      <SeriesFinder />
 
       {series.length === 0 ? (
         <Card>
@@ -34,7 +37,7 @@ export default function SeriesScreen() {
             <ReadoraIcon name="series" size={40} color={appColors.textDim} />
             <Text style={styles.emptyTitle}>Nenhuma série ainda</Text>
             <Text style={styles.emptyText}>
-              Quando você tiver dois ou mais volumes de uma série — com títulos como “Nome da Série (Volume 2)” ou “Nome da Série, Vol. 3” — ela aparece aqui.
+              Quando você tiver dois ou mais volumes de uma série, ela aparece aqui. Títulos como “Nome da Série (Volume 2)” são reconhecidos sozinhos; os outros, pela busca acima ou pelo campo Série em Editar.
             </Text>
           </View>
         </Card>

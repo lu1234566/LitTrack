@@ -1,84 +1,95 @@
 import { Link } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { LayoutChangeEvent, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Text } from '@/components/TranslatedText';
 import { Screen } from '@/components/Screen';
-import { Card } from '@/components/Card';
 import { BookCover } from '@/components/BookCover';
 import { useBooks } from '@/contexts/BookContext';
-import { statusLabel } from '@/services/bookStorage';
-import { BookStatus } from '@/types/book';
+import { calculateProgress } from '@/services/bookStorage';
+import { t } from '@/services/i18n';
+import { Book, BookStatus } from '@/types/book';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors, appFonts } from '@/theme/tokens';
 
-const filters: Array<'all' | BookStatus> = ['all', 'reading', 'finished', 'wishlist'];
+type Filtro = 'all' | BookStatus;
+const filters: Filtro[] = ['all', 'reading', 'finished', 'wishlist', 'dnf'];
+const GAP = 12;
 
+/**
+ * Parede de capas: todas do mesmo tamanho, as mais recentes primeiro.
+ * Antes havia quatro caixas grandes de números, capas com alturas alternadas
+ * e uma tarja de status sobre cada capa — ficava bagunçado.
+ */
 export default function GalleryScreen() {
   const { books } = useBooks();
   const { width } = useWindowDimensions();
   const mobile = width < 760;
-  const [filter, setFilter] = useState<'all' | BookStatus>('all');
-  const visibleBooks = useMemo(() => filter === 'all' ? books : books.filter((book) => book.status === filter), [books, filter]);
-  const coverCount = visibleBooks.filter((book) => book.coverUrl).length;
-  const withoutCover = visibleBooks.length - coverCount;
-  const topGenre = useMemo(() => {
-    const entries = Object.entries(visibleBooks.reduce<Record<string, number>>((acc, book) => {
-      acc[book.genre] = (acc[book.genre] || 0) + 1;
-      return acc;
-    }, {})).sort((a, b) => b[1] - a[1]);
-    return entries[0]?.[0] || '—';
-  }, [visibleBooks]);
+  const [filter, setFilter] = useState<Filtro>('all');
+  const [gridW, setGridW] = useState(0);
+
+  const contagem = useMemo(() => {
+    const c: Record<string, number> = { all: books.length };
+    books.forEach((b) => { c[b.status] = (c[b.status] || 0) + 1; });
+    return c;
+  }, [books]);
+
+  const visibleBooks = useMemo(() => {
+    const lista = filter === 'all' ? books : books.filter((book) => book.status === filter);
+    return [...lista].sort((a, b) => quando(b) - quando(a));
+  }, [books, filter]);
+  const semCapa = visibleBooks.filter((book) => !book.coverUrl).length;
+
+  // Colunas fixas e capas na proporção de livro (2:3), medidas pela largura real.
+  const colunas = mobile ? 3 : width > 1300 ? 7 : 6;
+  const capaW = gridW > 0 ? Math.floor((gridW - GAP * (colunas - 1)) / colunas) : 0;
+  const capaH = Math.round(capaW * 1.5);
 
   return (
     <Screen>
       <View style={styles.header}>
-        <Text style={styles.kicker}>GALERIA VISUAL</Text>
-        <Text style={styles.title}>Parede de Capas</Text>
-        <Text style={styles.subtitle}>Uma vitrine das suas leituras, com capas reais quando disponíveis e cartões editoriais para livros sem imagem.</Text>
+        <Text style={styles.kicker}>GALERIA</Text>
+        <Text style={[styles.title, mobile && styles.titleMobile]}>Parede de Capas</Text>
+        <Text style={styles.subtitle}>
+          {t('{n} livro(s)', { n: visibleBooks.length })}
+          {semCapa ? ' · ' + t('{n} sem capa', { n: semCapa }) : ''}
+        </Text>
       </View>
 
-      <View style={[styles.metrics, mobile && styles.stack]}>
-        <Metric label="LIVROS" value={String(visibleBooks.length)} />
-        <Metric label="COM CAPA" value={String(coverCount)} />
-        <Metric label="SEM CAPA" value={String(withoutCover)} />
-        <Metric label="GÊNERO FORTE" value={topGenre} />
+      <View style={styles.filterRow}>
+        {filters.filter((item) => item === 'all' || contagem[item]).map((item) => (
+          <Pressable key={item} style={[styles.filterButton, filter === item && styles.filterActive]} onPress={() => setFilter(item)}>
+            <Text style={[styles.filterText, filter === item && styles.filterTextActive]}>
+              {labelFor(item)} <Text style={[styles.filterCount, filter === item && styles.filterTextActive]}>{contagem[item] || 0}</Text>
+            </Text>
+          </Pressable>
+        ))}
       </View>
-
-      <Card>
-        <View style={[styles.toolbar, mobile && styles.stack]}>
-          <View style={styles.filterRow}>
-            {filters.map((item) => (
-              <Pressable key={item} style={[styles.filterButton, filter === item && styles.filterActive]} onPress={() => setFilter(item)}>
-                <Text style={[styles.filterText, filter === item && styles.filterTextActive]}>{labelFor(item)}</Text>
-              </Pressable>
-            ))}
-          </View>
-          <Text style={styles.count}>{visibleBooks.length} livro(s) selecionado(s)</Text>
-        </View>
-      </Card>
 
       {visibleBooks.length === 0 ? (
         <View style={styles.emptyState}>
-          <ReadoraIcon name="gallery" size={54} color={appColors.gold} />
+          <ReadoraIcon name="gallery" size={48} color={appColors.gold} />
           <Text style={styles.emptyTitle}>Nenhum livro nesta seleção</Text>
-          <Text style={styles.emptyText}>Troque o filtro ou adicione uma nova leitura para montar sua parede visual.</Text>
           <Link href="/add" asChild><Pressable style={styles.primaryButton}><Text style={styles.primaryText}>Adicionar leitura</Text></Pressable></Link>
         </View>
       ) : null}
 
-      <View style={styles.grid}>
-        {visibleBooks.map((book, index) => (
+      <View style={styles.grid} onLayout={(e: LayoutChangeEvent) => setGridW(e.nativeEvent.layout.width)}>
+        {capaW > 0 && visibleBooks.map((book) => (
           <Link key={book.id} href={{ pathname: '/book/[id]', params: { id: book.id } }} asChild>
-            {/* Ver shelves.tsx: com Link asChild o style vai parar num <a> do DOM na web,
-                que não aceita array. Flatten resolve sem mudar o resultado visual. */}
-            <Pressable style={StyleSheet.flatten([styles.tile, mobile ? styles.tileMobile : styles.tileDesktop])}>
-              <View style={styles.coverWrap}>
-                <BookCover book={book} height={index % 3 === 1 ? 290 : 250} radius={28} reserveBottom={54} />
-                <View style={styles.statusPill}><Text style={styles.statusPillText}>{statusLabel(book.status)}</Text></View>
+            {/* Link asChild na web passa o style para um <a>: precisa ser objeto. */}
+            <Pressable style={StyleSheet.flatten([styles.tile, { width: capaW }])} accessibilityLabel={book.title}>
+              <View>
+                <BookCover book={book} height={capaH} radius={10} />
+                {book.status === 'reading' ? (
+                  <View style={styles.progressTrack}>
+                    <View style={[styles.progressFill, { width: (Math.max(4, calculateProgress(book)) + '%') as `${number}%` }]} />
+                  </View>
+                ) : null}
+                {book.status === 'finished' && book.rating ? (
+                  <View style={styles.ratingBadge}><Text style={styles.ratingText}>★ {String(book.rating).replace('.', ',')}</Text></View>
+                ) : null}
               </View>
-              <Text style={styles.bookTitle} numberOfLines={2}>{book.title}</Text>
-              <Text style={styles.meta} numberOfLines={1}>{book.author}</Text>
-              <Text style={styles.rating}>{book.rating ? '★'.repeat(Math.round(book.rating)) : 'Sem nota'}</Text>
+              <Text style={styles.bookTitle} numberOfLines={1}>{book.title}</Text>
             </Pressable>
           </Link>
         ))}
@@ -87,11 +98,12 @@ export default function GalleryScreen() {
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
-  return <Card><Text style={styles.metricLabel}>{label}</Text><Text style={styles.metricValue} numberOfLines={1}>{value}</Text></Card>;
+/** Data mais recente do livro na estante: conclusão, depois última mexida. */
+function quando(book: Book) {
+  return book.finishedAt || book.updatedAt || book.createdAt || 0;
 }
 
-function labelFor(status: 'all' | BookStatus) {
+function labelFor(status: Filtro) {
   if (status === 'all') return 'Todos';
   if (status === 'reading') return 'Lendo';
   if (status === 'finished') return 'Lidos';
@@ -100,35 +112,26 @@ function labelFor(status: 'all' | BookStatus) {
 }
 
 const styles = StyleSheet.create({
-  stack: { flexDirection: 'column', alignItems: 'stretch' },
-  header: { gap: 8 },
+  header: { gap: 4 },
   kicker: { color: appColors.gold, fontSize: 12, fontWeight: '900', letterSpacing: 5 },
-  title: { color: appColors.text, fontFamily: appFonts.display, fontSize: 52, lineHeight: 58, fontWeight: '900' },
-  subtitle: { color: appColors.textMuted, fontSize: 18, lineHeight: 27, maxWidth: 720 },
-  metrics: { flexDirection: 'row', gap: 16 },
-  metricLabel: { color: appColors.textDim, fontSize: 10, letterSpacing: 3, fontWeight: '900' },
-  metricValue: { color: appColors.text, fontSize: 26, fontWeight: '900' },
-  toolbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 14 },
+  title: { color: appColors.text, fontFamily: appFonts.display, fontSize: 48, lineHeight: 54, fontWeight: '900' },
+  titleMobile: { fontSize: 34, lineHeight: 40 },
+  subtitle: { color: appColors.textMuted, fontSize: 14, fontWeight: '700' },
   filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  filterButton: { borderColor: appColors.border, borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 },
+  filterButton: { borderColor: appColors.border, borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
   filterActive: { backgroundColor: appColors.gold, borderColor: appColors.gold },
   filterText: { color: appColors.textMuted, fontSize: 12, fontWeight: '900' },
+  filterCount: { color: appColors.textDim, fontSize: 12, fontWeight: '800' },
   filterTextActive: { color: appColors.background },
-  count: { color: appColors.textMuted, fontSize: 13, fontWeight: '800' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 18 },
-  tile: { gap: 8 },
-  coverWrap: { position: 'relative' },
-  tileDesktop: { width: '22.7%' },
-  tileMobile: { width: '47%' },
-  statusPill: { position: 'absolute', left: 12, right: 12, bottom: 12, backgroundColor: 'rgba(0,0,0,0.72)', borderColor: appColors.borderSoft, borderWidth: 1, borderRadius: 999, paddingVertical: 8, alignItems: 'center' },
-  statusPillText: { color: appColors.gold, fontSize: 10, fontWeight: '900', letterSpacing: 2 },
-  bookTitle: { color: appColors.text, fontWeight: '900', lineHeight: 19, fontSize: 15 },
-  meta: { color: appColors.textDim, fontSize: 12 },
-  rating: { color: appColors.gold, fontSize: 12, fontWeight: '900' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP },
+  tile: { gap: 6 },
+  progressTrack: { position: 'absolute', left: 8, right: 8, bottom: 8, height: 4, borderRadius: 2, backgroundColor: 'rgba(0,0,0,0.6)', overflow: 'hidden' },
+  progressFill: { height: '100%', backgroundColor: appColors.gold },
+  ratingBadge: { position: 'absolute', right: 6, bottom: 6, backgroundColor: 'rgba(0,0,0,0.72)', borderRadius: 999, paddingHorizontal: 7, paddingVertical: 3 },
+  ratingText: { color: appColors.gold, fontSize: 10, fontWeight: '900' },
+  bookTitle: { color: appColors.textMuted, fontSize: 11, fontWeight: '700' },
   primaryButton: { backgroundColor: appColors.gold, borderRadius: 999, paddingHorizontal: 22, paddingVertical: 14, marginTop: 8 },
   primaryText: { color: appColors.background, fontWeight: '900' },
-  emptyState: { minHeight: 340, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  emptyIcon: { color: appColors.gold, fontSize: 56 },
-  emptyTitle: { color: appColors.text, fontFamily: appFonts.display, fontSize: 32, fontWeight: '900', textAlign: 'center' },
-  emptyText: { color: appColors.textMuted, textAlign: 'center', lineHeight: 24, maxWidth: 520 }
+  emptyState: { minHeight: 260, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  emptyTitle: { color: appColors.text, fontFamily: appFonts.display, fontSize: 26, fontWeight: '900', textAlign: 'center' }
 });

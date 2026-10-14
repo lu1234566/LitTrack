@@ -29,6 +29,9 @@ export default function EditBookScreen() {
   const [format, setFormat] = useState<BookFormat>(book ? formatOf(book) : 'physical');
   // Progresso na unidade do formato: página, % ou tempo ouvido.
   const [progress, setProgress] = useState(book ? progressInputText(book) : '');
+  // Série informada à mão (vale mais que a deduzida do título).
+  const [series, setSeries] = useState(book?.series || '');
+  const [seriesVolume, setSeriesVolume] = useState(book?.seriesVolume ? String(book.seriesVolume) : '');
   const [duration, setDuration] = useState(book?.totalMinutes ? formatDuration(book.totalMinutes).replace(' ', '') : '');
   const [rating, setRating] = useState(book?.rating ? String(book.rating) : '');
   const [reason, setReason] = useState(book?.reasonToRead || '');
@@ -58,7 +61,10 @@ export default function EditBookScreen() {
     // Calcula os campos de progresso do formato escolhido (e a página
     // proporcional); o status continua sendo o que foi marcado no formulário.
     const comProgresso = applyProgress({ ...currentBook, format, totalPages: Number(totalPages) || 0, totalMinutes, status }, valor);
+    const volumeSerie = Number(seriesVolume.replace(',', '.'));
     await updateBook(currentBook.id, {
+      series: series.trim() && volumeSerie > 0 ? series.trim() : undefined,
+      seriesVolume: series.trim() && volumeSerie > 0 ? volumeSerie : undefined,
       format,
       totalMinutes,
       progressPercent: comProgresso.progressPercent,
@@ -106,6 +112,16 @@ export default function EditBookScreen() {
       <CoverPicker title={title} author={author} isbn={isbn} value={coverUrl} onChange={setCoverUrl} />
 
       <TextInput style={styles.input} placeholder="Origem/fonte" placeholderTextColor={appColors.textDim} value={source} onChangeText={setSource} />
+      <Text style={styles.label}>Série (opcional)</Text>
+      <View style={styles.row}>
+        <View style={[styles.half, styles.seriesName]}>
+          <TextInput style={styles.input} placeholder="Ex: Ciclo A Herança" placeholderTextColor={appColors.textDim} value={series} onChangeText={setSeries} />
+        </View>
+        <View style={styles.seriesVol}>
+          <TextInput style={styles.input} placeholder="Vol." placeholderTextColor={appColors.textDim} value={seriesVolume} onChangeText={setSeriesVolume} keyboardType="numeric" />
+        </View>
+      </View>
+
       <Text style={styles.label}>Formato</Text>
       <FormatPicker value={format} onChange={(next) => { setFormat(next); setProgress(progressInputText(currentBook, next)); }} />
       {/* Rótulo acima de cada campo: preenchido, "21h" sozinho não diz nada. */}
@@ -167,6 +183,8 @@ const styles = StyleSheet.create({
   subtitle: { color: appColors.textMuted, fontSize: 15, lineHeight: 22 },
   row: { flexDirection: 'row', gap: 10 },
   half: { flex: 1, minWidth: 0 },
+  seriesName: { flex: 3 },
+  seriesVol: { flex: 1, minWidth: 0 },
   fieldLabel: { color: appColors.textDim, fontSize: 12, fontWeight: '800', marginBottom: 6 },
   label: { color: appColors.textMuted, fontSize: 16, fontWeight: '800', marginTop: 4 },
   outlineButton: { borderColor: appColors.goldDeep, backgroundColor: 'rgba(255,153,0,0.12)', borderWidth: 1, borderRadius: 14, paddingVertical: 13, alignItems: 'center' },

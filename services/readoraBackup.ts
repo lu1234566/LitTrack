@@ -156,6 +156,8 @@ function normalizeLegacyBook(input: LegacyReadoraBook): Book | null {
     progressPercent: optionalNumber(input.progressPercent),
     totalMinutes: optionalNumber(input.totalMinutes),
     listenedMinutes: optionalNumber(input.listenedMinutes),
+    series: stringValue(input.series) || undefined,
+    seriesVolume: optionalNumber(input.seriesVolume),
     review: reviewParts.join('\n\n'),
     favoriteQuote: stringValue(input.citacaoFavorita || input.favoriteQuote),
     publisher: stringValue(input.publisher),

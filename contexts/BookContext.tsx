@@ -178,6 +178,9 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
       // Só regrava se algo realmente mudou — o mapa devolve o mesmo objeto
       // quando os dados já estão limpos.
       if (cleaned.some((book, index) => book !== loaded[index])) await saveBooks(cleaned);
+      // Ao abrir o app, o widget já reflete a biblioteca (pode ter ficado
+      // parado desde a última vez).
+      updateReadingWidget(cleaned);
     }).finally(() => setLoading(false));
   }, []);
 

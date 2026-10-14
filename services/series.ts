@@ -1,7 +1,8 @@
 import { Book } from '@/types/book';
 
 /**
- * Séries deduzidas do título — sem campo novo no livro nem migração de dados.
+ * Séries: deduzidas do título ou informadas no livro (campos series e
+ * seriesVolume, preenchidos à mão ou pela IA).
  *
  * Os títulos de série seguem poucos formatos, e são esses que o reconhecedor
  * aceita. Na dúvida, NÃO é série: agrupar "Harry Potter e a Pedra Filosofal"
@@ -43,6 +44,24 @@ export function parseSeries(title: string): SeriesInfo | null {
   return null;
 }
 
+/**
+ * Série do livro: a informada no cadastro (à mão ou pela IA) tem prioridade;
+ * sem ela, a deduzida do título. Livros como "Eragon" ou "A Empregada" não
+ * têm número no título — só entram em série pelo campo informado.
+ */
+export function seriesInfoOf(book: Pick<Book, 'title' | 'series' | 'seriesVolume'>): SeriesInfo | null {
+  const nome = (book.series || '').trim();
+  const volume = Number(book.seriesVolume);
+  if (nome && Number.isFinite(volume) && volume > 0) {
+    const doTitulo = parseSeries(book.title);
+    // Subtítulo: o do título quando ele segue o formato de série; senão o
+    // próprio título ("Eldest", "Sítio e Tempestade").
+    const subtitle = doTitulo && seriesKey(doTitulo.series) === seriesKey(nome) ? doTitulo.subtitle : book.title;
+    return { series: nome, volume, subtitle };
+  }
+  return parseSeries(book.title);
+}
+
 /** Chave de agrupamento: ignora caixa, acento e pontuação ("TBATE" ≠, mas "the beginning" = "The Beginning"). */
 export function seriesKey(name: string) {
   return name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
@@ -70,7 +89,7 @@ export type SeriesGroup = {
 export function groupSeries(books: Book[]): SeriesGroup[] {
   const grupos = new Map<string, { name: string; volumes: SeriesVolume[] }>();
   for (const book of books) {
-    const info = parseSeries(book.title);
+    const info = seriesInfoOf(book);
     if (!info) continue;
     const key = seriesKey(info.series);
     const g = grupos.get(key) || { name: info.series, volumes: [] };
@@ -108,7 +127,7 @@ export function groupSeries(books: Book[]): SeriesGroup[] {
 
 /** A série de um livro, para mostrar na tela dele. */
 export function seriesOfBook(book: Book, books: Book[]): SeriesGroup | null {
-  const info = parseSeries(book.title);
+  const info = seriesInfoOf(book);
   if (!info) return null;
   const key = seriesKey(info.series);
   return groupSeries(books).find((g) => g.key === key) || null;

@@ -1,5 +1,5 @@
 import { pickReadingWidgetData } from '@/widget/readingWidgetData';
-import { groupSeries, parseSeries } from '@/services/series';
+import { groupSeries, parseSeries, seriesInfoOf } from '@/services/series';
 import { Book } from '@/types/book';
 
 const livro = (id: string, title: string, status: Book['status'] = 'finished'): Book =>
@@ -81,5 +81,30 @@ describe('widget lendo agora', () => {
 
   it('sem leitura em andamento, fica vazio', () => {
     expect(pickReadingWidgetData([livro('c', 'Lido')]).book).toBeNull();
+  });
+});
+
+describe('serie informada no livro (sem numero no titulo)', () => {
+  const eragon = [
+    { ...livro('e1', 'Eragon'), author: 'Christopher Paolini', series: 'Ciclo A Herança', seriesVolume: 1 },
+    { ...livro('e2', 'Eldest'), author: 'Christopher Paolini', series: 'Ciclo A Herança', seriesVolume: 2 },
+    { ...livro('e4', 'Inheritance', 'reading'), author: 'Christopher Paolini', series: 'ciclo a heranca', seriesVolume: 4 }
+  ];
+
+  it('agrupa pelo campo, mesmo com grafia diferente, e usa o titulo como subtitulo', () => {
+    const [g] = groupSeries(eragon);
+    expect(g.name).toBe('Ciclo A Herança');
+    expect(g.volumes.map((v) => [v.volume, v.subtitle])).toEqual([[1, 'Eragon'], [2, 'Eldest'], [4, 'Inheritance']]);
+    expect(g.missing).toEqual([3]);
+    expect(g.next).toMatchObject({ kind: 'continue', volume: 4 });
+  });
+
+  it('campo informado vale mais que o titulo', () => {
+    const info = seriesInfoOf({ title: 'Mistborn (Book 2)', series: 'Mistborn: Era 1', seriesVolume: 2 });
+    expect(info).toMatchObject({ series: 'Mistborn: Era 1', volume: 2 });
+  });
+
+  it('sem volume valido, volta a olhar so o titulo', () => {
+    expect(seriesInfoOf({ title: 'Eragon', series: 'Ciclo A Herança', seriesVolume: 0 })).toBeNull();
   });
 });

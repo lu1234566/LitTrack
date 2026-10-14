@@ -1,4 +1,3 @@
-import { Book } from '@/types/book';
 import { nativeAuth } from '@/services/firebaseNative';
 import { stripHtml } from '@/services/plainText';
 import { appLanguage } from '@/services/i18n';
@@ -28,7 +27,6 @@ export const isAiConfigured = Boolean(PROXY_URL || API_KEY);
 
 type Part = { text: string } | { inlineData: { mimeType: string; data: string } };
 type GeminiContent = { role: 'user' | 'model'; parts: Part[] };
-export type ChatTurn = { role: 'user' | 'assistant'; content: string };
 
 type GeminiBody = {
   contents: GeminiContent[];
@@ -186,23 +184,6 @@ export async function extractQuoteFromImage(base64: string, mimeType = 'image/jp
   });
 }
 
-/** "Converse com o livro": answers a question grounded in the book's metadata. */
-export async function askAboutBook(book: Book, question: string, history: ChatTurn[] = []): Promise<string> {
-  const facts = [
-    'Título: ' + book.title,
-    'Autor: ' + book.author,
-    book.genre ? 'Gênero: ' + book.genre : '',
-    book.publishedDate ? 'Ano: ' + book.publishedDate : '',
-    book.description ? 'Sinopse: ' + book.description : ''
-  ].filter(Boolean).join('\n');
-  const system = 'Você é uma companhia de leitura no app Readora. Converse em ' + IDIOMA_IA + ' sobre o livro abaixo, ajudando o leitor a refletir, esclarecer dúvidas e aprofundar. Evite spoilers de pontos da trama que o usuário ainda não mencionou, a menos que ele peça explicitamente. Seja conciso e caloroso.\n\nLIVRO:\n' + facts;
-  const contents: GeminiContent[] = [
-    ...history.map((t) => ({ role: (t.role === 'assistant' ? 'model' : 'user') as 'user' | 'model', parts: [{ text: t.content }] })),
-    { role: 'user', parts: [{ text: question }] }
-  ];
-  return callGemini({ contents, systemInstruction: { parts: [{ text: system }] }, generationConfig: { maxOutputTokens: 1024, thinkingConfig: NO_THINKING } });
-}
-
 /**
  * Carta de encerramento do Wrapped. Recebe só fatos já calculados pelo app e
  * é instruída a não inventar nada — a IA só dá a voz.
@@ -222,6 +203,40 @@ export async function writeWrappedLetter(facts: string[], readerName?: string): 
     generationConfig: { maxOutputTokens: 2048, thinkingConfig: NO_THINKING }
   });
   return texto.replace(/^["“]|["”]$/g, '').trim();
+}
+
+export type AiSeriesGuess = { index: number; series: string; volume: number };
+
+/**
+ * Para uma lista de livros, quais pertencem a uma série publicada e qual o
+ * volume. A IA só responde o que sabe; o app mostra para a pessoa confirmar
+ * antes de gravar.
+ */
+export async function findSeriesWithAi(books: Array<{ title: string; author: string }>): Promise<AiSeriesGuess[]> {
+  const lista = books.map((b, i) => i + '. ' + b.title + (b.author ? ' — ' + b.author : '')).join('\n');
+  const prompt = [
+    'Lista de livros (número. título — autor):',
+    lista,
+    '',
+    'Para cada livro que faz parte de uma SÉRIE publicada (sequência oficial com volumes numerados ou ordem de leitura definida pelo autor/editora), informe a série e o número do volume.',
+    'Responda APENAS com um JSON válido, sem markdown: [{"i": número do livro, "serie": nome da série, "volume": número}]',
+    '- Use o MESMO nome de série para todos os livros da mesma série, no idioma em que a maioria dos títulos dessa série está na lista.',
+    '- Inclua só o que você tem certeza. Livros avulsos não entram. Na dúvida, deixe de fora.',
+    '- Se nenhum for de série, responda [].'
+  ].join('\n');
+  const raw = await callGemini({
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    generationConfig: { maxOutputTokens: 4096, thinkingConfig: NO_THINKING }
+  });
+  const json = raw.replace(/```json|```/g, '').trim();
+  const start = json.indexOf('[');
+  const end = json.lastIndexOf(']');
+  if (start < 0 || end < 0) return [];
+  const parsed = JSON.parse(json.slice(start, end + 1));
+  if (!Array.isArray(parsed)) return [];
+  return parsed
+    .map((x) => ({ index: Number(x?.i), series: typeof x?.serie === 'string' ? x.serie.trim() : '', volume: Number(x?.volume) }))
+    .filter((x) => Number.isInteger(x.index) && x.index >= 0 && x.index < books.length && x.series.length >= 2 && Number.isFinite(x.volume) && x.volume > 0 && x.volume < 200);
 }
 
 export type AiBookFacts = { description?: string; totalPages?: number; genre?: string };

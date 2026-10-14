@@ -108,11 +108,29 @@ export default function DashboardScreen() {
       {recentBooks.map((book) => <BookCard key={book.id} book={book} />)}
 
       <SectionHeader color={appColors.purple} title="Minhas Estantes" action="GESTÃO" href="/shelves" />
-      <View style={[styles.shelfGrid, mobile && styles.stack]}>
+      {mobile ? (
+        // Celular: grade 2×2 de cartões compactos. Antes cada estante ocupava a
+        // largura toda e quase meia tela de altura.
+        <View style={styles.shelfMini}>
+          {buildShelfCards(shelves).map((shelf) => (
+            <Link key={shelf.name} href="/shelves" asChild>
+              <Pressable style={styles.shelfTile}>
+                <View style={styles.shelfTop}>
+                  <ReadoraIcon name={shelf.icon} size={18} color={shelf.color} />
+                  <Text style={styles.shelfCount}>{shelf.count}</Text>
+                </View>
+                <Text style={styles.shelfTileTitle} numberOfLines={1}>{shelf.name}</Text>
+                <Text style={styles.shelfTileText} numberOfLines={2}>{shelf.description}</Text>
+              </Pressable>
+            </Link>
+          ))}
+        </View>
+      ) : (
+      <View style={styles.shelfGrid}>
         {buildShelfCards(shelves).map((shelf) => (
           // No computador as quatro estantes dividem a linha por igual; antes
           // cada cartão tinha a largura do texto e as últimas saíam da tela.
-          <View key={shelf.name} style={!mobile && styles.cell}>
+          <View key={shelf.name} style={styles.cell}>
           <Card>
             <View style={styles.shelfTop}><View style={styles.folderIcon}><ReadoraIcon name={shelf.icon} size={20} color={shelf.color} /></View><Text style={styles.shelfBadge}>{shelf.count}</Text></View>
             <Text style={styles.shelfTitle}>{shelf.name}</Text>
@@ -121,6 +139,7 @@ export default function DashboardScreen() {
           </View>
         ))}
       </View>
+      )}
 
       <SectionHeader color={appColors.rose} title="Atmosferas" />
       <View style={[styles.atmosGrid, mobile && styles.stack]}>
@@ -221,6 +240,11 @@ const styles = StyleSheet.create({
   emptyPanel: { minHeight: 120, borderColor: appColors.border, borderStyle: 'dashed', borderWidth: 1, borderRadius: 34, alignItems: 'center', justifyContent: 'center', padding: 24 },
   emptyText: { color: appColors.textDim, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 16, textAlign: 'center' },
   shelfGrid: { flexDirection: 'row', gap: 20 },
+  shelfMini: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  shelfTile: { flexBasis: '47%', flexGrow: 1, backgroundColor: appColors.surface, borderColor: appColors.borderSoft, borderWidth: 1, borderRadius: 18, padding: 14, gap: 6 },
+  shelfCount: { color: appColors.text, fontWeight: '900', fontSize: 18 },
+  shelfTileTitle: { color: appColors.text, fontFamily: appFonts.display, fontStyle: 'italic', fontSize: 15, fontWeight: '900', marginTop: 4 },
+  shelfTileText: { color: appColors.textDim, fontSize: 11.5, lineHeight: 15 },
   cell: { flex: 1, minWidth: 0 },
   atmosMain: { flex: 2, minWidth: 0 },
   shelfTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

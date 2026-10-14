@@ -75,7 +75,7 @@ export function ReadingWidget({ data, width, height = 110 }: { data: ReadingWidg
         {book.author ? <TextWidget text={book.author} style={{ fontSize: 12, color: COR.apagado, marginTop: 2 }} maxLines={1} truncate="END" /> : null}
 
         <FlexWidget style={{ width: barra, height: 6, borderRadius: 3, backgroundColor: COR.trilho, marginTop: 10 }}>
-          <FlexWidget style={{ width: cheio, height: 6, borderRadius: 3, backgroundColor: COR.ouro }} />
+          {cheio > 0 ? <FlexWidget style={{ width: cheio, height: 6, borderRadius: 3, backgroundColor: COR.ouro }} /> : null}
         </FlexWidget>
         <TextWidget text={data.line} style={{ fontSize: 11, color: COR.apagado, marginTop: 6 }} maxLines={1} truncate="END" />
       </FlexWidget>
@@ -108,7 +108,7 @@ function CompactWidget({ data, width, height }: { data: ReadingWidgetData; width
         </FlexWidget>
       )}
       <FlexWidget style={{ width: capaW, height: barraAltura, borderRadius: 3, backgroundColor: COR.trilho, marginTop: 6 }}>
-        <FlexWidget style={{ width: cheio, height: barraAltura, borderRadius: 3, backgroundColor: COR.ouro }} />
+        {cheio > 0 ? <FlexWidget style={{ width: cheio, height: barraAltura, borderRadius: 3, backgroundColor: COR.ouro }} /> : null}
       </FlexWidget>
     </FlexWidget>
   );
