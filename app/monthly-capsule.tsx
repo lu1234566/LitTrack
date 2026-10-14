@@ -110,7 +110,7 @@ export default function MonthlyCapsuleScreen() {
   const previewWidth = mobile ? width - 40 : Math.min(width * 0.46, 540);
   const previewScale = previewWidth / 1080;
 
-  const caption = useMemo(() => 'Minha cápsula literária de ' + monthName + ' no Readora 📚✨\n\n📖 Livros concluídos: ' + monthFinished + '\n📄 Páginas lidas: ' + monthPages + '\n⭐ Média do mês: ' + ratingOutOf10.toFixed(1) + '/10\n🎭 Vibe: ' + vibe + '\n\nGerado automaticamente pelo @readora.app 📱\n#Readora #CapsulaLiteraria #Leitura #Books #MonthlyWrapUp', [monthName, monthPages, ratingOutOf10, monthFinished, vibe]);
+  const caption = useMemo(() => 'Minha cápsula literária de ' + monthName + ' no Códice Literário 📚✨\n\n📖 Livros concluídos: ' + monthFinished + '\n📄 Páginas lidas: ' + monthPages + '\n⭐ Média do mês: ' + ratingOutOf10.toFixed(1) + '/10\n🎭 Vibe: ' + vibe + '\n\nGerado no Códice Literário 📱\n#CodiceLiterario #CapsulaLiteraria #Leitura #Books #MonthlyWrapUp', [monthName, monthPages, ratingOutOf10, monthFinished, vibe]);
 
   async function copyCaption() {
     const ok = await copyText(caption);
