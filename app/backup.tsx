@@ -107,7 +107,7 @@ export default function BackupScreen() {
     const text = backupText || buildBackupText();
     setBackupText(text);
     setMessage('Gerando arquivo JSON...');
-    const ok = await saveTextFile('readora-backup-' + new Date().toISOString().slice(0, 10) + '.json', text, 'application/json;charset=utf-8');
+    const ok = await saveTextFile('codice-backup-' + new Date().toISOString().slice(0, 10) + '.json', text, 'application/json;charset=utf-8');
     setMessage(ok
       ? (Platform.OS === 'web' ? 'Arquivo JSON baixado.' : 'Arquivo JSON pronto — escolha onde salvar ou enviar.')
       : 'Não foi possível gerar o arquivo. Copie o JSON manualmente.');
@@ -149,7 +149,7 @@ export default function BackupScreen() {
     const text = reportText || buildReportText();
     setReportText(text);
     setMessage('Gerando relatório .txt...');
-    const ok = await saveTextFile('readora-relatorio-' + new Date().toISOString().slice(0, 10) + '.txt', text);
+    const ok = await saveTextFile('codice-relatorio-' + new Date().toISOString().slice(0, 10) + '.txt', text);
     setMessage(ok
       ? (Platform.OS === 'web' ? 'Relatório .txt baixado.' : 'Relatório .txt pronto — escolha onde salvar ou enviar.')
       : 'Não foi possível gerar o arquivo. Copie o relatório manualmente.');

@@ -294,7 +294,7 @@ export function downloadCapsulePng(data: CapsulePngData) {
   ctx.fillText(data.vibe, 130, 1730);
   ctx.fillText(data.genre || 'Diverso', 610, 1730);
 
-  const fileName = 'readora-capsula-' + data.year + '-' + data.monthName.toLowerCase().replace(/\s+/g, '-') + '.png';
+  const fileName = 'codice-capsula-' + data.year + '-' + data.monthName.toLowerCase().replace(/\s+/g, '-') + '.png';
   return downloadDataUrl(fileName, canvas.toDataURL('image/png'));
 }
 
