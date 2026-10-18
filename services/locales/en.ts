@@ -1070,6 +1070,7 @@ export const en: Record<string, string> = {
   'Com a conta, seus livros, citações e estantes ficam salvos na nuvem e aparecem também no site. Sem ela, tudo continua funcionando, só que apenas neste aparelho.': 'With an account, your books, quotes and shelves are saved to the cloud and also show up on the website. Without one, everything still works, just on this device only.',
   'Escolha cores, espaçamento e tamanho do texto do seu jeito.': 'Choose colors, spacing and text size your way.',
   'gêneros': 'genres',
+  'autores': 'authors',
   'citação(ões),': 'quote(s),',
   'de': 'of',
   'paginas.': 'pages.',
