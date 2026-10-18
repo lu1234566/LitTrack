@@ -36,6 +36,14 @@ describe('traducao para ingles', () => {
     expect(em('Mágico, Capitu')).toBe('Mágico, Capitu');
   });
 
+  it('frases da retrospectiva montadas com titulos', () => {
+    expect(em('21 dos seus 60 livros saíram da pena dele(a), como “A professora” e “The Divorce”.')).toBe('21 of your 60 books came from their pen, like “A professora” and “The Divorce”.');
+    expect(em('Foi quem assinou “Eragon”, uma leitura que marcou seu ano.')).toBe('The author of “Eragon”, a read that marked your year.');
+    expect(em('34 livros nesse território (57% do ano), com “Eldest” no topo.')).toBe('34 books in this territory (57% of the year), with “Eldest” on top.');
+    expect(em('Nota 5.0/5 — destaque entre 6 leituras nota máxima do ano.')).toBe('Rated 5.0/5 — a standout among 6 top-rated reads this year.');
+    expect(em('3 dos seus 10 livros carregaram esse clima, com destaque para Verity e Eldest.')).toBe('3 of your 10 books carried this mood, especially Verity and Eldest.');
+  });
+
   it('mensagens montadas com numeros', () => {
     expect(em('Procurando... 3 de 5 (1 atualizados)')).toBe('Searching... 3 of 5 (1 updated)');
     expect(em('2 de 5 livro(s) atualizados. Em 3 livro(s) fiquei na dúvida — escolha abaixo.'))

@@ -794,6 +794,7 @@ export const en: Record<string, string> = {
   'Pontos Fracos': 'Weaknesses',
   'Pontos fracos:': 'Weaknesses:',
   'Por década de publicação': 'By publication decade',
+  'De {a} ({b}) a {c} ({d}).': 'From {a} ({b}) to {c} ({d}).',
   'Preciso da sua ajuda': 'I need your help',
   'Preencha o ano de publicação dos seus livros para ver a distribuição por década.': 'Fill in the publication year of your books to see them by decade.',
   'Preferência': 'Preference',
@@ -1338,5 +1339,12 @@ export const enPatterns: Array<[RegExp, (m: RegExpMatchArray, sub: Sub) => strin
   [/^Todos os (\d+) livros estão completos\.$/, (m) => `All ${m[1]} books are complete.`],
   [/^Lendo • (.+)$/, (m, sub) => 'Reading • ' + sub(m[1])],
   [/^Lido • (.+)$/, (m, sub) => 'Read • ' + sub(m[1])],
-  [/^Quero ler • (.+)$/, (m, sub) => 'Want to read • ' + sub(m[1])]
+  [/^Quero ler • (.+)$/, (m, sub) => 'Want to read • ' + sub(m[1])],
+  // Retrospectiva: frases montadas com números e títulos (os títulos ficam como estão).
+  [/^(\d+) dos seus (\d+) livros saíram da pena dele\(a\)(?:, como “(.+)”)?\.$/, (m) => `${m[1]} of your ${m[2]} books came from their pen${m[3] ? ', like “' + m[3].replace('” e “', '” and “') + '”' : ''}.`],
+  [/^Foi quem assinou “(.+)”, uma leitura que marcou seu ano\.$/, (m) => `The author of “${m[1]}”, a read that marked your year.`],
+  [/^(\d+) dos seus (\d+) livros carregaram esse clima(?:, com destaque para (.+))?\.$/, (m) => `${m[1]} of your ${m[2]} books carried this mood${m[3] ? ', especially ' + m[3].replace(/ e (?!.* e )/, ' and ') : ''}.`],
+  [/^(\d+) livros? nesse território \((\d+)% do ano\)(?:, com “(.+)” no topo)?\.$/, (m) => `${m[1]} book${m[1] === '1' ? '' : 's'} in this territory (${m[2]}% of the year)${m[3] ? ', with “' + m[3] + '” on top' : ''}.`],
+  [/^Nota ([\d.,]+)\/5 — destaque entre (\d+) leituras nota máxima do ano\.$/, (m) => `Rated ${m[1]}/5 — a standout among ${m[2]} top-rated reads this year.`],
+  [/^Nota ([\d.,]+)\/5 — sua leitura mais bem avaliada do ano\.$/, (m) => `Rated ${m[1]}/5 — your highest-rated read of the year.`]
 ];

@@ -8,7 +8,7 @@ import { useShelves } from '@/contexts/ShelfContext';
 import { buildReadingInsights } from '@/services/readingInsights';
 import { buildDiversity } from '@/services/diversity';
 import { appColors } from '@/theme/tokens';
-import { appLocale } from '@/services/i18n';
+import { appLocale, t } from '@/services/i18n';
 
 export default function InsightsScreen() {
   const { books } = useBooks();
@@ -47,7 +47,7 @@ export default function InsightsScreen() {
                 </View>
               ))}
             </View>
-            {diversity.oldest && diversity.newest ? <Text style={[styles.body, { marginTop: 14 }]}>De {diversity.oldest.year} ({diversity.oldest.title}) a {diversity.newest.year} ({diversity.newest.title}).</Text> : null}
+            {diversity.oldest && diversity.newest ? <Text style={[styles.body, { marginTop: 14 }]}>{t('De {a} ({b}) a {c} ({d}).', { a: diversity.oldest.year, b: diversity.oldest.title, c: diversity.newest.year, d: diversity.newest.title })}</Text> : null}
           </>
         ) : <Text style={styles.body}>Preencha o ano de publicação dos seus livros para ver a distribuição por década.</Text>}
       </Card>
