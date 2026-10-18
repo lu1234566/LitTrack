@@ -249,7 +249,7 @@ export default function BackupScreen() {
       </View>
 
       <View style={[styles.topGrid, mobile && styles.stack]}>
-        <Card>
+        <View style={!mobile && styles.cellWide}><Card>
           <View style={styles.titleRow}><ReadoraIcon name="filter" size={18} color={appColors.gold} /><Text style={styles.cardTitle}>Filtros de Exportação</Text></View>
           <Text style={styles.kicker}>ESCOPO</Text>
           <View style={styles.filterRow}>{scopes.map((item) => <Pressable key={item} onPress={() => setScope(item)}><Text style={scope === item ? styles.filterActive : styles.filter}>{labelForScope(item)}</Text></Pressable>)}</View>
@@ -258,27 +258,27 @@ export default function BackupScreen() {
           <Text style={styles.kicker}>AVALIAÇÃO MÍNIMA <Text style={styles.gold}>{minRating}★</Text></Text>
           <View style={styles.filterRow}>{ratings.map((item) => <Pressable key={item} onPress={() => setMinRating(item)}><Text style={minRating === item ? styles.ratingActive : styles.rating}>{item}★</Text></Pressable>)}</View>
           <Text style={styles.body}>Livros selecionados: <Text style={styles.white}>{selectedBooks.length}</Text></Text>
-        </Card>
+        </Card></View>
 
-        <Card>
+        <View style={!mobile && styles.cell}><Card>
           <View style={styles.exportIcon}><ReadoraIcon name="json" size={28} color={appColors.gold} /></View>
           <Text style={styles.exportTitle}>Exportar JSON</Text>
           <Text style={styles.exportText}>Gera backup filtrado e permite baixar o arquivo .json no navegador.</Text>
           <Pressable style={styles.downloadButton} onPress={downloadBackup}><ReadoraIcon name="export" size={17} color={appColors.background} /><Text style={styles.downloadText}>Baixar JSON</Text></Pressable>
           <Pressable style={styles.secondaryMiniButton} onPress={generateBackup}><Text style={styles.secondaryMiniText}>Gerar e revisar</Text></Pressable>
-        </Card>
+        </Card></View>
 
-        <Card>
+        <View style={!mobile && styles.cell}><Card>
           <View style={[styles.exportIcon, styles.blueIcon]}><ReadoraIcon name="pdf" size={28} color="#3b82f6" /></View>
           <Text style={styles.exportTitle}>Relatório / PDF</Text>
           <Text style={styles.exportText}>Baixe .txt ou use a impressão do navegador para salvar como PDF.</Text>
           <Pressable style={styles.pdfButton} onPress={printReport}><ReadoraIcon name="pdf" size={17} color={appColors.text} /><Text style={styles.pdfText}>Imprimir / PDF</Text></Pressable>
           <Pressable style={styles.secondaryMiniButton} onPress={downloadReport}><Text style={styles.secondaryMiniText}>Baixar .txt</Text></Pressable>
-        </Card>
+        </Card></View>
       </View>
 
       <View style={[styles.midGrid, mobile && styles.stack]}>
-        <Card>
+        <View style={!mobile && styles.cellWide}><Card>
           <View style={styles.titleRow}><ReadoraIcon name="import" size={18} color="#3b82f6" /><Text style={[styles.cardTitle, { color: '#3b82f6' }]}>Importar Backup</Text></View>
           <Text style={styles.body}>Restaure sua biblioteca a partir de um arquivo JSON exportado anteriormente.</Text>
           <View style={[styles.reportButtons, mobile && styles.stack]}><Pressable style={styles.outlineButton} onPress={pickBackupFile}><Text style={styles.outlineText}>Importar de arquivo</Text></Pressable><Pressable style={styles.outlineButton} onPress={importBackup}><Text style={styles.outlineText}>Importar texto colado</Text></Pressable></View>
@@ -287,14 +287,14 @@ export default function BackupScreen() {
           <Text style={[styles.cardTitle, { color: appColors.emerald }]}>MIGRAR DE OUTRO APP</Text>
           <Text style={styles.body}>Importe sua estante exportada do Goodreads ou do StoryGraph (.csv). Duplicados são ignorados.</Text>
           <Pressable style={[styles.outlineButton, { borderColor: appColors.emerald }]} onPress={pickCsvFile}><Text style={[styles.outlineText, { color: appColors.emerald }]}>Importar CSV (Goodreads / StoryGraph)</Text></Pressable>
-        </Card>
+        </Card></View>
 
-        <Card>
+        <View style={!mobile && styles.cell}><Card>
           <View style={styles.titleRow}><ReadoraIcon name="info" size={18} color={appColors.gold} /><Text style={styles.cardTitle}>INFORMAÇÕES IMPORTANTES</Text></View>
           <Text style={styles.bullet}>• O JSON respeita os filtros de status, gênero e avaliação mínima.</Text>
           <Text style={styles.bullet}>• O botão Baixar JSON cria um arquivo .json no navegador.</Text>
           <Text style={styles.bullet}>• O relatório pode ser baixado em .txt ou salvo como PDF pela impressão.</Text>
-        </Card>
+        </Card></View>
       </View>
 
       <Card>
@@ -397,6 +397,9 @@ const styles = StyleSheet.create({
   stack: { flexDirection: 'column', alignItems: 'stretch' },
   topGrid: { flexDirection: 'row', gap: 18 },
   midGrid: { flexDirection: 'row', gap: 18 },
+  // Sem minWidth: 0 a fileira de gêneros alarga o card e empurra os outros para fora da tela.
+  cell: { flex: 1, minWidth: 0 },
+  cellWide: { flex: 2, minWidth: 0 },
   cardTitle: { color: appColors.gold, fontFamily: appFonts.display, fontSize: 18, fontWeight: '900' },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   kicker: { color: appColors.textDim, fontSize: 10, letterSpacing: 3, fontWeight: '900', marginTop: 14 },

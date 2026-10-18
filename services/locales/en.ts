@@ -362,6 +362,7 @@ export const en: Record<string, string> = {
   'Escanear ISBN': 'Scan ISBN',
   'Escolha o clima e o tamanho. Buscamos na sua lista de leitura — pelo que você marcou ou pelo clima que seus gêneros costumam ter.': 'Pick the vibe and the length. We search your reading list — by what you tagged or by the vibe your genres usually have.',
   'ESCOLHA O TEMA': 'CHOOSE THE THEME',
+  'ESCOPO': 'SCOPE',
   'Escreva o título primeiro — é só com ele que dá para procurar.': 'Type the title first — it is all we need to search.',
   'Esmeralda': 'Emerald',
   'Especulativa': 'Speculative',
