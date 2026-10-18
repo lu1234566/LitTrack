@@ -1,5 +1,6 @@
 import { ExternalBook } from '@/types/externalBook';
 import { stripHtml } from '@/services/plainText';
+import { parsePageCount } from '@/services/pageCount';
 
 /**
  * O Google serve uma imagem de "image not available" no lugar da capa quando
@@ -276,7 +277,7 @@ async function fromMercadoEditorial(isbn: string): Promise<ExternalBook[]> {
         genre: row?.assunto || 'A definir',
         publisher: typeof row?.editora === 'string' ? row.editora : (row?.editora?.nome || ''),
         publishedDate: String(row?.ano_edicao || row?.data_publicacao || '').slice(0, 4),
-        totalPages: Number(row?.paginas) || 0,
+        totalPages: parsePageCount(row?.paginas),
         isbn: row?.isbn || isbn,
         coverUrl: normalizeCover(covers?.grande || covers?.media || covers?.pequena),
         description: stripHtml(row?.sinopse),

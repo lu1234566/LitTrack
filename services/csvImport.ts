@@ -1,4 +1,5 @@
 import { Book, BookStatus } from '@/types/book';
+import { parsePageCount } from '@/services/pageCount';
 
 // Imports a Goodreads or StoryGraph CSV export into Readora books. No network —
 // just parsing + field mapping. Recognizes both layouts from their headers.
@@ -96,7 +97,7 @@ export function csvToBooks(text: string, now: number = Date.now()): CsvImportRes
         rating: Number(col(row, 'My Rating')) || 0,
         publisher: col(row, 'Publisher'),
         publishedDate: col(row, 'Year Published') || col(row, 'Original Publication Year'),
-        totalPages: Number(col(row, 'Number of Pages')) || 0,
+        totalPages: parsePageCount(col(row, 'Number of Pages')),
         status: goodreadsStatus(col(row, 'Exclusive Shelf')),
         format: formatFromCsv(col(row, 'Binding')),
         review: col(row, 'My Review'),

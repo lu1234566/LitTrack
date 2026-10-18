@@ -12,6 +12,7 @@ import { CoverPicker } from '@/components/CoverPicker';
 import { MonthYearField } from '@/components/MonthYearField';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors } from '@/theme/tokens';
+import { parsePageCount } from '@/services/pageCount';
 
 export default function EditBookScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -60,7 +61,7 @@ export default function EditBookScreen() {
     }
     // Calcula os campos de progresso do formato escolhido (e a página
     // proporcional); o status continua sendo o que foi marcado no formulário.
-    const comProgresso = applyProgress({ ...currentBook, format, totalPages: Number(totalPages) || 0, totalMinutes, status }, valor);
+    const comProgresso = applyProgress({ ...currentBook, format, totalPages: parsePageCount(totalPages), totalMinutes, status }, valor);
     const volumeSerie = Number(seriesVolume.replace(',', '.'));
     await updateBook(currentBook.id, {
       series: series.trim() && volumeSerie > 0 ? series.trim() : undefined,
@@ -78,7 +79,7 @@ export default function EditBookScreen() {
       coverUrl: coverUrl.trim(),
       notes: source.trim(),
       status,
-      totalPages: Number(totalPages) || 0,
+      totalPages: parsePageCount(totalPages),
       currentPage: comProgresso.currentPage || 0,
       rating: Number(rating) || 0,
       reasonToRead: reason.trim(),

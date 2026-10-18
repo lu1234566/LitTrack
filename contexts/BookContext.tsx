@@ -3,6 +3,7 @@ import { Book, BookStatus, ReadingStats } from '@/types/book';
 import { calculateProgress, loadBooks, saveBooks } from '@/services/bookStorage';
 import { applyProgress } from '@/services/bookFormat';
 import { looksLikeHtml, stripHtml } from '@/services/plainText';
+import { repairedPageCount } from '@/services/pageCount';
 import { persistLocalCover } from '@/services/webPlatformTools';
 import { updateReadingWidget } from '@/services/readingWidget';
 import { refreshReadingReminder } from '@/services/notificationScheduler';
@@ -77,12 +78,19 @@ function withCleanText(books: Book[]) {
     const nextCover = repairedCover(book);
     const fixCover = nextCover !== book.coverUrl;
     const fixMood = hasCatalogMoodNoise(book);
-    if (!dirty.length && !fixCover && !fixMood) return book;
+    // "1.087" páginas salvo como 1,087 antes de parsePageCount.
+    const fracionado = (n: unknown) => typeof n === 'number' && Number.isFinite(n) && !Number.isInteger(n);
+    const fixPages = fracionado(book.totalPages) || fracionado(book.currentPage);
+    if (!dirty.length && !fixCover && !fixMood && !fixPages) return book;
 
     const patch: Partial<Book> = {};
     dirty.forEach((field) => { patch[field] = stripHtml(book[field]); });
     if (fixCover) patch.coverUrl = nextCover;
     if (fixMood) patch.mood = '';
+    if (fixPages) {
+      if (fracionado(book.totalPages)) patch.totalPages = repairedPageCount(book.totalPages);
+      if (fracionado(book.currentPage)) patch.currentPage = repairedPageCount(book.currentPage);
+    }
     return { ...book, ...patch };
   });
 }

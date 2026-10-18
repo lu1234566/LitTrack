@@ -18,6 +18,7 @@ import { haptic } from '@/services/feedback';
 import { bookNeedsEnrichment, enrichBookPatch } from '@/services/bookEnrichment';
 import { MonthYearField } from '@/components/MonthYearField';
 import { appColors, appFonts } from '@/theme/tokens';
+import { parsePageCount } from '@/services/pageCount';
 
 const moods = ['Sombrio', 'Tenso', 'Reflexivo', 'Aconchegante', 'Emocional', 'Misterioso', 'Caótico', 'Inspirador', 'Cerebral', 'Mágico'];
 
@@ -146,7 +147,7 @@ export default function AddBookScreen() {
       publishedDate: year.trim(),
       status,
       rating: Number(rating) || 0,
-      totalPages: Number(totalPages) || 0,
+      totalPages: parsePageCount(totalPages),
       currentPage: Number(currentPage) || 0,
       priority: status === 'wishlist' ? 'media' : 'alta',
       reasonToRead: reason.trim(),
