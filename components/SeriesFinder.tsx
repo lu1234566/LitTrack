@@ -13,8 +13,8 @@ import type { Book } from '@/types/book';
 
 type Sugestao = { key: string; name: string; itens: Array<{ book: Book; volume: number }> };
 
-/** Livros por chamada: a lista vai inteira no pedido, então em lotes. */
-const LOTE = 80;
+/** Livros por chamada: lotes menores respondem mais rápido (o modelo pensa menos por vez). */
+const LOTE = 40;
 
 /**
  * Séries que o título não entrega ("Eragon", "A Empregada", "Sombra e Ossos"):
@@ -26,6 +26,7 @@ export function SeriesFinder() {
   const [estado, setEstado] = useState<'idle' | 'buscando' | 'pronto' | 'erro'>('idle');
   const [sugestoes, setSugestoes] = useState<Sugestao[]>([]);
   const [mensagem, setMensagem] = useState('');
+  const [progresso, setProgresso] = useState('');
 
   // Só olha quem ainda não está em série nenhuma (nem pelo título, nem informado).
   const candidatos = useMemo(() => books.filter((b) => b.status !== 'dnf' && !seriesInfoOf(b)), [books]);
@@ -37,11 +38,23 @@ export function SeriesFinder() {
     setMensagem('');
     try {
       const achados: Array<{ book: Book; series: string; volume: number }> = [];
+      const lotes = Math.ceil(candidatos.length / LOTE);
+      let falhas = 0;
+      let ultimoErro: unknown = null;
       for (let i = 0; i < candidatos.length; i += LOTE) {
         const lote = candidatos.slice(i, i + LOTE);
-        const r = await findSeriesWithAi(lote.map((b) => ({ title: b.title, author: b.author })));
-        r.forEach((g) => achados.push({ book: lote[g.index], series: g.series, volume: g.volume }));
+        if (lotes > 1) setProgresso(t('{a} de {b}', { a: i / LOTE + 1, b: lotes }));
+        // Um lote que falha (ou passa do prazo) não perde o que os outros acharam.
+        try {
+          const r = await findSeriesWithAi(lote.map((b) => ({ title: b.title, author: b.author })));
+          r.forEach((g) => achados.push({ book: lote[g.index], series: g.series, volume: g.volume }));
+        } catch (erro) {
+          falhas++;
+          ultimoErro = erro;
+        }
       }
+      setProgresso('');
+      if (falhas === lotes) throw ultimoErro;
       // Agrupa pelo nome normalizado; ordena os volumes.
       const mapa = new Map<string, Sugestao>();
       for (const a of achados) {
@@ -55,10 +68,15 @@ export function SeriesFinder() {
         .sort((a, b) => b.itens.length - a.itens.length || a.name.localeCompare(b.name));
       setSugestoes(lista);
       setEstado('pronto');
-      if (!lista.length) setMensagem(t('Nenhuma série nova encontrada entre os seus livros.'));
+      if (falhas) setMensagem(t('Parte dos livros não foi analisada a tempo. Tente de novo depois para ver o resto.'));
+      else if (!lista.length) setMensagem(t('Nenhuma série nova encontrada entre os seus livros.'));
     } catch (erro) {
+      setProgresso('');
       setEstado('erro');
-      setMensagem(t('Não foi possível consultar a IA agora. Tente de novo mais tarde.'));
+      const status = (erro as { status?: number })?.status;
+      setMensagem(status === 408
+        ? t('A IA demorou demais para responder. Tente de novo em instantes.')
+        : t('Não foi possível consultar a IA agora. Tente de novo mais tarde.'));
     }
   }
 
@@ -111,7 +129,7 @@ export function SeriesFinder() {
       ) : (
         <Pressable style={[styles.primary, styles.alone, (estado === 'buscando' || !candidatos.length) && styles.off]} onPress={buscar} disabled={estado === 'buscando' || !candidatos.length}>
           {estado === 'buscando' ? <ActivityIndicator color={appColors.background} /> : <ReadoraIcon name="search" size={15} color={appColors.background} />}
-          <Text style={styles.primaryText}>{estado === 'buscando' ? t('Procurando séries...') : t('Encontrar séries com IA')}</Text>
+          <Text style={styles.primaryText}>{estado === 'buscando' ? t('Procurando séries...') + (progresso ? ' ' + progresso : '') : t('Encontrar séries com IA')}</Text>
         </Pressable>
       )}
 

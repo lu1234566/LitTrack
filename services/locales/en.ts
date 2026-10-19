@@ -1213,6 +1213,8 @@ export const en: Record<string, string> = {
   'Aplicar': 'Apply',
   'Procurando séries...': 'Looking for series...',
   'Encontrar séries com IA': 'Find series with AI',
+  'Parte dos livros não foi analisada a tempo. Tente de novo depois para ver o resto.': 'Some of your books could not be checked in time. Try again later to see the rest.',
+  'A IA demorou demais para responder. Tente de novo em instantes.': 'The AI took too long to answer. Try again in a moment.',
   'Os volumes de cada série em ordem, o seu progresso e o que ler em seguida. O app reconhece a série pelo título do livro ou pela série informada em Editar.': 'Each series’ volumes in order, your progress and what to read next. The app recognizes the series from the book’s title or from the series set in Edit.',
   'Quando você tiver dois ou mais volumes de uma série, ela aparece aqui. Títulos como “Nome da Série (Volume 2)” são reconhecidos sozinhos; os outros, pela busca acima ou pelo campo Série em Editar.': 'Once you have two or more volumes of a series, it shows up here. Titles like “Series Name (Volume 2)” are recognized automatically; others through the search above or the Series field in Edit.',
   'Série (opcional)': 'Series (optional)',

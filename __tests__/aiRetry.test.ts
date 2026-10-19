@@ -104,3 +104,28 @@ describe('IA tenta de novo e troca de modelo', () => {
     expect(corpo.generationConfig.thinkingConfig).toBeUndefined();
   });
 });
+
+describe('IA que não responde', () => {
+  beforeEach(() => { jest.useFakeTimers(); });
+  afterEach(() => { jest.useRealTimers(); (global as any).fetch = undefined; });
+
+  it('desiste no prazo com erro 408 em vez de ficar procurando para sempre', async () => {
+    // Uma resposta que nunca chega: só termina quando a chamada é abortada.
+    (global as any).fetch = jest.fn((_url: string, init: { signal?: AbortSignal }) => new Promise((_ok, falha) => {
+      init?.signal?.addEventListener('abort', () => falha(new Error('aborted')));
+    }));
+    let mod: typeof import('@/services/aiClient');
+    jest.isolateModules(() => {
+      process.env.EXPO_PUBLIC_GEMINI_API_KEY = 'teste';
+      delete process.env.EXPO_PUBLIC_AI_PROXY_URL;
+      delete process.env.EXPO_PUBLIC_GEMINI_MODEL;
+      mod = require('@/services/aiClient');
+    });
+    const resultado = mod!.findSeriesWithAi([{ title: 'Eragon', author: 'Christopher Paolini' }]).then(() => null, (e) => e);
+    await jest.advanceTimersByTimeAsync(mod!.PRAZO_IA_MS + 1000);
+    const erro = await resultado;
+    expect(erro?.status).toBe(408);
+    // Não tenta de novo: seria esperar o prazo outra vez.
+    expect(((global as any).fetch as jest.Mock).mock.calls.length).toBe(1);
+  });
+});

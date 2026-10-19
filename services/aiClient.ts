@@ -62,6 +62,35 @@ async function proxyAuthHeader(): Promise<Record<string, string>> {
 
 /** Sobrecarga (503) e limite de ritmo (429) passam sozinhos: vale insistir. */
 const PASSAGEIRO = new Set([429, 500, 503]);
+
+/**
+ * O fetch do React Native não tem prazo: uma resposta que nunca chega deixava
+ * a tela em "Procurando..." para sempre, sem erro. Passado o prazo, a chamada é
+ * abortada e vira um erro 408 (que não é tentado de novo: seria esperar o
+ * dobro para nada).
+ */
+export const PRAZO_IA_MS = 60000;
+async function fetchComPrazo(url: string, init: RequestInit, ms: number): Promise<{ res: Response; ler: <T>(f: (r: Response) => Promise<T>) => Promise<T> }> {
+  const controle = new AbortController();
+  const relogio = setTimeout(() => controle.abort(), ms);
+  const comoErro = (e: unknown) => {
+    if (!controle.signal.aborted) return e;
+    const erro = new Error('A IA demorou demais para responder. Tente de novo em instantes.') as Error & { status?: number };
+    erro.status = 408;
+    return erro;
+  };
+  try {
+    const res = await fetch(url, { ...init, signal: controle.signal });
+    // O corpo também conta no prazo: a resposta pode começar e travar no meio.
+    const ler = async <T>(f: (r: Response) => Promise<T>) => {
+      try { return await f(res); } catch (e) { throw comoErro(e); } finally { clearTimeout(relogio); }
+    };
+    return { res, ler };
+  } catch (e) {
+    clearTimeout(relogio);
+    throw comoErro(e);
+  }
+}
 const esperar = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
@@ -84,8 +113,8 @@ export function pickFallbackModels(nomes: string[], principal: string): string[]
 function modelosReserva(): Promise<string[]> {
   if (PROXY_URL) return Promise.resolve([]);
   if (!reservasEmCache) {
-    reservasEmCache = fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key=' + API_KEY)
-      .then((r) => (r.ok ? r.json() : { models: [] }))
+    reservasEmCache = fetchComPrazo('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key=' + API_KEY, {}, 10000)
+      .then(({ res, ler }) => (res.ok ? ler((r) => r.json()) : { models: [] }))
       .then((data) => {
         const modelos: Array<{ name?: string; supportedGenerationMethods?: string[] }> = data?.models || [];
         const nomes = modelos
@@ -152,13 +181,13 @@ async function chamarModelo(body: GeminiBody, modelo: string): Promise<string> {
   // thinkingBudget é da família 2.5; no modelo de reserva pode não valer.
   const corpo = /gemini-2\.5/.test(modelo) || PROXY_URL ? body : semThinking(body);
 
-  const res = await fetch(url, {
+  const { res, ler } = await fetchComPrazo(url, {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...(await proxyAuthHeader()) },
     body: JSON.stringify(corpo)
-  });
+  }, PRAZO_IA_MS);
   if (!res.ok) {
-    const detail = await res.text().catch(() => '');
+    const detail = await ler((r) => r.text()).catch(() => '');
     // Diz QUEM falhou: com o proxy ligado, o erro é do nosso servidor, não do
     // Gemini — e o conserto é em outro lugar. A página de erro do Google Cloud
     // vem em HTML; sem tirar as tags, ela chegava inteira na tela.
@@ -168,7 +197,7 @@ async function chamarModelo(body: GeminiBody, modelo: string): Promise<string> {
     erro.status = res.status;
     throw erro;
   }
-  const data = await res.json();
+  const data = await ler((r) => r.json());
   const blocked = data?.candidates?.[0]?.finishReason && data.candidates[0].finishReason !== 'STOP';
   const text = (data?.candidates?.[0]?.content?.parts || []).map((p: any) => p?.text || '').join('').trim();
   if (!text) throw new Error(blocked ? 'A resposta foi bloqueada pela IA.' : 'Resposta vazia da IA.');
@@ -226,7 +255,7 @@ export async function findSeriesWithAi(books: Array<{ title: string; author: str
   ].join('\n');
   const raw = await callGemini({
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    generationConfig: { maxOutputTokens: 4096, thinkingConfig: NO_THINKING }
+    generationConfig: { maxOutputTokens: 8192, thinkingConfig: NO_THINKING }
   });
   const json = raw.replace(/```json|```/g, '').trim();
   const start = json.indexOf('[');
