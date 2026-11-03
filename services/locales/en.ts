@@ -192,6 +192,8 @@ export const en: Record<string, string> = {
   'Cápsula Mensal': 'Monthly Capsule',
   'Cápsula PNG baixada pelo navegador.': 'Capsule PNG downloaded by the browser.',
   'Cápsula pronta para compartilhar.': 'Capsule ready to share.',
+  'Preparando a imagem da cápsula…': 'Preparing the capsule image…',
+  'Preparando…': 'Preparing…',
   'Card do livro': 'Book card',
   'Cards, barras inferiores e espaçamento já respondem aos ajustes escolhidos.': 'Cards, bottom bars and spacing already follow the settings you pick.',
   'Carregando biblioteca...': 'Loading library...',

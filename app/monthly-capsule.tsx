@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Image, Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Text } from '@/components/TranslatedText';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
@@ -11,6 +11,7 @@ import { useBooks } from '@/contexts/BookContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
 import { downloadCapsulePng } from '@/services/webPlatformTools';
 import { copyText, haptic } from '@/services/feedback';
+import { comPrazo, preloadCovers, PRAZO_CAPTURA_MS } from '@/services/imagePreload';
 import { ReadoraIcon } from '@/components/ReadoraIcon';
 import { appColors, appFonts } from '@/theme/tokens';
 import { appLocale } from '@/services/i18n';
@@ -27,6 +28,7 @@ export default function MonthlyCapsuleScreen() {
   const [monthOffset, setMonthOffset] = useState(0);
   const [yearOffset, setYearOffset] = useState(0);
   const [favoriteId, setFavoriteId] = useState<string | null>(null);
+  const [sharing, setSharing] = useState(false);
   const shotRef = useRef<View>(null);
 
   const selected = useMemo(() => {
@@ -137,9 +139,8 @@ export default function MonthlyCapsuleScreen() {
 
   // Make sure remote covers are in cache (and painted) before we snapshot,
   // otherwise the shared image can come out with blank covers.
-  async function preloadCovers() {
-    const urls = [bestBook?.coverUrl, ...rankedBooks.map((b) => b.coverUrl)].filter(Boolean) as string[];
-    await Promise.all(urls.map((u) => Image.prefetch(u).catch(() => false)));
+  async function prepareCovers() {
+    await preloadCovers([bestBook?.coverUrl, ...rankedBooks.map((b) => b.coverUrl)]);
     await new Promise((resolve) => setTimeout(resolve, 350));
   }
 
@@ -150,15 +151,19 @@ export default function MonthlyCapsuleScreen() {
       downloadOnWeb();
       return;
     }
+    if (sharing) return;
+    if (!shotRef.current) {
+      setMessage('A imagem da cápsula ainda está sendo preparada. Tente novamente em instantes.');
+      return;
+    }
+    setSharing(true);
+    setMessage('Preparando a imagem da cápsula…');
     try {
-      if (!shotRef.current) {
-        setMessage('A imagem da cápsula ainda está sendo preparada. Tente novamente em instantes.');
-        return;
-      }
-      await preloadCovers();
-      const uri = await captureRef(shotRef, { format: 'png', quality: 1, result: 'tmpfile' });
+      await prepareCovers();
+      const uri = await comPrazo(captureRef(shotRef, { format: 'png', quality: 1, result: 'tmpfile' }), PRAZO_CAPTURA_MS, 'captura');
       haptic('success');
       if (await Sharing.isAvailableAsync()) {
+        setMessage('');
         await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Compartilhar Cápsula Literária' });
         setMessage('Cápsula pronta para compartilhar.');
       } else {
@@ -167,8 +172,12 @@ export default function MonthlyCapsuleScreen() {
     } catch {
       haptic('error');
       setMessage('Não foi possível gerar a imagem da cápsula. Tente novamente.');
+    } finally {
+      setSharing(false);
     }
   }
+
+  const shareLabel = (web: string, native: string) => (sharing ? 'Preparando…' : Platform.OS === 'web' ? web : native);
 
   return (
     <Screen>
@@ -243,7 +252,7 @@ export default function MonthlyCapsuleScreen() {
               </View>
             ) : null}
 
-            <Pressable style={[styles.downloadButton, styles.btnRow]} onPress={handleShareImage}><ReadoraIcon name="share" size={17} color={appColors.background} /><Text style={styles.downloadText}>{Platform.OS === 'web' ? 'Baixar Cápsula PNG' : 'Compartilhar Cápsula'}</Text></Pressable>
+            <Pressable style={[styles.downloadButton, styles.btnRow, sharing && styles.busy]} disabled={sharing} onPress={handleShareImage}><ReadoraIcon name="share" size={17} color={appColors.background} /><Text style={styles.downloadText}>{shareLabel('Baixar Cápsula PNG', 'Compartilhar Cápsula')}</Text></Pressable>
           </View>
         </View>
       ) : (
@@ -256,7 +265,7 @@ export default function MonthlyCapsuleScreen() {
             </View>
             <Text selectable style={styles.caption}>{caption}</Text>
           </Card>
-          <Pressable style={[styles.downloadButton, styles.btnRow]} onPress={handleShareImage}><ReadoraIcon name="share" size={17} color={appColors.background} /><Text style={styles.downloadText}>{Platform.OS === 'web' ? 'Baixar imagem para o Instagram' : 'Compartilhar imagem da cápsula'}</Text></Pressable>
+          <Pressable style={[styles.downloadButton, styles.btnRow, sharing && styles.busy]} disabled={sharing} onPress={handleShareImage}><ReadoraIcon name="share" size={17} color={appColors.background} /><Text style={styles.downloadText}>{shareLabel('Baixar imagem para o Instagram', 'Compartilhar imagem da cápsula')}</Text></Pressable>
         </>
       )}
 
@@ -322,6 +331,7 @@ const styles = StyleSheet.create({
   essenceText: { color: appColors.textDim, fontFamily: appFonts.display, fontStyle: 'italic', lineHeight: 20, marginTop: 4 },
   downloadButton: { backgroundColor: appColors.gold, borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 12 },
   downloadText: { color: appColors.background, fontWeight: '900' },
+  busy: { opacity: 0.6 },
   saveButton: { borderColor: appColors.goldDeep, borderWidth: 1, borderRadius: 14, paddingVertical: 15, alignItems: 'center', marginTop: 10 },
   saveText: { color: appColors.gold, fontWeight: '900' },
   favBox: { gap: 10 },

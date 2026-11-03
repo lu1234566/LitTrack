@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Image, Modal, Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Text } from '@/components/TranslatedText';
 import { captureRef } from 'react-native-view-shot';
+import { comPrazo, preloadCovers, PRAZO_CAPTURA_MS } from '@/services/imagePreload';
 import * as Sharing from 'expo-sharing';
 import { Book } from '@/types/book';
 import { Quote } from '@/types/quote';
@@ -229,11 +230,10 @@ export function WrappedStory({ books, quotes = [], readerName, year, onClose }: 
 
   async function capture(): Promise<string | null> {
     if (!shotRef.current) return null;
-    const urls = [data.bestBook?.coverUrl, ...data.top5.map((b) => b.coverUrl)].filter((u): u is string => Boolean(u) && /^https?:/.test(u as string));
-    await Promise.all(urls.map((u) => Image.prefetch(u).catch(() => false)));
+    await preloadCovers([data.bestBook?.coverUrl, ...data.top5.map((b) => b.coverUrl)]);
     await new Promise((resolve) => setTimeout(resolve, 350));
     // Desenhada em 360×640, sai em 1080×1920: o tamanho de um story.
-    return captureRef(shotRef, { format: 'png', quality: 1, result: 'tmpfile', width: SHARE_W * 3, height: SHARE_H * 3 });
+    return comPrazo(captureRef(shotRef, { format: 'png', quality: 1, result: 'tmpfile', width: SHARE_W * 3, height: SHARE_H * 3 }), PRAZO_CAPTURA_MS, 'captura');
   }
 
   async function handleShare() {

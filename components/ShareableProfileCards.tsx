@@ -2,6 +2,7 @@ import { forwardRef, useMemo, useRef, useState } from 'react';
 import { Image, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/TranslatedText';
 import { captureRef } from 'react-native-view-shot';
+import { comPrazo, preloadCovers, PRAZO_CAPTURA_MS } from '@/services/imagePreload';
 import * as Sharing from 'expo-sharing';
 import { Book } from '@/types/book';
 import { analyzeLiteraryProfile, NativeLiteraryProfile } from '@/services/literaryProfile';
@@ -270,10 +271,10 @@ export function ShareableProfileCards({ books, onClose }: { books: Book[]; onClo
     if (!shotRef.current) return null;
     // Ensure the cover (used by the "Livro do Ano" card) is cached/painted first.
     if (data.bestBook?.coverUrl) {
-      await Image.prefetch(data.bestBook.coverUrl).catch(() => false);
+      await preloadCovers([data.bestBook.coverUrl]);
       await new Promise((resolve) => setTimeout(resolve, 350));
     }
-    return captureRef(shotRef, { format: 'png', quality: 1, result: 'tmpfile' });
+    return comPrazo(captureRef(shotRef, { format: 'png', quality: 1, result: 'tmpfile' }), PRAZO_CAPTURA_MS, 'captura');
   }
 
   async function handleShare() {

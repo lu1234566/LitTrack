@@ -2,6 +2,7 @@ import { forwardRef, useRef, useState } from 'react';
 import { Image, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/TranslatedText';
 import { captureRef } from 'react-native-view-shot';
+import { comPrazo, preloadCovers, PRAZO_CAPTURA_MS } from '@/services/imagePreload';
 import * as Sharing from 'expo-sharing';
 import { Book } from '@/types/book';
 import { statusLabel } from '@/services/bookStorage';
@@ -102,9 +103,9 @@ export function BookShareCard({ book, onClose }: { book: Book; onClose: () => vo
 
   async function capture(): Promise<string | null> {
     if (!shotRef.current) return null;
-    if (book.coverUrl) await Image.prefetch(book.coverUrl).catch(() => false);
+    await preloadCovers([book.coverUrl]);
     await new Promise((resolve) => setTimeout(resolve, 300));
-    return captureRef(shotRef, { format: 'png', quality: 1, result: 'tmpfile' });
+    return comPrazo(captureRef(shotRef, { format: 'png', quality: 1, result: 'tmpfile' }), PRAZO_CAPTURA_MS, 'captura');
   }
 
   async function share() {
